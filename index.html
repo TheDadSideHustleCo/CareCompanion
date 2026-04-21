@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="CareCompanion">
-<link rel="apple-touch-icon" id="pwa-apple-icon" href="">
-<link rel="manifest" id="pwa-manifest" href="">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -4274,69 +4274,12 @@ function skipTooltips() {
 // ── PWA HOME SCREEN INSTALL ─────────────────────────────────────────────────
 
 (function initPWA() {
-  // 1. App icon — green leaf SVG as data URI
-  const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-    <rect width="512" height="512" rx="100" fill="#4e7560"/>
-    <text x="256" y="340" text-anchor="middle" font-size="300" font-family="Arial">🌿</text>
-  </svg>`;
-  const ICON_URL = 'data:image/svg+xml;base64,' + btoa(ICON_SVG);
-
-  // Set apple-touch-icon
-  const appleIcon = document.getElementById('pwa-apple-icon');
-  if (appleIcon) appleIcon.href = ICON_URL;
-
-  // 2. Inline Web App Manifest via Blob URL
-  const manifest = {
-    name: 'CareCompanion',
-    short_name: 'CareComp',
-    description: 'Your personal caregiving assistant',
-    start_url: './',
-    display: 'standalone',
-    orientation: 'portrait',
-    background_color: '#faf7f2',
-    theme_color: '#7a9e87',
-    icons: [
-      { src: ICON_URL, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-      { src: ICON_URL, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-    ]
-  };
-  try {
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const manifestURL = URL.createObjectURL(blob);
-    const manifestLink = document.getElementById('pwa-manifest');
-    if (manifestLink) manifestLink.href = manifestURL;
-  } catch(e) { /* Blob URLs not available in all contexts */ }
-
-  // 3. Inline Service Worker via Blob URL (enables offline + installability)
-  const swCode = `
-const CACHE = 'carecompanion-v1';
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache =>
-      cache.addAll([self.location.href.replace('/sw-blob', '')])
-    ).catch(() => {})
-  );
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(clients.claim());
-  caches.keys().then(keys => keys.filter(k => k !== CACHE).forEach(k => caches.delete(k)));
-});
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
-  );
-});
-`;
+  // Register real service worker
   if ('serviceWorker' in navigator) {
-    try {
-      const swBlob = new Blob([swCode], { type: 'application/javascript' });
-      const swURL = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swURL, { scope: './' }).catch(() => {});
-    } catch(e) { /* Blob SW not supported on all platforms */ }
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
   }
 
-  // 4. Install banner
+  // Install banner
   const banner = document.getElementById('pwa-banner');
   if (!banner) return;
 
