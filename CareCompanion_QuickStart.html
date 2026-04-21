@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CareCompanion — Quick Start Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Lato', sans-serif;
+    background: #faf7f2;
+    color: #111;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: white;
+    padding: 14mm 16mm;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #c4a46b;
+    margin-bottom: 4px;
+  }
+  .header-brand h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: #6b5344;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .header-brand p {
+    font-size: 11px;
+    color: #9a7a6a;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .header-tag {
+    background: #4e7560;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* GRID */
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* SECTION CARD */
+  .card {
+    background: #faf7f2;
+    border: 1px solid #e0d5c8;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    color: #6b5344;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card ul { list-style: none; }
+  .card li {
+    padding: 2px 0;
+    font-size: 11.5px;
+    color: #2a2a2a;
+    padding-left: 10px;
+    position: relative;
+  }
+  .card li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: #7a9e87;
+    font-weight: 700;
+  }
+
+  /* STEPS */
+  .steps { display: flex; flex-direction: column; gap: 5px; }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .step-num {
+    background: #6b5344;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { font-size: 11.5px; color: #2a2a2a; line-height: 1.4; }
+  .step-text strong { color: #4e7560; }
+
+  /* HIGHLIGHT BOX */
+  .highlight {
+    background: linear-gradient(135deg, #f0ece4, #faf7f2);
+    border: 1.5px solid #c4a46b;
+    border-radius: 8px;
+    padding: 9px 12px;
+  }
+  .highlight-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 12px;
+    color: #7a5e2a;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  /* NOTICE */
+  .notice {
+    background: #f5ddd9;
+    border-left: 4px solid #c9847a;
+    border-radius: 0 6px 6px 0;
+    padding: 7px 10px;
+    font-size: 10.5px;
+    color: #6b3a34;
+    line-height: 1.5;
+  }
+
+  /* AI SECTION */
+  .ai-box {
+    background: linear-gradient(135deg, #4e7560, #6b5344);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: white;
+  }
+  .ai-box h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    color: #e8d5b0;
+    margin-bottom: 6px;
+  }
+  .ai-features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .ai-feature {
+    font-size: 11px;
+    color: rgba(255,255,255,0.9);
+    padding-left: 10px;
+    position: relative;
+  }
+  .ai-feature::before { content: '✦'; position: absolute; left: 0; font-size: 8px; color: #c4a46b; top: 2px; }
+
+  /* KEYBOARD TIPS */
+  .tip-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 11px;
+    border-bottom: 1px solid #e8e0d8;
+  }
+  .tip-row:last-child { border-bottom: none; }
+  .tip-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+  .tip-text { color: #2a2a2a; }
+
+  /* FOOTER */
+  .footer {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #e0d5c8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9.5px;
+    color: #9a8a80;
+  }
+  .footer em { font-style: italic; color: #b09080; }
+
+  .section-divider {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #b09080;
+    font-weight: 700;
+    margin-bottom: 2px;
+    margin-top: 2px;
+  }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; padding: 10mm 12mm; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-brand">
+      <h1>CareCompanion</h1>
+      <p>Personal Caregiving Assistant — Quick Start Guide</p>
+    </div>
+    <div class="header-tag">v1.0</div>
+  </div>
+
+  <!-- GETTING STARTED STEPS -->
+  <div class="section-divider">Getting Started</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🚀 First Time Setup</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Open the file</strong> — double-click carecompanion.html in any browser</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Accept the disclaimer</strong> — check the box, click "I Understand"</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Enter profile</strong> — name, DOB, and primary condition of your loved one</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Take the tour</strong> — 6-step walkthrough fires automatically</div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-text"><strong>Follow the checklist</strong> — the Dashboard shows 4 recommended first steps</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⭐ Four First Steps</div>
+      <div class="steps">
+        <div class="step"><div class="step-num" style="background:#7a9e87;">1</div><div class="step-text"><strong>💊 Medications</strong> — add all current meds with dose, frequency, times</div></div>
+        <div class="step"><div class="step-num" style="background:#7a9e87;">2</div><div class="step-text"><strong>👥 Care Team</strong> — add doctors, nurses, and emergency contacts</div></div>
+        <div class="step"><div class="step-num" style="background:#7a9e87;">3</div><div class="step-text"><strong>🚨 Emergency Card</strong> — auto-fills from your data, print for the fridge</div></div>
+        <div class="step"><div class="step-num" style="background:#7a9e87;">4</div><div class="step-text"><strong>📋 First Log Entry</strong> — record today's mood, sleep, appetite, observations</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL SECTIONS -->
+  <div class="section-divider">All Sections</div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">🏠 Dashboard</div>
+      <ul>
+        <li>Check off today's medications</li>
+        <li>See upcoming appointments</li>
+        <li>View 14-day trend charts</li>
+        <li>Good Days memory strip</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">💊 Medications</div>
+      <ul>
+        <li>Name, dose, frequency, timing</li>
+        <li>Food instructions & special notes</li>
+        <li>Prescribing doctor & refill date</li>
+        <li>Daily check-offs reset at midnight</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Symptom Log</div>
+      <ul>
+        <li>Mood, sleep, appetite, pain (0–10)</li>
+        <li>Free-text observations</li>
+        <li>Doctor questions field</li>
+        <li>Powers the trend charts</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">📅 Appointments</div>
+      <ul>
+        <li>Auto-sorted by date & time</li>
+        <li>Past / upcoming visual split</li>
+        <li>Category badges</li>
+        <li>Prep notes per appointment</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">👥 Care Team</div>
+      <ul>
+        <li>Doctors, nurses, family contacts</li>
+        <li>Phone, fax, facility</li>
+        <li>Printable directory</li>
+        <li>Auto-feeds emergency card</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">🔄 Handoff Notes</div>
+      <ul>
+        <li>For rotating caregivers</li>
+        <li>Medications given this shift</li>
+        <li>Meals, mood, watch-for notes</li>
+        <li>Timestamped by shift</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">💛 Memory Box</div>
+      <ul>
+        <li>Capture precious moments</li>
+        <li>Mood emoji for each memory</li>
+        <li>Private journal — just for you</li>
+        <li>Beautiful moments surfaced on dashboard</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">🌿 My Wellbeing</div>
+      <ul>
+        <li>Daily caregiver stress check-in (1–10)</li>
+        <li>Gratitude field</li>
+        <li>Burnout alert when scores trend low</li>
+        <li>14-day wellbeing chart</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">🚨 Emergency Card</div>
+      <ul>
+        <li>Auto-fills name, DOB, condition</li>
+        <li>Pulls medications automatically</li>
+        <li>Pulls contacts from care team</li>
+        <li>Print-ready, one click</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- AI + BACKUP ROW -->
+  <div class="grid-2">
+    <div class="ai-box">
+      <h3>✨ AI Assistant (requires API key)</h3>
+      <div class="ai-features">
+        <div class="ai-feature">💬 Ask a care question</div>
+        <div class="ai-feature">📋 Daily briefing</div>
+        <div class="ai-feature">📧 Family update email</div>
+        <div class="ai-feature">🩺 Doctor visit prep</div>
+        <div class="ai-feature">⚠️ Medication check</div>
+        <div class="ai-feature" style="color:rgba(255,255,255,0.6);font-style:italic;">Get key free at console.anthropic.com</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:8px;">
+        <div class="card-title">💾 Data & Backup</div>
+        <div class="steps">
+          <div class="step"><div class="tip-icon">⬇️</div><div class="step-text"><strong>Export</strong> — downloads a .json backup file</div></div>
+          <div class="step"><div class="tip-icon">📂</div><div class="step-text"><strong>Import</strong> — restores from a backup file</div></div>
+          <div class="step"><div class="tip-icon">↺</div><div class="step-text"><strong>Reset</strong> — wipe all data, start fresh</div></div>
+        </div>
+      </div>
+      <div class="highlight">
+        <div class="highlight-title">📱 Mobile</div>
+        <div style="font-size:11px;color:#2a2a2a;">Tap <strong>☰</strong> (top left) to open the menu. Swipe right from the left edge to open, left to close.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTICE -->
+  <div class="notice">
+    <strong>Important:</strong> CareCompanion is not a medical device. It does not diagnose, treat, or monitor medical conditions. Always consult a qualified healthcare provider for medical decisions. Data is stored locally on your device — back up regularly via Data & Backup.
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>CareCompanion v1.0 — Personal Caregiving Assistant</span>
+    <em>carecompanion.html — open in any browser, no installation required</em>
+    <span>Not a medical device</span>
+  </div>
+
+</div>
+</body>
+</html>

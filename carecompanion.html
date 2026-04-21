@@ -1,0 +1,4244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CareCompanion — Your Personal Caregiving Assistant</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+<meta name="theme-color" content="#7a9e87">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CareCompanion">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #faf7f2;
+    --warm-white: #fff9f4;
+    --sage: #7a9e87;
+    --sage-light: #a8c4b0;
+    --sage-dark: #4e7560;
+    --rose: #c9847a;
+    --rose-light: #e8b4ae;
+    --rose-dark: #9e5a52;
+    --brown: #6b5344;
+    --brown-light: #b09080;
+    --gold: #c4a46b;
+    --gold-light: #e8d5b0;
+    --text: #111111;
+    --text-muted: #2a2a2a;
+    --border: #c8b8a8;
+    --shadow: rgba(58,46,40,0.08);
+    --shadow-md: rgba(58,46,40,0.14);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; color: inherit; }
+
+  /* GLOBAL DARK TEXT OVERRIDE */
+  p, span, div, li, td, th, label, input, select, textarea, button, a {
+    color: #111111;
+  }
+
+  body {
+    font-family: 'Lato', system-ui, -apple-system, sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── DISCLAIMER MODAL ── */
+  #disclaimer-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(58,46,40,0.7);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  #disclaimer-overlay.hidden { display: none; }
+  .hidden { display: none !important; }
+  .disclaimer-box {
+    background: var(--warm-white);
+    border-radius: 16px;
+    max-width: 520px; width: 100%;
+    padding: 40px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px var(--shadow-md);
+  }
+  .disclaimer-box h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.9rem; color: var(--brown);
+    margin-bottom: 16px;
+  }
+  .disclaimer-box p {
+    font-size: 1.05rem; line-height: 1.7;
+    color: var(--text); margin-bottom: 12px;
+  }
+  .disclaimer-box p strong { color: var(--text); font-weight: 700; }
+  .disclaimer-checkbox {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin: 20px 0; cursor: pointer;
+  }
+  .disclaimer-checkbox input { margin-top: 3px; accent-color: var(--sage); width: 16px; height: 16px; flex-shrink: 0; }
+  .disclaimer-checkbox span { font-size: 1rem; line-height: 1.6; color: var(--text); }
+  #disclaimer-accept {
+    width: 100%; padding: 14px;
+    background: var(--sage); color: white;
+    border: none; border-radius: 10px;
+    font-family: 'Lato', system-ui, -apple-system, sans-serif;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.5px;
+    transition: background 0.2s;
+  }
+  #disclaimer-accept:hover { background: var(--sage-dark); }
+  #disclaimer-accept:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+  /* ── LAYOUT ── */
+  .app-wrapper {
+    display: flex; min-height: 100vh;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px; flex-shrink: 0;
+    background: var(--brown);
+    display: flex; flex-direction: column;
+    padding: 0;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    overflow-y: auto;
+  }
+  .sidebar-brand {
+    padding: 32px 24px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-brand h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.65rem; color: var(--gold-light);
+    font-weight: 600; line-height: 1.2;
+  }
+  .sidebar-brand p {
+    font-size: 1rem; color: var(--brown-light);
+    margin-top: 4px; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .care-recipient-card {
+    margin: 16px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .care-recipient-card .label {
+    font-size: 1rem; color: rgba(255,255,255,0.65);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px;
+  }
+  .care-recipient-card .name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.1rem; color: white; font-style: italic;
+  }
+  .care-recipient-card .edit-btn {
+    font-size: 1.05rem; color: var(--gold-light);
+    cursor: pointer; text-decoration: underline;
+    background: none; border: none; margin-top: 4px;
+    font-family: 'Lato', system-ui, -apple-system, sans-serif;
+  }
+
+  .sidebar-nav {
+    padding: 8px 0; flex: 1;
+  }
+  .sidebar, .sidebar * { color: white; }
+  .sidebar .nav-item { color: rgba(255,255,255,0.95) !important; }
+  .sidebar .nav-item.active { color: white !important; }
+  .sidebar .nav-section-label { color: rgba(255,255,255,0.6) !important; }
+  .sidebar-brand h1 { color: var(--gold-light) !important; }
+  .sidebar-brand p { color: rgba(255,255,255,0.7) !important; }
+  .sidebar-footer { color: rgba(255,255,255,0.6) !important; }
+  .care-recipient-card .label { color: rgba(255,255,255,0.65) !important; }
+  .care-recipient-card .name { color: white !important; }
+  .care-recipient-card .edit-btn { color: var(--gold-light) !important; }
+
+  .btn-primary, .btn-rose, .btn-gold, .btn-danger { color: white !important; }
+  .btn-primary *, .btn-rose *, .btn-gold *, .btn-danger * { color: white !important; }
+
+  .chat-msg.user .chat-bubble, .chat-msg.user .chat-bubble * { color: white !important; }
+  .chat-avatar.ai { color: white !important; }
+  .chat-avatar.user { color: var(--rose-dark) !important; }
+
+  .dashboard-hero, .dashboard-hero * { color: white !important; }
+  .dashboard-hero p { color: rgba(255,255,255,0.85) !important; }
+
+  .appt-date-badge, .appt-date-badge * { color: white !important; }
+  .contact-avatar { color: white !important; }
+  .badge-sage { color: var(--sage-dark) !important; }
+  .badge-rose { color: var(--rose-dark) !important; }
+  .badge-gold { color: #5a3e10 !important; }
+  .badge-muted { color: #222222 !important; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 24px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+    color: rgba(255,255,255,0.95);
+    font-size: 1.05rem;
+    font-weight: 400;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: white; }
+  .nav-item.active {
+    background: rgba(255,255,255,0.1);
+    border-left-color: var(--gold);
+    color: white;
+    font-weight: 700;
+  }
+  .nav-item .icon { font-size: 1.1rem; width: 20px; text-align: center; }
+
+  .sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.6;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main-content {
+    margin-left: 260px;
+    flex: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .top-bar {
+    background: var(--warm-white);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .top-bar-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.5rem; color: var(--brown);
+  }
+  .top-bar-date {
+    font-size: 1rem; color: var(--text-muted); font-weight: 700;
+  }
+
+  .page { display: none; padding: 36px 40px; min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .page.active { display: block; }
+
+  /* ── CARDS & SECTIONS ── */
+  .card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    box-shadow: 0 2px 12px var(--shadow);
+    margin-bottom: 24px;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  .card-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.3rem; color: var(--brown);
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-title .icon { font-size: 1.2rem; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* ── FORM ELEMENTS ── */
+  label {
+    display: block;
+    font-size: 1.1rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--text); margin-bottom: 7px;
+  }
+  input[type=text], input[type=date], input[type=time],
+  input[type=number], input[type=email], select, textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--cream);
+    font-family: 'Lato', system-ui, -apple-system, sans-serif;
+    font-size: 1.05rem;
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(122,158,135,0.15);
+  }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .form-row { margin-bottom: 16px; }
+  #page-handoff { padding-top: 16px; }
+  #page-handoff .section-intro { display: none; }
+  #page-handoff .card { padding: 16px 22px; margin-bottom: 16px; }
+  #page-handoff .card-title { margin-bottom: 8px; font-size: 1.1rem; }
+  #page-handoff .form-row { margin-bottom: 8px; }
+  #page-handoff .form-grid-2, #page-handoff .form-grid-3 { margin-bottom: 8px; }
+  #page-handoff label { font-size: 0.95rem; margin-bottom: 3px; }
+  #page-handoff textarea { min-height: 55px; }
+
+  #page-appointments { padding-top: 16px; }
+  #page-appointments .section-intro { display: none; }
+  #page-appointments .card { padding: 16px 22px; margin-bottom: 16px; }
+  #page-appointments .card-title { margin-bottom: 8px; font-size: 1.1rem; }
+  #page-appointments .form-row { margin-bottom: 8px; }
+  #page-appointments .form-grid-2, #page-appointments .form-grid-3 { margin-bottom: 8px; }
+  #page-appointments label { font-size: 0.95rem; margin-bottom: 3px; }
+  #page-appointments textarea { min-height: 55px; }
+
+  #page-medications { padding-top: 16px; }
+  #page-medications .section-intro { display: none; }
+  @media screen { #medications-print-table-wrap { display: none; } }
+  #page-medications .card { padding: 16px 22px; margin-bottom: 16px; }
+  #page-medications .card-title { margin-bottom: 8px; font-size: 1.1rem; }
+  #page-medications .form-row { margin-bottom: 8px; }
+  #page-medications .form-grid-2 { margin-bottom: 8px; }
+  #page-medications label { font-size: 0.95rem; margin-bottom: 3px; }
+
+  #page-symptoms { padding-top: 16px; }
+  #page-symptoms .section-intro { display: none; }
+  #page-symptoms .card { padding: 16px 22px; margin-bottom: 16px; }
+  #page-symptoms .card-title { margin-bottom: 8px; font-size: 1.1rem; }
+  #page-symptoms .form-row { margin-bottom: 8px; }
+  #page-symptoms .form-grid-3 { margin-bottom: 8px; }
+  #page-symptoms label { font-size: 0.95rem; margin-bottom: 3px; }
+  #page-symptoms .mood-selector { margin-bottom: 4px; }
+  #page-symptoms .mood-btn { padding: 6px 4px; font-size: 1.2rem; }
+  #page-symptoms .mood-btn span { font-size: 0.9rem; margin-top: 2px; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px;
+    border-radius: 8px; border: none;
+    font-family: 'Lato', system-ui, -apple-system, sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary { background: var(--sage); color: white; }
+  .btn-primary:hover { background: var(--sage-dark); }
+  .btn-rose { background: var(--rose); color: white; }
+  .btn-rose:hover { background: var(--rose-dark); }
+  .btn-gold { background: var(--gold); color: white; }
+  .btn-gold:hover { background: #a88845; }
+  .btn-outline {
+    background: transparent; color: var(--sage);
+    border: 1.5px solid var(--sage);
+  }
+  .btn-outline:hover { background: var(--sage); color: white; }
+  .btn-ghost {
+    background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--rose); color: var(--rose); }
+  .btn-sm { padding: 8px 16px; font-size: 1.1rem; }
+  .btn-danger { background: #e57373; color: white; }
+  .btn-danger:hover { background: #c62828; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block; padding: 4px 12px;
+    border-radius: 20px; font-size: 1rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-sage { background: rgba(122,158,135,0.15); color: var(--sage-dark); }
+  .badge-rose { background: rgba(201,132,122,0.15); color: var(--rose-dark); }
+  .badge-gold { background: rgba(196,164,107,0.2); color: #7a5e2a; }
+  .badge-muted { background: var(--border); color: var(--text-muted); }
+
+  /* ── DASHBOARD PAGE ── */
+  .dashboard-hero {
+    background: linear-gradient(135deg, var(--brown) 0%, #4e3828 100%);
+    border-radius: 16px; padding: 32px 36px;
+    margin-bottom: 28px; position: relative; overflow: hidden;
+  }
+  .dashboard-hero::before {
+    content: '';
+    position: absolute; top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(196,164,107,0.2) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .dashboard-hero h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.8rem; color: white; margin-bottom: 6px;
+  }
+  .dashboard-hero p { color: rgba(255,255,255,0.65); font-size: 1.05rem; }
+
+  .stat-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 22px;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .stat-card .stat-label {
+    font-size: 1.05rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text-muted); margin-bottom: 8px;
+  }
+  .stat-card .stat-value {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 2rem; color: var(--brown); line-height: 1;
+  }
+  .stat-card .stat-sub { font-size: 1.05rem; color: var(--text-muted); margin-top: 4px; }
+
+  .today-meds-list { list-style: none; }
+  .today-meds-list li {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 1.05rem;
+  }
+  .today-meds-list li:last-child { border-bottom: none; }
+  .med-check {
+    width: 22px; height: 22px;
+    border-radius: 50%; border: 2px solid var(--border);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .med-check.done { background: var(--sage); border-color: var(--sage); color: white; }
+
+  /* ── MEDICATIONS PAGE ── */
+  .med-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+    margin-bottom: 12px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px;
+  }
+  .med-info h4 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.05rem; color: var(--brown); margin-bottom: 3px;
+  }
+  .med-info p { font-size: 1.05rem; color: var(--text-muted); }
+  .med-times {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .med-time-pill {
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 10px;
+    font-size: 1rem; color: var(--text); font-weight: 700;
+  }
+
+  /* ── SYMPTOM LOG ── */
+  .mood-selector {
+    display: flex; gap: 10px; margin-bottom: 8px;
+  }
+  .mood-btn {
+    flex: 1; padding: 8px 4px; border-radius: 10px;
+    border: 2px solid var(--border); background: var(--cream);
+    cursor: pointer; text-align: center; transition: all 0.2s;
+    font-size: 1.4rem;
+  }
+  .mood-btn:hover { border-color: var(--sage-light); background: var(--warm-white); }
+  .mood-btn.selected { border-color: var(--sage); background: rgba(122,158,135,0.1); }
+  .mood-btn span { display: block; font-size: 1.05rem; color: var(--text); margin-top: 4px; font-family: 'Lato', sans-serif; font-weight: 700; }
+
+  .log-entry {
+    border-left: 3px solid var(--sage-light);
+    padding: 12px 16px; margin-bottom: 12px;
+    background: var(--warm-white);
+    border-radius: 0 8px 8px 0;
+  }
+  .log-entry .log-date {
+    font-size: 1rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .log-entry .log-text { font-size: 1.1rem; line-height: 1.6; }
+
+  /* ── MEMORY BOX ── */
+  .memory-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .memory-card .memory-date {
+    font-size: 1.05rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .memory-card .memory-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.05rem; color: var(--brown); margin-bottom: 8px;
+  }
+  .memory-card .memory-text { font-size: 1.1rem; line-height: 1.7; color: var(--text-muted); }
+  .memory-card .memory-mood { font-size: 1.3rem; position: absolute; top: 16px; right: 16px; }
+
+  /* ── CARE TEAM ── */
+  .contact-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+    margin-bottom: 12px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .contact-avatar {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--sage-light), var(--sage));
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.1rem; color: white; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .contact-info { flex: 1; padding-left: 14px; }
+  .contact-info h4 { font-size: 1rem; font-weight: 700; color: var(--text); }
+  .contact-info p { font-size: 1.05rem; color: var(--text-muted); margin-top: 2px; }
+  .contact-info .contact-phone {
+    font-size: 1.1rem; color: var(--sage-dark);
+    font-weight: 700; margin-top: 6px;
+  }
+
+  /* ── EMERGENCY CARD ── */
+  .emergency-preview {
+    border: 2px dashed var(--rose-light);
+    border-radius: 12px; padding: 28px;
+    background: white;
+  }
+  .emergency-preview h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    color: var(--rose-dark); font-size: 1.2rem; margin-bottom: 16px;
+    text-align: center;
+  }
+  .emergency-row {
+    display: flex; gap: 16px; margin-bottom: 10px;
+    font-size: 1.05rem;
+  }
+  .emergency-row strong { min-width: 140px; color: var(--text-muted); font-weight: 700; }
+
+  /* ── HANDOFF NOTES ── */
+  .handoff-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    margin-bottom: 12px;
+  }
+  .handoff-card .handoff-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .handoff-card h4 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.1rem; color: var(--brown);
+  }
+
+  /* ── APPOINTMENTS ── */
+  .appt-item {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .appt-item:last-child { border-bottom: none; }
+  .appt-date-badge {
+    background: var(--sage);
+    color: white; border-radius: 10px;
+    padding: 8px 12px; text-align: center;
+    min-width: 52px; flex-shrink: 0;
+  }
+  .appt-date-badge .day { font-size: 1.3rem; font-weight: 700; line-height: 1; }
+  .appt-date-badge .mon { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .appt-info h4 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .appt-info p { font-size: 1.05rem; color: var(--text-muted); }
+
+  /* ── STRESS CHECK ── */
+  .stress-scale {
+    display: flex; gap: 8px; margin: 12px 0;
+  }
+  .stress-btn {
+    flex: 1; padding: 10px 4px; border-radius: 8px;
+    border: 2px solid var(--border); background: var(--cream);
+    cursor: pointer; text-align: center; transition: all 0.2s;
+    font-weight: 700; font-size: 1rem;
+  }
+  .stress-btn:hover { border-color: var(--sage-light); }
+  .stress-btn.selected-low { border-color: var(--sage); background: rgba(122,158,135,0.12); color: var(--sage-dark); }
+  .stress-btn.selected-mid { border-color: var(--gold); background: rgba(196,164,107,0.12); color: #7a5e2a; }
+  .stress-btn.selected-high { border-color: var(--rose); background: rgba(201,132,122,0.12); color: var(--rose-dark); }
+
+  /* ── PRINT STYLES (main block below) ── */
+
+  /* ── UTILITIES ── */
+  .text-muted { color: var(--text-muted); }
+  .text-sm { font-size: 1.05rem; }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-24 { margin-top: 24px; }
+  .mb-16 { margin-bottom: 16px; }
+  .flex { display: flex; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .serif { font-family: 'Playfair Display', Georgia, serif; }
+  .empty-state {
+    text-align: center; padding: 48px 24px;
+    color: var(--text-muted);
+  }
+  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 1.1rem; line-height: 1.6; font-weight: 700; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  .typing-indicator span {
+    display: inline-block; width: 7px; height: 7px;
+    background: var(--sage-light); border-radius: 50%; margin: 0 2px;
+    animation: bounce 1.2s infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  .section-intro {
+    font-size: 1.1rem; color: var(--text-muted);
+    line-height: 1.7; margin-bottom: 24px;
+    padding-bottom: 20px; border-bottom: 1px solid var(--border);
+  }
+
+  /* ── MOBILE SIDEBAR OVERLAY ── */
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(30,15,5,0.55);
+    z-index: 99;
+    backdrop-filter: blur(2px);
+  }
+  .sidebar-overlay.active { display: block; }
+
+  /* ── HAMBURGER BUTTON ── */
+  .hamburger {
+    display: none;
+    background: none; border: none;
+    cursor: pointer; padding: 6px 8px;
+    flex-direction: column; gap: 5px;
+    border-radius: 6px;
+  }
+  .hamburger:hover { background: var(--border); }
+  .hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: var(--brown); border-radius: 2px;
+    transition: all 0.25s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ── TABLET — icon-only sidebar (769–1024px) ── */
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .sidebar {
+      width: 64px;
+      overflow: visible;
+    }
+    .sidebar-brand, .care-recipient-card,
+    .sidebar-footer, .nav-section-label,
+    .nav-item span:not(.icon) { display: none; }
+    .nav-item {
+      justify-content: center; padding: 14px 0;
+      border-left: none; border-right: 3px solid transparent;
+    }
+    .nav-item.active { border-right-color: var(--gold); border-left: none; }
+    .nav-item .icon { font-size: 1.4rem; width: auto; }
+    .main-content { margin-left: 64px; }
+    .top-bar { padding: 14px 24px; }
+    .page { padding: 28px 24px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* ── MOBILE — slide-out sidebar (≤768px) ── */
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.28s ease;
+      width: 280px;
+      z-index: 200;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+    .hamburger { display: flex; }
+    .top-bar {
+      padding: 12px 16px;
+      gap: 12px;
+    }
+    .top-bar-title { font-size: 1.2rem; }
+    .top-bar-date { display: none; }
+    .page { padding: 20px 16px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .form-grid-2, .form-grid-3 { grid-template-columns: 1fr !important; }
+    .dashboard-hero { padding: 22px 20px; }
+    .dashboard-hero h2 { font-size: 1.4rem; }
+    .stat-card .stat-value { font-size: 1.6rem; }
+    .chat-bubble { max-width: 90%; }
+    .emergency-preview { padding: 16px; }
+    .card { padding: 18px 16px; }
+  }
+
+  /* ── SMALL MOBILE (≤420px) ── */
+  @media (max-width: 420px) {
+    body { font-size: 16px; }
+    .grid-3 { grid-template-columns: 1fr !important; }
+    .mood-selector { flex-wrap: wrap; }
+    .mood-btn { flex: 0 0 calc(33% - 6px); }
+    .stress-scale { gap: 4px; }
+    .stress-btn { font-size: 1.05rem; padding: 8px 2px; }
+    .stat-cards { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .stat-card { padding: 14px 12px !important; }
+    .stat-card .stat-value { font-size: 1.4rem !important; }
+    .appt-item { flex-wrap: wrap; gap: 8px; }
+    .appt-date-badge { min-width: 44px; }
+    #chart-summaries { flex-direction: column; }
+    .med-card { flex-wrap: wrap; }
+    .getting-started { padding: 18px 16px; }
+    .contact-card { flex-wrap: wrap; }
+    .btn-sm { padding: 7px 12px; font-size: 1rem; }
+    .print-doc-header { flex-direction: column; gap: 4px; }
+  }
+
+  .page.active {
+    animation: fadeIn 0.25s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--brown-light); }
+
+  /* ── GETTING STARTED ── */
+  .getting-started {
+    background: linear-gradient(135deg, var(--warm-white), #f5f0ea);
+    border: 2px solid var(--gold-light);
+    border-radius: 16px; padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+  .getting-started h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.3rem; color: var(--brown);
+    margin-bottom: 6px;
+  }
+  .getting-started .gs-subtitle {
+    font-size: 1rem; color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+  .gs-steps { display: flex; flex-direction: column; gap: 10px; }
+  .gs-step {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: white; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .gs-step:hover { border-color: var(--sage); background: rgba(122,158,135,0.05); }
+  .gs-step.done { opacity: 0.6; border-color: var(--border); }
+  .gs-step.done:hover { border-color: var(--sage); background: rgba(122,158,135,0.05); }
+  .gs-step-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .gs-step-text { flex: 1; }
+  .gs-step-text strong { display: block; font-size: 1rem; color: var(--text); }
+  .gs-step-text span { font-size: 1rem; color: var(--text-muted); }
+  .gs-step-check {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; color: white;
+    transition: all 0.2s;
+  }
+  .gs-step.done .gs-step-check { background: var(--sage); border-color: var(--sage); }
+  .gs-progress {
+    margin-top: 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .gs-progress-bar {
+    flex: 1; height: 6px; background: var(--border);
+    border-radius: 3px; overflow: hidden;
+  }
+  .gs-progress-fill {
+    height: 100%; background: var(--sage);
+    border-radius: 3px; transition: width 0.4s ease;
+  }
+  .gs-progress-label { font-size: 1rem; color: var(--text-muted); font-weight: 700; white-space: nowrap; }
+  .good-days-strip {
+    background: linear-gradient(135deg, #f9f3e8, #fdf8f0);
+    border: 1.5px solid var(--gold-light);
+    border-radius: 14px; padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .good-days-strip h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.1rem; color: #7a5e2a;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .good-days-scroll {
+    display: flex; gap: 12px; overflow-x: auto;
+    padding-bottom: 6px;
+  }
+  .good-days-scroll::-webkit-scrollbar { height: 4px; }
+  .good-day-chip {
+    background: white; border: 1.5px solid var(--gold-light);
+    border-radius: 12px; padding: 12px 16px;
+    min-width: 160px; flex-shrink: 0;
+    cursor: default;
+  }
+  .good-day-chip .chip-date { font-size: 1.05rem; color: #9a7a3a; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .good-day-chip .chip-mood { font-size: 1.5rem; margin-bottom: 4px; }
+  .good-day-chip .chip-text { font-size: 1rem; color: #3a2e10; line-height: 1.4; }
+
+  /* ── CHARTS ── */
+  .chart-container {
+    background: var(--cream);
+    border-radius: 10px; padding: 16px;
+    margin-top: 16px; position: relative;
+  }
+  .chart-bars {
+    display: flex; align-items: flex-end;
+    gap: 6px; height: 120px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 4px;
+  }
+  .chart-bar-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 4px; height: 100%;
+    justify-content: flex-end;
+  }
+  .chart-bar {
+    width: 100%; border-radius: 4px 4px 0 0;
+    min-height: 4px; transition: height 0.4s ease;
+  }
+  .chart-label {
+    font-size: 1rem; color: var(--text-muted);
+    text-align: center; margin-top: 6px;
+    font-weight: 700; white-space: nowrap;
+  }
+  .chart-value {
+    font-size: 1rem; font-weight: 700;
+    color: var(--text);
+  }
+  .chart-legend {
+    display: flex; gap: 20px; margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .chart-legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 1rem; color: var(--text);
+  }
+  .chart-legend-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+
+  /* ── TOOLTIP / ONBOARDING ── */
+  .tooltip-overlay {
+    position: fixed; inset: 0; z-index: 8000;
+    pointer-events: none;
+  }
+  .tooltip-overlay.active { pointer-events: all; }
+  .tooltip-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(20,10,5,0.55);
+    backdrop-filter: blur(2px);
+  }
+  .tooltip-box {
+    position: fixed; z-index: 8100;
+    background: white; border-radius: 14px;
+    padding: 22px 26px; max-width: 320px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    border: 2px solid var(--gold-light);
+  }
+  .tooltip-box h4 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.15rem; color: var(--brown); margin-bottom: 8px;
+  }
+  .tooltip-box p { font-size: 1.05rem; color: #111; line-height: 1.6; margin-bottom: 16px; }
+  .tooltip-nav { display: flex; justify-content: space-between; align-items: center; }
+  .tooltip-dots { display: flex; gap: 6px; }
+  .tooltip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .tooltip-dot.active { background: var(--sage); }
+  .tooltip-skip { font-size: 1rem; color: var(--text-muted); cursor: pointer; text-decoration: underline; background: none; border: none; }
+
+  /* ── EXPORT / IMPORT ── */
+  .export-card {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px 24px;
+    margin-bottom: 16px;
+  }
+  .export-card h4 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.1rem; color: var(--brown); margin-bottom: 8px;
+  }
+  .export-card p { font-size: 1.05rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6; }
+
+  /* ── PROFESSIONAL PRINT STYLES ── */
+  @media print {
+    @page { margin: 1.8cm 2cm; size: letter; }
+
+    /* ── Reset layout ── */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .sidebar, .top-bar, .no-print, button { display: none !important; }
+    .main-content { margin-left: 0 !important; padding: 0 !important; }
+    body { background: white !important; font-family: Georgia, serif; font-size: 11pt; color: #1a1a1a !important; line-height: 1.6; }
+    .page { display: none !important; }
+    .page.active { display: block !important; padding: 0 !important; }
+    .section-intro { display: none !important; }
+    /* Keep cards visible but clean */
+    .card { box-shadow: none !important; border: 1pt solid #ddd !important; background: white !important; margin-bottom: 12pt !important; overflow: visible !important; max-width: none !important; }
+    .page.active { overflow: visible !important; }
+    .main-content { overflow: visible !important; }
+    body { overflow: visible !important; }
+
+    /* ── Shared print header ── */
+    .print-doc-header {
+      display: flex !important;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2.5pt solid #2d5a3d;
+      padding: 0 16pt 10pt 16pt;
+      margin-bottom: 18pt;
+    }
+    .print-doc-header .prt-title { font-family: Georgia, serif; font-size: 17pt; font-weight: bold; color: #2d5a3d; }
+    .print-doc-header .prt-sub { font-size: 9pt; color: #555; margin-top: 3pt; }
+    .print-doc-header .prt-right { text-align: right; font-size: 9pt; color: #555; }
+
+    /* ── Hide all add/edit forms and UI-only elements on print ── */
+    .no-print { display: none !important; }
+    #page-careteam.active #careteam-list .contact-card .btn { display: none !important; }
+
+    /* ── Medications: table ── */
+    #page-medications { padding: 0 !important; }
+    #med-search { display: none !important; }
+    #medications-list { display: none !important; }
+    #medications-print-table-wrap { display: block !important; overflow: visible !important; }
+    .medications-print-table { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+    .medications-print-table thead { display: table-header-group; }
+    .medications-print-table th {
+      background: #2d5a3d !important; color: white !important;
+      font-family: Georgia, serif; font-size: 9pt; font-weight: bold;
+      padding: 7pt 8pt; text-align: left; border: 1pt solid #2d5a3d;
+    }
+    .medications-print-table td {
+      font-size: 8.5pt; padding: 5pt 7pt;
+      border: 0.5pt solid #ccc; vertical-align: top; color: #1a1a1a !important;
+    }
+    .medications-print-table tr { page-break-inside: avoid; }
+    .medications-print-table tr:nth-child(even) td { background: #f5f9f6 !important; }
+    .medications-print-table .pill-low { color: #8b1a1a !important; font-weight: bold; }
+    .medications-print-table .pill-warn { color: #7a5e2a !important; font-weight: bold; }
+    .med-print-footer { margin-top: 14pt; font-size: 8pt; color: #777; border-top: 0.5pt solid #ccc; padding-top: 8pt; padding-left: 16pt; padding-right: 16pt; }
+
+    /* ── Care Team: grid of cards ── */
+    #page-careteam.active { padding: 0 !important; }
+    #page-careteam.active #careteam-list { display: none !important; }
+    .ct-print-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 14pt; margin: 0 16pt; }
+    .ct-print-card {
+      border: 1pt solid #c8d8c8 !important; border-radius: 6pt;
+      overflow: hidden !important; page-break-inside: avoid;
+      background: white !important; box-shadow: 0 1pt 4pt rgba(0,0,0,0.08) !important;
+    }
+    .ct-print-card-header {
+      background: #2d5a3d !important; padding: 9pt 12pt 7pt !important;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
+    .ct-print-card-header h4 {
+      font-size: 12pt; font-family: Georgia, serif; color: white !important;
+      font-weight: bold; margin-bottom: 2pt;
+    }
+    .ct-print-card-header .ct-role {
+      font-size: 8pt; color: #c8e6c9 !important; font-style: italic;
+    }
+    .ct-print-card-body { padding: 8pt 12pt 10pt !important; }
+    .ct-print-card .ct-detail {
+      font-size: 9pt; color: #1a1a1a !important; margin-bottom: 3pt;
+      display: flex; align-items: flex-start; gap: 5pt;
+    }
+    .ct-print-card .ct-detail-icon { min-width: 11pt; }
+    .ct-print-card .ct-notes {
+      font-size: 8.5pt; color: #555 !important; font-style: italic;
+      margin-top: 6pt; padding-top: 6pt; border-top: 0.5pt solid #e0e0e0;
+      line-height: 1.4;
+    }
+
+    /* ── Handoff Notes ── */
+    #page-handoff.active { padding: 0 !important; }
+    #page-handoff.active #handoff-list { display: block !important; padding: 0 16pt !important; }
+    .handoff-card {
+      border: none !important; border-left: 3pt solid #2d5a3d !important;
+      border-bottom: 0.5pt solid #eee !important;
+      border-radius: 0 !important; padding: 10pt 14pt !important;
+      margin-bottom: 14pt !important; page-break-inside: avoid;
+      background: white !important; box-shadow: none !important;
+    }
+    .handoff-card .handoff-header h4 {
+      font-family: Georgia, serif; font-size: 12pt !important; color: #2d5a3d;
+      padding-bottom: 5pt; margin-bottom: 7pt; border-bottom: 0.5pt solid #ddd;
+    }
+    .handoff-card p, .handoff-card .text-sm { font-size: 10pt !important; line-height: 1.6 !important; color: #1a1a1a !important; }
+    .handoff-card .handoff-meta { display: none !important; }
+    .handoff-header { flex-direction: column !important; align-items: flex-start !important; gap: 0 !important; }
+    .handoff-header .btn { display: none !important; }
+
+    /* ── Page numbers in margin ── */
+    @page { margin: 1.8cm 2cm 2cm 2cm; }
+    @page { @bottom-center { content: "Page " counter(page); font-size: 8pt; color: #999; font-family: Georgia, serif; } }
+
+    /* ── Emergency card ── */
+    #page-emergency.active { padding: 0 !important; }
+    #page-emergency.active .card { border: none !important; padding: 0 !important; margin: 0 !important; }
+    #page-emergency.active .emergency-preview {
+      border: 2pt solid #2d5a3d !important; border-radius: 4pt !important;
+      padding: 20pt !important; max-width: 100% !important;
+      page-break-inside: avoid; background: white !important;
+    }
+    #page-emergency.active .emergency-preview h3 {
+      font-family: Georgia, serif; font-size: 15pt !important; color: #2d5a3d;
+      border-bottom: 1.5pt solid #2d5a3d; padding-bottom: 8pt; margin-bottom: 14pt;
+    }
+    .emergency-row { font-size: 10.5pt !important; margin-bottom: 8pt !important; display: flex !important; }
+    .emergency-row strong { min-width: 140pt !important; color: #2d5a3d !important; display: inline-block; }
+    #page-emergency.active .grid-2 { display: block !important; }
+    #page-emergency.active p[style*="font-size:0.8rem"] { display: none !important; }
+
+    /* ── Doctor Visit Prep ── */
+    #page-visit-prep { display: block !important; }
+    #page-visit-prep .print-doc-header { display: flex !important; }
+  }
+
+  /* ── TOAST NOTIFICATIONS ── */
+  #toast-container {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    z-index: 99999; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    pointer-events: none;
+  }
+  .toast {
+    padding: 12px 22px; border-radius: 30px;
+    font-family: 'Lato', system-ui, -apple-system, sans-serif; font-size: 1rem; font-weight: 700;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    opacity: 0; transform: translateY(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--sage-dark); color: white; }
+  .toast.error   { background: var(--rose-dark);  color: white; }
+  .toast.info    { background: var(--brown);       color: white; }
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- DISCLAIMER -->
+<div id="disclaimer-overlay" style="display:none;">
+  <div class="disclaimer-box">
+    <h2>Welcome to CareCompanion</h2>
+    <p>Before you begin, please read and acknowledge the following important notice.</p>
+    <p><strong>Not a Medical Device.</strong> CareCompanion is a personal organization and journaling tool. It does not provide medical advice, diagnosis, or treatment. All AI-generated responses are informational only.</p>
+    <p><strong>Always consult a qualified healthcare provider</strong> before making any medical decisions. Never disregard professional medical advice based on anything in this app.</p>
+    <p><strong>Privacy.</strong> All data is stored locally on your device. If you use AI features, health information you type will be sent to Anthropic's servers to generate responses. Avoid entering full legal names or identifying information in AI chat.</p>
+    <label class="disclaimer-checkbox">
+      <input type="checkbox" id="disclaimer-check" onchange="
+        var btn = document.getElementById('disclaimer-accept');
+        btn.disabled = !this.checked;
+        btn.style.background = this.checked ? 'var(--sage)' : 'var(--border)';
+        btn.style.cursor = this.checked ? 'pointer' : 'not-allowed';
+      ">
+      <span>I understand that CareCompanion is not a medical device and does not replace professional healthcare advice.</span>
+    </label>
+    <button id="disclaimer-accept" disabled
+      style="width:100%;padding:16px;background:var(--border);color:white;border:none;border-radius:10px;font-size:1.1rem;font-weight:700;cursor:not-allowed;letter-spacing:0.5px;"
+      onclick="if(!document.getElementById('disclaimer-check').checked){return;} acceptDisclaimer();">
+      I Understand — Enter App
+    </button>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div id="setup-overlay" class="hidden" style="position:fixed;inset:0;z-index:9000;background:rgba(58,46,40,0.6);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);">
+  <div class="disclaimer-box">
+    <h2>Who are you caring for?</h2>
+    <p>This helps personalize your experience. You can change this anytime.</p>
+    <div class="form-row">
+      <label>Their Name (or nickname)</label>
+      <input type="text" id="setup-name" placeholder="e.g. Mom, Dad, Margaret…">
+    </div>
+    <div class="form-grid-2">
+      <div>
+        <label>Date of Birth</label>
+        <input type="date" id="setup-dob">
+      </div>
+      <div>
+        <label>Primary Condition (optional)</label>
+        <input type="text" id="setup-condition" placeholder="e.g. Dementia, Heart Disease">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Your Name (the caregiver)</label>
+      <input type="text" id="setup-caregiver" placeholder="Your name">
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:14px;font-size:1rem;" onclick="saveSetup()">Save &amp; Begin →</button>
+  </div>
+</div>
+
+<!-- MOBILE SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="app-wrapper">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <h1>Care<br>Companion</h1>
+      <p>Personal Care Organizer</p>
+    </div>
+
+    <div class="care-recipient-card">
+      <div class="label">Caring for</div>
+      <div class="name" id="sidebar-name">—</div>
+      <button class="edit-btn" onclick="openSetup()">Edit profile</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Daily Care</div>
+      <div class="nav-item active" onclick="navigate('dashboard', this)">
+        <span class="icon">🏠</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="navigate('medications', this)">
+        <span class="icon">💊</span> Medications
+      </div>
+      <div class="nav-item" onclick="navigate('symptoms', this)">
+        <span class="icon">📋</span> Symptom Log
+      </div>
+      <div class="nav-item" onclick="navigate('appointments', this)">
+        <span class="icon">📅</span> Appointments
+      </div>
+      <div class="nav-section-label">Care Circle</div>
+      <div class="nav-item" onclick="navigate('careteam', this)">
+        <span class="icon">👥</span> Care Team
+      </div>
+      <div class="nav-item" onclick="navigate('handoff', this)">
+        <span class="icon">🔄</span> Handoff Notes
+      </div>
+      <div class="nav-section-label">Support</div>
+      <div class="nav-item" onclick="navigate('memory', this)">
+        <span class="icon">💛</span> Memory Box
+      </div>
+      <div class="nav-item" onclick="navigate('stress', this)">
+        <span class="icon">🌿</span> My Wellbeing
+      </div>
+      <div class="nav-section-label">Documents</div>
+      <div class="nav-item" onclick="navigate('emergency', this)">
+        <span class="icon">🚨</span> Emergency Card
+      </div>
+      <div class="nav-item" onclick="navigate('export', this)">
+        <span class="icon">💾</span> Data & Backup
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      CareCompanion v1.1<br>
+      Data stored locally on your device.<br>
+      Not a medical device.<br><br>
+      <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="top-bar">
+      <button class="hamburger no-print" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="top-bar-title" id="page-title">Dashboard</div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div id="last-saved" style="font-size:0.85rem;color:rgba(255,255,255,0.6);white-space:nowrap;"></div>
+        <div class="top-bar-date" id="top-date"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ DASHBOARD ═══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="dashboard-hero">
+        <h2 id="hero-greeting">Good morning 🌿</h2>
+        <p id="hero-sub" style="color:rgba(255,255,255,0.85);font-size:1.05rem;">Here's a summary of today's care for <span id="hero-name">your loved one</span>.</p>
+      </div>
+
+      <!-- GETTING STARTED (hidden once data exists) -->
+      <div class="getting-started" id="getting-started" style="display:none;">
+        <h3>🌿 Welcome — let's get you set up</h3>
+        <p class="gs-subtitle">Complete these four steps to get the most out of CareCompanion.</p>
+        <div class="gs-steps">
+          <div class="gs-step" id="gs-step-meds" onclick="navigate('medications', document.querySelectorAll('.nav-item')[1])">
+            <div class="gs-step-icon">💊</div>
+            <div class="gs-step-text">
+              <strong>Add medications</strong>
+              <span>Enter all current medications, doses, and schedules</span>
+            </div>
+            <div class="gs-step-check">✓</div>
+          </div>
+          <div class="gs-step" id="gs-step-careteam" onclick="navigate('careteam', document.querySelectorAll('.nav-item')[4])">
+            <div class="gs-step-icon">👥</div>
+            <div class="gs-step-text">
+              <strong>Add your care team</strong>
+              <span>Doctors, nurses, and emergency contacts</span>
+            </div>
+            <div class="gs-step-check">✓</div>
+          </div>
+          <div class="gs-step" id="gs-step-emergency" onclick="navigate('emergency', document.querySelectorAll('.nav-item')[9])">
+            <div class="gs-step-icon">🚨</div>
+            <div class="gs-step-text">
+              <strong>Generate emergency card</strong>
+              <span>A printable card for the fridge and your wallet</span>
+            </div>
+            <div class="gs-step-check">✓</div>
+          </div>
+          <div class="gs-step" id="gs-step-log" onclick="navigate('symptoms', document.querySelectorAll('.nav-item')[2])">
+            <div class="gs-step-icon">📋</div>
+            <div class="gs-step-text">
+              <strong>Log today's observations</strong>
+              <span>Start your daily symptom and mood journal</span>
+            </div>
+            <div class="gs-step-check">✓</div>
+          </div>
+        </div>
+        <div class="gs-progress">
+          <div class="gs-progress-bar"><div class="gs-progress-fill" id="gs-progress-fill" style="width:0%"></div></div>
+          <div class="gs-progress-label" id="gs-progress-label">0 of 4 done</div>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:24px;">
+        <div class="stat-card">
+          <div class="stat-label">Medications Today</div>
+          <div class="stat-value" id="stat-meds">0</div>
+          <div class="stat-sub" id="stat-meds-sub">none scheduled</div>
+        </div>
+        <div class="stat-card" id="stat-appt-card">
+          <div class="stat-label">Next Appointment</div>
+          <div id="stat-appt-detail" style="margin-top:6px;">
+            <div class="stat-value" style="font-size:1.1rem;">—</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Days Logged</div>
+          <div class="stat-value" id="stat-days">0</div>
+          <div class="stat-sub">symptom entries</div>
+        </div>
+      </div>
+
+      <!-- REFILL ALERTS -->
+      <div id="refill-alerts"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="icon">💊</span> Today's Medications</div>
+          <ul class="today-meds-list" id="dashboard-meds">
+            <li style="color:var(--text-muted);font-size:1rem;padding:12px 0;">No medications added yet.</li>
+          </ul>
+          <button class="btn btn-outline btn-sm mt-8" onclick="navigate('medications', document.querySelector('[onclick*=medications]'))">Manage medications →</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">📋</span> Recent Log</div>
+          <div id="dashboard-log">
+            <div class="empty-state" style="padding:24px 0;">
+              <div class="empty-icon">📝</div>
+              <p>No entries yet. Start logging today.</p>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="navigate('symptoms', document.querySelector('[onclick*=symptoms]'))">Log today →</button>
+        </div>
+      </div>
+
+      <!-- MOOD SNAPSHOT -->
+      <div class="card" id="dash-mood-card">
+        <div class="card-title"><span class="icon">📈</span> Mood This Week</div>
+        <div id="dash-mood-snapshot">
+          <div class="empty-state" style="padding:16px 0;">
+            <div class="empty-icon">📝</div>
+            <p>No log entries yet.</p>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm mt-8" onclick="navigate('symptoms', document.querySelector('[onclick*=symptoms]'))">Log today →</button>
+      </div>
+
+      <!-- GOOD DAYS WIDGET + MED SEARCH -->
+      <div class="grid-2">
+        <div class="card" id="dash-gooddays-card">
+          <div class="card-title"><span class="icon">💛</span> Good Days</div>
+          <div id="dash-gooddays-content">
+            <div class="empty-state" style="padding:16px 0;">
+              <div class="empty-icon">🌟</div>
+              <p>No good days recorded yet.</p>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="navigate('symptoms', document.querySelector('[onclick*=symptoms]'))">Log today →</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">🔍</span> Medication Lookup</div>
+          <input type="search" id="dash-med-search" placeholder="Search medications…" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:1rem;margin-bottom:12px;" oninput="renderMedSearch(this.value)">
+          <div id="dash-med-results">
+            <div style="color:var(--text-muted);font-size:1rem;padding:8px 0;">Type to search your medication list.</div>
+          </div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="navigate('medications', document.querySelector('[onclick*=medications]'))">All medications →</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📅</span> Upcoming Appointments</div>
+        <div id="dashboard-appts">
+          <div class="empty-state" style="padding:20px 0;">
+            <p>No upcoming appointments.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOOD DAYS STRIP -->
+      <div class="good-days-strip" id="good-days-strip" style="display:none;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+          <h3 style="margin:0;">💛 Good Days</h3>
+          <span id="good-days-streak" style="display:none;background:linear-gradient(135deg,#c4a46b,#e8d5b0);color:#5a3e10;font-weight:700;font-size:1rem;padding:4px 12px;border-radius:20px;">🔥 0 day streak</span>
+          <span id="good-days-summary" style="font-size:1rem;color:var(--text-muted);"></span>
+        </div>
+        <div class="good-days-scroll" id="good-days-list"></div>
+      </div>
+
+      <!-- TREND CHARTS -->
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Trends (Last 14 Days)</div>
+        <div id="charts-empty" class="empty-state" style="padding:24px 0;">
+          <div class="empty-icon">📈</div>
+          <p>Add symptom log entries to see trend charts here.</p>
+        </div>
+        <div id="charts-content" style="display:none;">
+          <div id="chart-summaries" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;"></div>
+          <div class="grid-2">
+            <div>
+              <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Mood Over Time</div>
+              <div class="chart-container">
+                <div class="chart-bars" id="chart-mood"></div>
+                <div class="chart-legend">
+                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--sage);"></div>Good/Okay</div>
+                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--gold);"></div>Tired/Anxious</div>
+                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--rose);"></div>Low/Agitated</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Pain Level (0–10)</div>
+              <div class="chart-container">
+                <div class="chart-bars" id="chart-pain"></div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:20px;">
+            <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Your Wellbeing Score (1–10)</div>
+            <div class="chart-container">
+              <div class="chart-bars" id="chart-stress"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ MEDICATIONS ═══ -->
+    <div class="page" id="page-medications">
+      <div class="print-doc-header" id="med-print-header" style="display:none;">
+        <div>
+          <div class="prt-title">Medication List</div>
+          <div class="prt-sub" id="med-print-patient"></div>
+        </div>
+        <div class="prt-right" id="med-print-date"></div>
+      </div>
+      <p class="section-intro">Track all medications, dosages, and schedules. Check off doses as they're given each day.</p>
+
+      <div class="card no-print">
+        <div class="card-title"><span class="icon">➕</span> Add Medication</div>
+        <div class="form-grid-2">
+          <div><label>Medication Name</label><input type="text" id="med-name" placeholder="e.g. Lisinopril"></div>
+          <div><label>Dosage</label><input type="text" id="med-dose" placeholder="e.g. 10mg"></div>
+        </div>
+        <div class="form-grid-2">
+          <div><label>Frequency</label>
+            <select id="med-freq" onchange="updateMedTimeInputs();updatePillDaysLeft()">
+              <option>Once daily</option>
+              <option>Twice daily</option>
+              <option>Three times daily</option>
+              <option>Every 8 hours</option>
+              <option>As needed</option>
+              <option>Weekly</option>
+            </select>
+          </div>
+          <div><label>With Food?</label>
+            <select id="med-food">
+              <option value="">No preference</option>
+              <option value="with food">Take with food</option>
+              <option value="without food">Take without food</option>
+              <option value="with water">Take with full glass of water</option>
+            </select>
+          </div>
+        </div>
+        <div id="med-times-container"></div>
+        <div class="form-row">
+          <label>Special Instructions</label>
+          <input type="text" id="med-notes" placeholder="e.g. Avoid grapefruit, refrigerate after opening…">
+        </div>
+        <div class="form-grid-2">
+          <div><label>Prescribing Doctor</label><input type="text" id="med-doctor" placeholder="Dr. Smith"></div>
+          <div><label>Refill Date</label><input type="date" id="med-refill"></div>
+        </div>
+        <div class="form-grid-2">
+          <div><label>Pills Remaining</label><input type="number" id="med-pills" placeholder="e.g. 30" min="0" step="1" oninput="updatePillDaysLeft()"></div>
+          <div><label style="visibility:hidden;">spacer</label><div style="padding-top:8px;font-size:1rem;color:var(--text-muted);" id="med-days-left"></div></div>
+        </div>
+        <button class="btn btn-primary" onclick="addMedication()">➕ Add Medication</button>
+      </div>
+
+      <div style="margin:12px 0 4px;">
+        <input type="text" id="med-search" placeholder="🔍 Search medications…" oninput="renderMedications()"
+          style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:1.05rem;background:var(--warm-white);">
+      </div>
+      <div id="medications-list"></div>
+      <div id="medications-print-table-wrap"></div>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="printMedicationList()">🖨️ Print Medication List</button>
+    </div>
+
+    <!-- ═══════════════════════════════════ SYMPTOMS ═══ -->
+    <div class="page" id="page-symptoms">
+      <p class="section-intro">Keep a daily record of how your loved one is feeling. These logs are invaluable at doctor visits.</p>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📝</span> Log Today's Entry</div>
+        <div class="form-row">
+          <label>Date</label>
+          <input type="date" id="log-date">
+        </div>
+        <div class="form-row">
+          <label>Overall Mood</label>
+          <div class="mood-selector" id="mood-selector">
+            <div class="mood-btn" onclick="selectMood('😊')" data-mood="😊">😊<span>Good</span></div>
+            <div class="mood-btn" onclick="selectMood('😐')" data-mood="😐">😐<span>Okay</span></div>
+            <div class="mood-btn" onclick="selectMood('😔')" data-mood="😔">😔<span>Low</span></div>
+            <div class="mood-btn" onclick="selectMood('😰')" data-mood="😰">😰<span>Anxious</span></div>
+            <div class="mood-btn" onclick="selectMood('😴')" data-mood="😴">😴<span>Tired</span></div>
+            <div class="mood-btn" onclick="selectMood('😤')" data-mood="😤">😤<span>Agitated</span></div>
+          </div>
+        </div>
+        <div class="form-grid-3">
+          <div>
+            <label>Sleep Quality</label>
+            <select id="log-sleep">
+              <option value="">—</option>
+              <option>Excellent</option>
+              <option>Good</option>
+              <option>Fair</option>
+              <option>Poor</option>
+              <option>Very poor</option>
+            </select>
+          </div>
+          <div>
+            <label>Appetite</label>
+            <select id="log-appetite">
+              <option value="">—</option>
+              <option>Excellent</option>
+              <option>Good</option>
+              <option>Fair</option>
+              <option>Poor</option>
+              <option>Refused food</option>
+            </select>
+          </div>
+          <div>
+            <label>Pain Level (0–10)</label>
+            <input type="number" id="log-pain" min="0" max="10" placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Symptoms / Observations</label>
+          <textarea id="log-symptoms" placeholder="Any symptoms, changes, or notable observations today…" style="min-height:60px;"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Questions for Doctor</label>
+          <textarea id="log-questions" placeholder="Things to remember to ask at the next appointment…" style="min-height:55px;"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addLogEntry()">💾 Save Entry</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📚</span> Previous Entries</div>
+        <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" id="log-search" placeholder="🔍 Search entries…" oninput="renderSymptomLog()"
+            style="flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:1rem;background:var(--warm-white);">
+          <select id="log-mood-filter" onchange="renderSymptomLog()"
+            style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:1rem;background:var(--warm-white);">
+            <option value="">All moods</option>
+            <option value="😊">😊 Good</option>
+            <option value="😐">😐 Okay</option>
+            <option value="😔">😔 Low</option>
+            <option value="😰">😰 Anxious</option>
+            <option value="😴">😴 Tired</option>
+            <option value="😤">😤 Agitated</option>
+          </select>
+        </div>
+        <div id="symptom-log-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ APPOINTMENTS ═══ -->
+    <div class="page" id="page-appointments">
+      <p class="section-intro">Keep all appointments organized in one place. Never miss an important visit.</p>
+
+      <div class="card no-print">
+        <div class="card-title"><span class="icon">➕</span> Add Appointment</div>
+        <div class="form-grid-2">
+          <div><label>Title / Type</label><input type="text" id="appt-title" placeholder="e.g. Cardiology Follow-up"></div>
+          <div><label>Doctor / Facility</label><input type="text" id="appt-doctor" placeholder="e.g. Dr. Chen at Vancouver General"></div>
+        </div>
+        <div class="form-grid-3">
+          <div><label>Date</label><input type="date" id="appt-date"></div>
+          <div><label>Time</label><input type="time" id="appt-time"></div>
+          <div>
+            <label>Category</label>
+            <select id="appt-category">
+              <option>Medical</option>
+              <option>Therapy</option>
+              <option>Lab / Tests</option>
+              <option>Dental</option>
+              <option>Vision</option>
+              <option>Social / Personal</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Address</label>
+          <input type="text" id="appt-address" placeholder="e.g. 123 Main St, Suite 4, Vancouver BC">
+        </div>
+        <div class="form-row">
+          <label>Notes / Prep Needed</label>
+          <textarea id="appt-notes" placeholder="Any prep, fasting required, questions to bring…" style="min-height:70px;"></textarea>
+        </div>
+        <div class="form-row" id="appt-visit-notes-row" style="display:none;">
+          <label>Visit Notes <span style="font-weight:400;font-size:1rem;color:var(--text-muted);">(what the doctor said, next steps)</span></label>
+          <textarea id="appt-visit-notes" placeholder="e.g. Blood pressure stable, increase Lisinopril to 20mg, follow-up in 3 months…" style="min-height:80px;"></textarea>
+        </div>
+        <div class="form-row" id="appt-recurring-row">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="appt-recurring" onchange="toggleRecurringFields()" style="accent-color:var(--sage);width:16px;height:16px;">
+            <span>Repeat this appointment</span>
+          </label>
+          <div id="appt-recurring-fields" style="display:none;margin-top:12px;">
+            <div class="form-grid-2">
+              <div>
+                <label>Frequency</label>
+                <select id="appt-recur-freq">
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Every 2 weeks</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="daily">Daily</option>
+                </select>
+              </div>
+              <div>
+                <label>Repeat until</label>
+                <input type="date" id="appt-recur-end">
+              </div>
+            </div>
+            <div style="font-size:0.95rem;color:var(--text-muted);margin-top:6px;">Max 52 occurrences. Each instance can be edited or deleted individually.</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addAppointment()">➕ Add Appointment</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📅</span> All Appointments</div>
+        <div id="appointments-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ DOCTOR VISIT PREP (print-only page) ═══ -->
+    <div id="page-visit-prep" style="display:none;">
+      <div class="print-doc-header" id="visit-prep-print-header" style="display:flex;">
+        <div>
+          <div class="prt-title">Doctor Visit Prep</div>
+          <div class="prt-sub" id="visit-prep-patient"></div>
+        </div>
+        <div class="prt-right" id="visit-prep-date"></div>
+      </div>
+      <div id="visit-prep-content"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════ CARE TEAM ═══ -->
+    <div class="page" id="page-careteam">
+      <div class="print-doc-header" id="ct-print-header" style="display:none;">
+        <div>
+          <div class="prt-title">Care Team Directory</div>
+          <div class="prt-sub" id="ct-print-patient"></div>
+        </div>
+        <div class="prt-right" id="ct-print-date"></div>
+      </div>
+      <p class="section-intro">Your directory of doctors, specialists, and support contacts — all in one printable place.</p>
+
+      <div class="card no-print">
+        <div class="card-title"><span class="icon">➕</span> Add Contact</div>
+        <div class="form-grid-2">
+          <div><label>Full Name</label><input type="text" id="ct-name" placeholder="Dr. Sarah Chen"></div>
+          <div><label>Role / Specialty</label><input type="text" id="ct-role" placeholder="e.g. Cardiologist, Home Nurse"></div>
+        </div>
+        <div class="form-grid-3">
+          <div><label>Phone</label><input type="text" id="ct-phone" placeholder="(604) 555-0100"></div>
+          <div><label>Fax (optional)</label><input type="text" id="ct-fax" placeholder="(604) 555-0101"></div>
+          <div><label>Hospital / Clinic</label><input type="text" id="ct-facility" placeholder="Vancouver General"></div>
+        </div>
+        <div class="form-row">
+          <label>Email (optional)</label>
+          <input type="email" id="ct-email" placeholder="dr.chen@clinic.com">
+        </div>
+        <div class="form-row">
+          <label>Notes</label>
+          <input type="text" id="ct-notes" placeholder="e.g. Prefers calls in morning, referral needed…">
+        </div>
+        <button class="btn btn-primary" onclick="addContact()">➕ Add Contact</button>
+      </div>
+
+      <div id="careteam-list"></div>
+      <div id="ct-print-grid" style="display:none;"></div>
+      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders();window.print();">🖨️ Print Care Team Directory</button>
+    </div>
+
+    <!-- ═══════════════════════════════════ HANDOFF NOTES ═══ -->
+    <div class="page" id="page-handoff">
+      <div class="print-doc-header" id="handoff-print-header" style="display:none;">
+        <div>
+          <div class="prt-title">Caregiver Handoff Notes</div>
+          <div class="prt-sub" id="handoff-print-patient"></div>
+        </div>
+        <div class="prt-right" id="handoff-print-date"></div>
+      </div>
+      <p class="section-intro">Use handoff notes when multiple caregivers rotate shifts. Leave clear, structured notes for the next person coming on.</p>
+
+      <div class="card no-print">
+        <div class="card-title"><span class="icon">✏️</span> Create Handoff Note</div>
+        <div class="form-grid-3">
+          <div><label>Date</label><input type="date" id="ho-date"></div>
+          <div><label>Shift</label>
+            <select id="ho-shift">
+              <option>Morning (6am–2pm)</option>
+              <option>Afternoon (2pm–10pm)</option>
+              <option>Overnight (10pm–6am)</option>
+              <option>Full Day</option>
+            </select>
+          </div>
+          <div><label>Your Name</label><input type="text" id="ho-caregiver" placeholder="Your name"></div>
+        </div>
+        <div class="form-row">
+          <label>Medications Given</label>
+          <textarea id="ho-meds" placeholder="List medications given this shift with times…" style="min-height:70px;"></textarea>
+        </div>
+        <div class="form-grid-2">
+          <div>
+            <label>Meals / Fluids</label>
+            <textarea id="ho-meals" placeholder="What was eaten, any concerns with appetite…" style="min-height:80px;"></textarea>
+          </div>
+          <div>
+            <label>Mood / Behavior</label>
+            <textarea id="ho-mood" placeholder="Emotional state, any agitation or changes…" style="min-height:80px;"></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Things to Watch For</label>
+          <textarea id="ho-watch" placeholder="Any concerns the next caregiver should be aware of…" style="min-height:70px;"></textarea>
+        </div>
+        <div class="form-row">
+          <label>General Notes</label>
+          <textarea id="ho-notes" placeholder="Anything else the next caregiver needs to know…" style="min-height:70px;"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addHandoff()">💾 Save Handoff Note</button>
+      </div>
+
+      <div id="handoff-list"></div>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="preparePrintHeaders();window.print();">🖨️ Print Handoff Notes</button>
+    </div>
+
+    <!-- ═══════════════════════════════════ MEMORY BOX ═══ -->
+    <div class="page" id="page-memory">
+      <p class="section-intro">A gentle space to capture precious memories, stories, and small beautiful moments. These entries are for you — the caregiver — as much as for your loved one.</p>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">💛</span> Add a Memory</div>
+        <div class="form-grid-2">
+          <div><label>Title</label><input type="text" id="mem-title" placeholder="e.g. She remembered the old house today…"></div>
+          <div><label>Date</label><input type="date" id="mem-date"></div>
+        </div>
+        <div class="form-row">
+          <label>What happened?</label>
+          <textarea id="mem-text" placeholder="Write as much or as little as you like. This is your space…"></textarea>
+        </div>
+        <div class="form-row">
+          <label>How did it feel?</label>
+          <div class="mood-selector" id="mem-mood-selector" style="max-width:400px;">
+            <div class="mood-btn" onclick="selectMemMood('💛')" data-mood="💛">💛<span>Warm</span></div>
+            <div class="mood-btn" onclick="selectMemMood('😂')" data-mood="😂">😂<span>Joyful</span></div>
+            <div class="mood-btn" onclick="selectMemMood('🥲')" data-mood="🥲">🥲<span>Bittersweet</span></div>
+            <div class="mood-btn" onclick="selectMemMood('😢')" data-mood="😢">😢<span>Sad</span></div>
+            <div class="mood-btn" onclick="selectMemMood('🙏')" data-mood="🙏">🙏<span>Grateful</span></div>
+          </div>
+        </div>
+        <button class="btn btn-gold" onclick="addMemory()">💛 Save Memory</button>
+      </div>
+
+      <div id="memory-list"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════ WELLBEING ═══ -->
+    <div class="page" id="page-stress">
+      <p class="section-intro">You can't pour from an empty cup. Your wellbeing matters. Track your own stress and burnout — because caring for yourself is part of caring for them.</p>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">🌿</span> Today's Check-In</div>
+        <div class="form-row">
+          <label>How are YOU feeling today? (1 = very stressed, 10 = doing great)</label>
+          <div class="stress-scale" id="stress-scale">
+            <div class="stress-btn" onclick="selectStress(1)">1</div>
+            <div class="stress-btn" onclick="selectStress(2)">2</div>
+            <div class="stress-btn" onclick="selectStress(3)">3</div>
+            <div class="stress-btn" onclick="selectStress(4)">4</div>
+            <div class="stress-btn" onclick="selectStress(5)">5</div>
+            <div class="stress-btn" onclick="selectStress(6)">6</div>
+            <div class="stress-btn" onclick="selectStress(7)">7</div>
+            <div class="stress-btn" onclick="selectStress(8)">8</div>
+            <div class="stress-btn" onclick="selectStress(9)">9</div>
+            <div class="stress-btn" onclick="selectStress(10)">10</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>What's weighing on you?</label>
+          <textarea id="stress-notes" placeholder="No judgment here. Write what's on your mind…"></textarea>
+        </div>
+        <div class="form-row">
+          <label>One thing I'm grateful for today</label>
+          <input type="text" id="stress-gratitude" placeholder="Even small things count…">
+        </div>
+        <button class="btn btn-primary" onclick="addStressEntry()">💾 Save Check-In</button>
+      </div>
+
+      <div class="card" id="burnout-alert" style="display:none;background:rgba(201,132,122,0.08);border-color:var(--rose-light);">
+        <div class="card-title" style="color:var(--rose-dark);"><span class="icon">🌷</span> A gentle reminder</div>
+        <p style="font-size:1rem;line-height:1.7;color:var(--text);">Your recent check-ins suggest you may be experiencing high caregiver stress. This is completely normal — and it matters. Consider reaching out to a trusted friend, your own doctor, or a caregiver support group. You deserve support too.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Your Wellbeing Over Time</div>
+        <div id="stress-log-list"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ EMERGENCY CARD ═══ -->
+    <div class="page" id="page-emergency">
+      <div class="print-doc-header" id="ec-print-header" style="display:none;">
+        <div>
+          <div class="prt-title">Emergency Information Card</div>
+          <div class="prt-sub" id="ec-print-patient"></div>
+        </div>
+        <div class="prt-right" id="ec-print-date"></div>
+      </div>
+      <p class="section-intro no-print">Fill in the details below to generate a printable emergency information card. Keep one on the fridge and one in your wallet.</p>
+
+      <!-- Auto-fill notification banner -->
+      <div id="ec-autofill-banner" style="display:none;background:rgba(122,158,135,0.1);border:1.5px solid var(--sage-light);border-radius:10px;padding:14px 18px;margin-bottom:20px;" class="no-print">
+        <strong>✨ Auto-filled from your profile!</strong> We've pre-populated fields from your profile, care team, and medication list. Review and adjust as needed, then click Save.
+      </div>
+
+      <div class="grid-2">
+        <div class="card no-print">
+          <div class="card-title"><span class="icon">✏️</span> Emergency Card Details</div>
+          <div class="form-row"><label>Full Name</label><input type="text" id="ec-name" placeholder="Legal name"></div>
+          <div class="form-grid-2">
+            <div><label>Date of Birth</label><input type="date" id="ec-dob"></div>
+            <div><label>Blood Type</label>
+              <select id="ec-blood">
+                <option value="">Unknown</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>AB+</option><option>AB-</option>
+                <option>O+</option><option>O-</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row"><label>Primary Conditions / Diagnoses</label>
+            <textarea id="ec-conditions" placeholder="e.g. Type 2 Diabetes, Atrial Fibrillation, Dementia" style="min-height:70px;"></textarea>
+          </div>
+          <div class="form-row"><label>Known Allergies</label>
+            <textarea id="ec-allergies" placeholder="e.g. Penicillin (severe), shellfish, latex" style="min-height:70px;"></textarea>
+          </div>
+          <div class="form-row"><label>Primary Emergency Contact</label>
+            <input type="text" id="ec-contact1" placeholder="Name — Relationship — Phone">
+          </div>
+          <div class="form-row"><label>Secondary Emergency Contact</label>
+            <input type="text" id="ec-contact2" placeholder="Name — Relationship — Phone">
+          </div>
+          <div class="form-row"><label>Primary Doctor</label>
+            <input type="text" id="ec-doctor" placeholder="Dr. Name — Phone">
+          </div>
+          <div class="form-row"><label>Health Card / Insurance #</label>
+            <input type="text" id="ec-insurance" placeholder="e.g. BC MSP: 1234 567 890">
+          </div>
+          <div class="form-row"><label>Additional Notes</label>
+            <textarea id="ec-notes" placeholder="e.g. Has pacemaker, uses hearing aid, speaks Cantonese" style="min-height:70px;"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button id="ec-save-btn" class="btn btn-primary" onclick="saveEmergencyFields()">🔄 Save & Update Card</button>
+            <button class="btn btn-outline" onclick="loadEmergencyCard()">↺ Re-import from Profile</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card-title no-print" style="margin-bottom:12px;"><span class="icon">👁️</span> Card Preview</div>
+          <div class="emergency-preview" id="emergency-card-preview">
+            <h3>🚨 Emergency Medical Information</h3>
+            <div id="ec-preview-content">
+              <p style="text-align:center;color:var(--text-muted);font-size:1.05rem;">Loading…</p>
+            </div>
+          </div>
+          <div class="flex gap-8 mt-16 no-print">
+            <button class="btn btn-rose" onclick="preparePrintHeaders();window.print();">🖨️ Print Card</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ EXPORT / IMPORT ═══ -->
+    <div class="page" id="page-export">
+      <p class="section-intro">Back up all your CareCompanion data as a single file, or restore from a previous backup. Your data never leaves your device unless you choose to save it.</p>
+
+      <div class="export-card">
+        <h4>💾 Export All Data</h4>
+        <p>Downloads a complete backup of all medications, logs, appointments, contacts, memories, and settings as a JSON file. Save it somewhere safe — cloud storage, email to yourself, or a USB drive.</p>
+        <button class="btn btn-primary" onclick="exportData()">⬇️ Download Backup File</button>
+        <div id="export-status" style="margin-top:12px;font-size:1.05rem;color:var(--sage-dark);font-weight:700;"></div>
+      </div>
+
+      <div class="export-card">
+        <h4>📂 Import / Restore Data</h4>
+        <p>Restore from a previously exported backup file. <strong>Warning: this will replace all current data.</strong> Make sure to export first if you want to keep your current entries.</p>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <label for="import-file" class="btn btn-outline" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+            📁 Choose Backup File
+          </label>
+          <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(this)">
+          <span id="import-filename" style="font-size:1.05rem;color:var(--text-muted);">No file chosen</span>
+        </div>
+        <div id="import-status" style="margin-top:12px;font-size:1.05rem;font-weight:700;"></div>
+      </div>
+
+      <div class="export-card">
+        <h4>🗑️ Clear All Data</h4>
+        <p>Permanently delete all data from this app. This cannot be undone. Export a backup first if you may need it later.</p>
+        <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+      </div>
+
+      <div class="export-card" style="background:rgba(122,158,135,0.06);border-color:var(--sage-light);">
+        <h4>🧭 Replay Onboarding Tour</h4>
+        <p>Want to see the feature tour again? Click below to restart it.</p>
+        <button class="btn btn-outline" onclick="localStorage.removeItem('cc_tour_done'); startTooltips();">▶️ Replay Tour</button>
+      </div>
+
+      <div class="export-card" style="background:rgba(122,158,135,0.06);border-color:var(--sage-light);">
+        <h4>📋 Data Summary</h4>
+        <div id="data-summary" style="font-size:1rem;line-height:2;"></div>
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+</div><!-- end app-wrapper -->
+
+<!-- ONBOARDING TOOLTIP OVERLAY -->
+<div class="tooltip-overlay" id="tooltip-overlay" style="display:none;">
+  <div class="tooltip-backdrop"></div>
+  <div class="tooltip-box" id="tooltip-box">
+    <h4 id="tooltip-title"></h4>
+    <p id="tooltip-body"></p>
+    <div class="tooltip-nav">
+      <div class="tooltip-dots" id="tooltip-dots"></div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="tooltip-skip" onclick="skipTooltips()">Skip tour</button>
+        <button class="btn btn-primary btn-sm" onclick="nextTooltip()" id="tooltip-next-btn">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  DATA LAYER — localStorage
+// ════════════════════════════════════════════════
+const KEYS = {
+  profile: 'cc_profile',
+  medications: 'cc_medications',
+  logs: 'cc_logs',
+  appointments: 'cc_appointments',
+  careteam: 'cc_careteam',
+  handoff: 'cc_handoff',
+  memories: 'cc_memories',
+  stress: 'cc_stress',
+  disclaimer: 'cc_disclaimer',
+  medChecks: 'cc_medchecks',
+  emergency: 'cc_emergency',
+};
+
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  container.appendChild(t);
+  requestAnimationFrame(() => { requestAnimationFrame(() => { t.classList.add('show'); }); });
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  }, 2500);
+}
+
+function showLastSaved() {
+  const el = document.getElementById('last-saved');
+  if (!el) return;
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  el.textContent = '✓ Saved ' + t;
+  setTimeout(() => { el.textContent = ''; }, 8000);
+}
+
+function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); showLastSaved(); }
+function load(key, fallback=[]) {
+  try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; }
+  catch { return fallback; }
+}
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+let selectedMood = '';
+let selectedMemMood = '';
+let selectedStress = null;
+let currentAiPanel = 'chat';
+let logShowAll = false;
+let editingMedId = null;
+let editingLogId = null;
+let editingApptId = null;
+let editingContactId = null;
+let editingHandoffId = null;
+let editingMemoryId = null;
+let editingStressId = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize medication time inputs
+  updateMedTimeInputs();
+
+  // Set today's date on inputs
+  const today = new Date().toISOString().split('T')[0];
+  ['log-date','mem-date','ho-date','appt-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = today;
+  });
+
+  // Update top date
+  document.getElementById('top-date').textContent = new Date().toLocaleDateString('en-US', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  });
+
+  // Disclaimer — show if not yet accepted
+  if (!load(KEYS.disclaimer, false)) {
+    document.getElementById('disclaimer-overlay').style.display = 'flex';
+  }
+
+  // Profile
+  const profile = load(KEYS.profile, null);
+  if (profile) {
+    updateProfileDisplay(profile);
+    if (!load(KEYS.disclaimer, false)) {} // covered above
+  }
+
+  // API key
+  if (key) {
+  }
+
+  setGreeting();
+  renderAll();
+
+  // Populate print tables before any print (Ctrl+P or browser menu)
+  window.addEventListener('beforeprint', () => {
+    preparePrintHeaders();
+    printMedicationList();
+    renderCareTeamPrintGrid();
+  });
+
+  // Start tour on reload if disclaimer AND setup are done but tour hasn't run yet
+  if (load(KEYS.disclaimer, false) && profile && !localStorage.getItem('cc_tour_done')) {
+    setTimeout(startTooltips, 600);
+  }
+
+  // Swipe left to close sidebar on mobile
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (dx < -60 && document.querySelector('.sidebar').classList.contains('open')) {
+      closeSidebar();
+    }
+    if (dx > 60 && window.innerWidth <= 768 && !document.querySelector('.sidebar').classList.contains('open')) {
+      toggleSidebar();
+    }
+  }, { passive: true });
+});
+
+function setGreeting() {
+  const h = new Date().getHours();
+  const timeGreet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const emoji = h < 12 ? '🌿' : h < 17 ? '☀️' : '🌙';
+  const profile = load(KEYS.profile, null);
+  const caregiverName = profile && profile.caregiver ? ', ' + profile.caregiver.split(' ')[0] : '';
+  document.getElementById('hero-greeting').textContent = `${timeGreet}${caregiverName} ${emoji}`;
+}
+
+function renderAll() {
+  renderDashboard();
+  renderMedications();
+  renderSymptomLog();
+  renderAppointments();
+  renderCareTeam();
+  renderHandoff();
+  renderMemories();
+  renderStress();
+  renderDataSummary();
+  renderCharts();
+  renderGoodDays();
+  renderRefillAlerts();
+}
+
+// ════════════════════════════════════════════════
+//  DISCLAIMER + SETUP
+// ════════════════════════════════════════════════
+function acceptDisclaimer() {
+  save(KEYS.disclaimer, true);
+  document.getElementById('disclaimer-overlay').style.display = 'none';
+  const profile = load(KEYS.profile, null);
+  if (!profile) {
+    document.getElementById('setup-overlay').classList.remove('hidden');
+    document.getElementById('setup-overlay').style.display = 'flex';
+  } else {
+    setTimeout(startTooltips, 400);
+  }
+}
+
+function openSetup() {
+  document.getElementById('setup-overlay').classList.remove('hidden');
+  document.getElementById('setup-overlay').style.display = 'flex';
+  const p = load(KEYS.profile, null);
+  if (p) {
+    document.getElementById('setup-name').value = p.name || '';
+    document.getElementById('setup-dob').value = p.dob || '';
+    document.getElementById('setup-condition').value = p.condition || '';
+    document.getElementById('setup-caregiver').value = p.caregiver || '';
+  }
+}
+
+function saveSetup() {
+  const profile = {
+    name: document.getElementById('setup-name').value || 'Your Loved One',
+    dob: document.getElementById('setup-dob').value,
+    condition: document.getElementById('setup-condition').value,
+    caregiver: document.getElementById('setup-caregiver').value,
+  };
+  save(KEYS.profile, profile);
+  updateProfileDisplay(profile);
+  document.getElementById('setup-overlay').classList.add('hidden');
+  document.getElementById('setup-overlay').style.display = 'none';
+  renderDashboard();
+  // First time setup complete — start the tour
+  setTimeout(startTooltips, 400);
+}
+
+function updateProfileDisplay(profile) {
+  document.getElementById('sidebar-name').textContent = profile.name;
+  document.getElementById('hero-name').textContent = profile.name;
+}
+
+// ════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════
+const pageTitles = {
+  dashboard: 'Dashboard',
+  medications: 'Medications',
+  symptoms: 'Symptom Log',
+  appointments: 'Appointments',
+  careteam: 'Care Team',
+  handoff: 'Handoff Notes',
+  memory: 'Memory Box',
+  stress: 'My Wellbeing',
+  emergency: 'Emergency Card',
+  export: 'Data & Backup',
+};
+
+// ════════════════════════════════════════════════
+//  MOBILE SIDEBAR
+// ════════════════════════════════════════════════
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const btn     = document.getElementById('hamburger-btn');
+  const isOpen  = sidebar.classList.contains('open');
+  if (isOpen) {
+    closeSidebar();
+  } else {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+    btn.classList.add('open');
+  }
+}
+
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('active');
+  const btn = document.getElementById('hamburger-btn');
+  if (btn) btn.classList.remove('open');
+}
+
+function navigate(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[page] || page;
+  if (page === 'dashboard')     renderDashboard();
+  if (page === 'appointments')  renderAppointments();
+  if (page === 'careteam')      renderCareTeam();
+  if (page === 'handoff')       renderHandoff();
+  if (page === 'symptoms')      renderSymptomLog();
+  if (page === 'medications')   renderMedications();
+  if (page === 'memories')      renderMemories();
+  if (page === 'stress')        renderStress();
+  if (page === 'export')        renderDataSummary();
+  if (page === 'emergency')     loadEmergencyCard();
+  // Scroll to top on navigation
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  // Auto-close sidebar on mobile after navigation
+  if (window.innerWidth <= 768) closeSidebar();
+}
+
+// ════════════════════════════════════════════════
+//  MEDICATIONS
+// ════════════════════════════════════════════════
+function freqToDoseCount(freq) {
+  const f = (freq || '').toLowerCase();
+  if (f.includes('twice') || f.includes('two')) return 2;
+  if (f.includes('three') || f.includes('3')) return 3;
+  if (f.includes('every 8')) return 3;
+  if (f.includes('every 6')) return 4;
+  return 1;
+}
+
+const FREQ_DEFAULTS = {
+  1: ['08:00'],
+  2: ['08:00', '20:00'],
+  3: ['08:00', '14:00', '20:00'],
+  4: ['06:00', '12:00', '18:00', '00:00'],
+};
+
+function updateMedTimeInputs(prefill) {
+  const freq = document.getElementById('med-freq').value;
+  const count = freqToDoseCount(freq);
+  const container = document.getElementById('med-times-container');
+  const defaults = FREQ_DEFAULTS[count] || ['08:00'];
+  const label = count === 1 ? 'Time' : 'Dose times';
+  let html = `<div class="form-row"><label>${label}</label><div style="display:flex;gap:10px;flex-wrap:wrap;">`;
+  for (let i = 0; i < count; i++) {
+    const val = prefill && prefill[i] ? prefill[i] : defaults[i];
+    const doseLabel = count > 1 ? `<span style="font-size:1.05rem;color:var(--text-muted);margin-bottom:2px;display:block;">Dose ${i+1}</span>` : '';
+    html += `<div style="display:flex;flex-direction:column;">${doseLabel}<input type="time" class="med-time-input" value="${val}" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:1.05rem;background:var(--warm-white);"></div>`;
+  }
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+function getMedTimesValue() {
+  const inputs = document.querySelectorAll('.med-time-input');
+  return Array.from(inputs).map(i => {
+    if (!i.value) return '';
+    const [h, m] = i.value.split(':');
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? 'pm' : 'am';
+    const h12 = hour % 12 || 12;
+    return `${h12}:${m}${ampm}`;
+  }).filter(Boolean).join(', ');
+}
+
+function addMedication() {
+  const name = document.getElementById('med-name').value.trim();
+  if (!name) { alert('Please enter a medication name.'); return; }
+  const data = {
+    name, dose: document.getElementById('med-dose').value,
+    frequency: document.getElementById('med-freq').value,
+    times: getMedTimesValue(),
+    food: document.getElementById('med-food').value,
+    notes: document.getElementById('med-notes').value,
+    doctor: document.getElementById('med-doctor').value,
+    refill: document.getElementById('med-refill').value,
+    pills: document.getElementById('med-pills').value ? parseInt(document.getElementById('med-pills').value) : null,
+  };
+  let meds = load(KEYS.medications);
+  if (editingMedId) {
+    meds = meds.map(m => m.id === editingMedId ? { ...m, ...data } : m);
+    editingMedId = null;
+    document.querySelector('#page-medications .btn-primary').textContent = '➕ Add Medication';
+  } else {
+    meds.push({ id: Date.now(), ...data });
+  }
+  save(KEYS.medications, meds);
+  ['med-name','med-dose','med-notes','med-doctor','med-refill','med-pills'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('med-days-left').textContent = '';
+  document.getElementById('med-freq').selectedIndex = 0;
+  document.getElementById('med-food').selectedIndex = 0;
+  updateMedTimeInputs();
+  renderMedications();
+  renderDashboard();
+  showToast(editingMedId === null ? '💊 Medication saved' : '💊 Medication updated');
+}
+
+function updatePillDaysLeft() {
+  const pillsEl = document.getElementById('med-pills');
+  const labelEl = document.getElementById('med-days-left');
+  if (!pillsEl || !labelEl) return;
+  const pills = parseInt(pillsEl.value);
+  if (!pills || pills <= 0) { labelEl.textContent = ''; return; }
+  const freq = document.getElementById('med-freq').value;
+  const dailyDoses = freqToDoseCount(freq);
+  const daysLeft = Math.floor(pills / dailyDoses);
+  let color = daysLeft <= 3 ? 'var(--rose-dark)' : daysLeft <= 7 ? '#7a5e2a' : 'var(--sage-dark)';
+  labelEl.innerHTML = `<span style="color:${color};font-weight:600;">~${daysLeft} day${daysLeft !== 1 ? 's' : ''} supply</span>`;
+}
+
+function timeStrTo24(t) {
+  // converts "8:00am" or "8am" → "08:00" for <input type="time">
+  if (!t) return '';
+  t = t.trim().toLowerCase();
+  const m = t.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/);
+  if (!m) return '';
+  let h = parseInt(m[1]);
+  const min = m[2] || '00';
+  const ampm = m[3];
+  if (ampm === 'pm' && h !== 12) h += 12;
+  if (ampm === 'am' && h === 12) h = 0;
+  return `${String(h).padStart(2,'0')}:${min}`;
+}
+
+function editMedication(id) {
+  const m = load(KEYS.medications).find(x => x.id === id);
+  if (!m) return;
+  editingMedId = id;
+  document.getElementById('med-name').value = m.name || '';
+  document.getElementById('med-dose').value = m.dose || '';
+  document.getElementById('med-freq').value = m.frequency || 'Once daily';
+  document.getElementById('med-food').value = m.food || '';
+  document.getElementById('med-notes').value = m.notes || '';
+  document.getElementById('med-doctor').value = m.doctor || '';
+  document.getElementById('med-refill').value = m.refill || '';
+  document.getElementById('med-pills').value = m.pills != null ? m.pills : '';
+  updatePillDaysLeft();
+  // Rebuild time inputs for this frequency, pre-filled with saved times
+  const savedTimes = m.times ? m.times.split(',').map(t => timeStrTo24(t)) : [];
+  updateMedTimeInputs(savedTimes);
+  document.querySelector('#page-medications .btn-primary').textContent = '💾 Update Medication';
+  document.getElementById('med-name').focus();
+  document.getElementById('med-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function deleteMedication(id) {
+  if (!confirm('Remove this medication?')) return;
+  save(KEYS.medications, load(KEYS.medications).filter(m => m.id !== id));
+  if (editingMedId === id) { editingMedId = null; document.querySelector('#page-medications .btn-primary').textContent = '➕ Add Medication'; }
+  renderMedications();
+  renderDashboard();
+}
+
+function renderMedications() {
+  const allMeds = load(KEYS.medications);
+  const el = document.getElementById('medications-list');
+  const searchEl = document.getElementById('med-search');
+  const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
+  const meds = query ? allMeds.filter(m =>
+    (m.name || '').toLowerCase().includes(query) ||
+    (m.dose || '').toLowerCase().includes(query) ||
+    (m.frequency || '').toLowerCase().includes(query) ||
+    (m.notes || '').toLowerCase().includes(query)
+  ) : allMeds;
+  if (!allMeds.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">💊</div><p>No medications added yet.<br>Add the first one above.</p></div>';
+    return;
+  }
+  if (!meds.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>No medications match your search.</p></div>';
+    document.getElementById('stat-meds').textContent = allMeds.length;
+    document.getElementById('stat-meds-sub').textContent = allMeds.length + ' medication' + (allMeds.length !== 1 ? 's' : '') + ' tracked';
+    return;
+  }
+  el.innerHTML = meds.map(m => `
+    <div class="med-card">
+      <div class="med-info" style="flex:1;">
+        <h4>${m.name} <span class="badge badge-sage">${m.dose || ''}</span></h4>
+        <p>${m.frequency}${m.food ? ' · ' + m.food : ''}</p>
+        ${m.notes ? `<p style="margin-top:4px;color:var(--text);">${m.notes}</p>` : ''}
+        <div class="med-times">
+          ${m.times ? m.times.split(',').map(t => `<span class="med-time-pill">⏰ ${t.trim()}</span>`).join('') : ''}
+          ${m.doctor ? `<span class="med-time-pill">👩‍⚕️ ${m.doctor}</span>` : ''}
+          ${m.refill ? `<span class="med-time-pill">🔄 Refill: ${formatDate(m.refill)}</span>` : ''}
+          ${m.pills != null ? (() => { const d = Math.floor(m.pills / freqToDoseCount(m.frequency)); const c = d <= 3 ? 'var(--rose-dark)' : d <= 7 ? '#7a5e2a' : 'var(--sage-dark)'; return `<span class="med-time-pill" style="color:${c};font-weight:600;">💊 ${m.pills} pills (~${d}d supply)</span>`; })() : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="editMedication(${m.id})" aria-label="Edit ${m.name}">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteMedication(${m.id})" aria-label="Delete ${m.name}">✕</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('stat-meds').textContent = allMeds.length;
+  document.getElementById('stat-meds-sub').textContent = allMeds.length + ' medication' + (allMeds.length !== 1 ? 's' : '') + ' tracked';
+}
+
+// ════════════════════════════════════════════════
+//  SYMPTOM LOG
+// ════════════════════════════════════════════════
+function selectMood(mood) {
+  selectedMood = mood;
+  document.querySelectorAll('#mood-selector .mood-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.mood === mood);
+  });
+}
+
+function addLogEntry() {
+  const date = document.getElementById('log-date').value;
+  if (!date) { alert('Please select a date.'); return; }
+  const data = {
+    date, mood: selectedMood,
+    sleep: document.getElementById('log-sleep').value,
+    appetite: document.getElementById('log-appetite').value,
+    pain: document.getElementById('log-pain').value,
+    symptoms: document.getElementById('log-symptoms').value,
+    questions: document.getElementById('log-questions').value,
+  };
+  let logs = load(KEYS.logs);
+  if (editingLogId) {
+    logs = logs.map(l => l.id === editingLogId ? { ...l, ...data } : l);
+    editingLogId = null;
+    document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Save Entry';
+  } else {
+    logs.unshift({ id: Date.now(), ...data });
+  }
+  save(KEYS.logs, logs);
+  selectedMood = '';
+  logShowAll = false;
+  document.querySelectorAll('#mood-selector .mood-btn').forEach(b => b.classList.remove('selected'));
+  ['log-sleep','log-appetite','log-pain','log-symptoms','log-questions'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  renderSymptomLog();
+  renderDashboard();
+  showToast('📋 Log entry saved');
+}
+
+function editLog(id) {
+  const l = load(KEYS.logs).find(x => x.id === id);
+  if (!l) return;
+  editingLogId = id;
+  document.getElementById('log-date').value = l.date || '';
+  selectMood(l.mood || '');
+  document.getElementById('log-sleep').value = l.sleep || '';
+  document.getElementById('log-appetite').value = l.appetite || '';
+  document.getElementById('log-pain').value = l.pain || '';
+  document.getElementById('log-symptoms').value = l.symptoms || '';
+  document.getElementById('log-questions').value = l.questions || '';
+  document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Update Entry';
+  document.getElementById('log-date').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function renderSymptomLog() {
+  const allLogs = load(KEYS.logs);
+  const el = document.getElementById('symptom-log-list');
+  document.getElementById('stat-days').textContent = allLogs.length;
+  if (!allLogs.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No entries yet. Log your first entry above.</p></div>';
+    return;
+  }
+  const searchEl = document.getElementById('log-search');
+  const moodEl = document.getElementById('log-mood-filter');
+  const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
+  const moodFilter = moodEl ? moodEl.value : '';
+  const isFiltering = query || moodFilter;
+  let logs = allLogs;
+  if (moodFilter) logs = logs.filter(l => l.mood === moodFilter);
+  if (query) logs = logs.filter(l =>
+    (l.symptoms || '').toLowerCase().includes(query) ||
+    (l.questions || '').toLowerCase().includes(query) ||
+    (l.sleep || '').toLowerCase().includes(query) ||
+    (l.appetite || '').toLowerCase().includes(query)
+  );
+  if (!logs.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>No entries match your search.</p></div>';
+    return;
+  }
+  const PAGE = 15;
+  const visible = (isFiltering || logShowAll) ? logs : logs.slice(0, PAGE);
+  const renderEntry = l => `
+    <div class="log-entry">
+      <div class="log-date">${formatDate(l.date)} ${l.mood ? '· ' + l.mood : ''}</div>
+      <div class="flex gap-8" style="flex-wrap:wrap;margin-bottom:6px;">
+        ${l.sleep ? `<span class="badge badge-muted">Sleep: ${l.sleep}</span>` : ''}
+        ${l.appetite ? `<span class="badge badge-muted">Appetite: ${l.appetite}</span>` : ''}
+        ${l.pain ? `<span class="badge badge-rose">Pain: ${l.pain}/10</span>` : ''}
+      </div>
+      ${l.symptoms ? `<div class="log-text">${l.symptoms}</div>` : ''}
+      ${l.questions ? `<div style="margin-top:8px;font-size:1.05rem;color:var(--sage-dark);">❓ <em>${l.questions}</em></div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="editLog(${l.id})">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteLog(${l.id})">✕ Remove</button>
+      </div>
+    </div>`;
+  let html = visible.map(renderEntry).join('');
+  if (!isFiltering && logs.length > PAGE) {
+    if (logShowAll) {
+      html += `<div style="text-align:center;padding:16px 0;">
+        <button class="btn btn-ghost btn-sm" onclick="logShowAll=false;renderSymptomLog();">▲ Show less</button>
+      </div>`;
+    } else {
+      html += `<div style="text-align:center;padding:16px 0;">
+        <button class="btn btn-outline btn-sm" onclick="logShowAll=true;renderSymptomLog();">Show all ${logs.length} entries ▼</button>
+      </div>`;
+    }
+  }
+  if (isFiltering && logs.length > 0) {
+    html += `<div style="text-align:center;padding:8px 0;font-size:1rem;color:var(--text-muted);">${logs.length} result${logs.length !== 1 ? 's' : ''}</div>`;
+  }
+  el.innerHTML = html;
+}
+
+function deleteLog(id) {
+  if (editingLogId === id) { editingLogId = null; document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Save Entry'; }
+  save(KEYS.logs, load(KEYS.logs).filter(l => l.id !== id));
+  renderSymptomLog();
+}
+
+// ════════════════════════════════════════════════
+//  APPOINTMENTS
+// ════════════════════════════════════════════════
+function toggleRecurringFields() {
+  const checked = document.getElementById('appt-recurring').checked;
+  document.getElementById('appt-recurring-fields').style.display = checked ? 'block' : 'none';
+}
+
+function generateRecurringDates(startDate, freq, endDate) {
+  const dates = [];
+  const end = new Date(endDate + 'T12:00:00');
+  let cur = new Date(startDate + 'T12:00:00');
+  const max = 52;
+  while (cur <= end && dates.length < max) {
+    dates.push(cur.toISOString().split('T')[0]);
+    if (freq === 'daily')     cur.setDate(cur.getDate() + 1);
+    else if (freq === 'weekly')    cur.setDate(cur.getDate() + 7);
+    else if (freq === 'biweekly')  cur.setDate(cur.getDate() + 14);
+    else if (freq === 'monthly')   cur.setMonth(cur.getMonth() + 1);
+    else break;
+  }
+  return dates;
+}
+
+function addAppointment() {
+  const title = document.getElementById('appt-title').value.trim();
+  const date = document.getElementById('appt-date').value;
+  if (!title || !date) { alert('Please enter a title and date.'); return; }
+  const data = {
+    title, date,
+    time: document.getElementById('appt-time').value,
+    doctor: document.getElementById('appt-doctor').value,
+    address: document.getElementById('appt-address').value,
+    category: document.getElementById('appt-category').value,
+    notes: document.getElementById('appt-notes').value,
+    visitNotes: document.getElementById('appt-visit-notes').value,
+  };
+  let appts = load(KEYS.appointments);
+  if (editingApptId) {
+    appts = appts.map(a => a.id === editingApptId ? { ...a, ...data } : a);
+    editingApptId = null;
+    document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment';
+  } else {
+    const isRecurring = document.getElementById('appt-recurring').checked;
+    const recurEnd = document.getElementById('appt-recur-end').value;
+    const recurFreq = document.getElementById('appt-recur-freq').value;
+    if (isRecurring && recurEnd && recurEnd > date) {
+      const groupId = Date.now();
+      const dates = generateRecurringDates(date, recurFreq, recurEnd);
+      dates.forEach((d, i) => {
+        appts.push({ id: groupId + i, ...data, date: d, recurringGroupId: groupId, recurringFreq: recurFreq });
+      });
+      showToast(`📅 ${dates.length} appointments created`);
+    } else {
+      appts.push({ id: Date.now(), ...data });
+      showToast('📅 Appointment saved');
+    }
+  }
+  save(KEYS.appointments, sortAppointments(appts));
+  ['appt-title','appt-doctor','appt-address','appt-notes','appt-time','appt-date','appt-visit-notes','appt-recur-end'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('appt-visit-notes-row').style.display = 'none';
+  document.getElementById('appt-recurring').checked = false;
+  document.getElementById('appt-recurring-fields').style.display = 'none';
+  document.getElementById('appt-recurring-row').style.display = 'block';
+  renderAppointments();
+  renderDashboard();
+}
+
+function editAppointment(id) {
+  const a = load(KEYS.appointments).find(x => x.id === id);
+  if (!a) return;
+  editingApptId = id;
+  document.getElementById('appt-title').value = a.title || '';
+  document.getElementById('appt-date').value = a.date || '';
+  document.getElementById('appt-time').value = a.time || '';
+  document.getElementById('appt-doctor').value = a.doctor || '';
+  document.getElementById('appt-address').value = a.address || '';
+  document.getElementById('appt-category').value = a.category || 'General';
+  document.getElementById('appt-notes').value = a.notes || '';
+  document.getElementById('appt-visit-notes').value = a.visitNotes || '';
+  const today = new Date().toISOString().split('T')[0];
+  const showVisitNotes = a.attended || a.date < today;
+  document.getElementById('appt-visit-notes-row').style.display = showVisitNotes ? 'block' : 'none';
+  // Hide recurring row when editing — edits apply to this instance only
+  document.getElementById('appt-recurring').checked = false;
+  document.getElementById('appt-recurring-fields').style.display = 'none';
+  document.getElementById('appt-recurring-row').style.display = 'none';
+  document.querySelector('#page-appointments .btn-primary').textContent = '💾 Update Appointment';
+  document.getElementById('appt-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function navigateToAppointment(id) {
+  navigate('appointments', document.querySelectorAll('.nav-item')[3]);
+  setTimeout(() => {
+    const card = document.getElementById('appt-card-' + id);
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.transition = 'box-shadow 0.3s, outline 0.3s';
+      card.style.outline = '2px solid var(--sage)';
+      card.style.borderRadius = '10px';
+      setTimeout(() => { card.style.outline = ''; }, 2000);
+    }
+  }, 120);
+}
+
+function sortAppointments(appts) {
+  return [...appts].sort((a, b) => {
+    // Sort by date, then by time within same date
+    const dateCmp = a.date.localeCompare(b.date);
+    if (dateCmp !== 0) return dateCmp;
+    return (a.time || '').localeCompare(b.time || '');
+  });
+}
+
+function unmarkAttended(id) {
+  const appts = load(KEYS.appointments).map(a => a.id === id ? { ...a, attended: false } : a);
+  save(KEYS.appointments, appts);
+  renderAppointments();
+  renderDashboard();
+  showToast('↩️ Attendance removed', 'info');
+}
+
+function markAttended(id) {
+  const appts = load(KEYS.appointments).map(a => a.id === id ? { ...a, attended: true } : a);
+  save(KEYS.appointments, appts);
+  renderAppointments();
+  renderDashboard();
+  // Auto-open edit form so user can add visit notes right away
+  editAppointment(id);
+  document.getElementById('appt-visit-notes-row').style.display = 'block';
+  document.getElementById('appt-visit-notes').focus();
+  document.getElementById('appt-visit-notes').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function deleteAppointment(id) {
+  const appts = load(KEYS.appointments);
+  const target = appts.find(a => a.id === id);
+  if (target && target.recurringGroupId) {
+    const future = appts.filter(a => a.recurringGroupId === target.recurringGroupId && a.date >= target.date);
+    if (future.length > 1) {
+      const choice = confirm(`This is a repeating appointment.\n\nOK = Delete this and all ${future.length} future occurrences\nCancel = Delete just this one`);
+      if (choice) {
+        save(KEYS.appointments, appts.filter(a => !(a.recurringGroupId === target.recurringGroupId && a.date >= target.date)));
+        showToast(`🗑️ ${future.length} appointments removed`, 'info');
+        if (editingApptId === id) { editingApptId = null; document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
+        renderAppointments(); renderDashboard(); return;
+      }
+    }
+  }
+  if (editingApptId === id) { editingApptId = null; document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
+  save(KEYS.appointments, appts.filter(a => a.id !== id));
+  renderAppointments();
+  renderDashboard();
+}
+
+function renderAppointments() {
+  // Always sort on render — catches unsorted data from backups
+  const appts = sortAppointments(load(KEYS.appointments));
+  const el = document.getElementById('appointments-list');
+  if (!appts.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><p>No appointments added yet.</p></div>';
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const upcoming = appts.filter(a => a.date >= today);
+  const past     = appts.filter(a => a.date <  today);
+
+  const renderAppt = (a, isPast) => {
+    const d = new Date(a.date + 'T12:00:00');
+    const attended = !!a.attended;
+    const badgeColor = isPast ? 'var(--border)' : 'var(--sage)';
+    const badgeTextColor = isPast ? 'var(--text-muted)' : 'white';
+    return `
+    <div class="appt-item" id="appt-card-${a.id}" style="${isPast ? 'opacity:0.6;' : ''}">
+      <div class="appt-date-badge" style="background:${badgeColor};">
+        <div class="day" style="color:${badgeTextColor};">${d.getDate()}</div>
+        <div class="mon" style="color:${badgeTextColor};">${d.toLocaleDateString('en-US',{month:'short'})}</div>
+      </div>
+      <div class="appt-info" style="flex:1;">
+        <h4>${a.title}
+          <span class="badge badge-sage">${a.category}</span>
+          ${a.recurringGroupId ? `<span class="badge" style="background:var(--gold-light);color:var(--brown);">🔁 Repeating</span>` : ''}
+          ${attended ? `<span class="badge" style="background:var(--sage);color:white;">✓ Attended</span> <button class="btn btn-ghost btn-sm" style="font-size:0.85rem;padding:2px 8px;color:var(--text-muted);" onclick="unmarkAttended(${a.id})" title="Undo attended">↩ Undo</button>` : isPast ? '<span class="badge badge-muted">Past</span>' : ''}
+        </h4>
+        <p>${a.doctor ? a.doctor + ' · ' : ''}${a.time ? formatTime(a.time) : ''}</p>
+        ${a.address ? `<p style="margin-top:3px;font-size:1rem;color:var(--text-muted);">📍 ${a.address}</p>` : ''}
+        ${a.notes ? `<p style="margin-top:4px;font-size:1rem;color:var(--text-muted);">${a.notes}</p>` : ''}
+        ${a.visitNotes ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(122,158,135,0.1);border-left:3px solid var(--sage);border-radius:0 8px 8px 0;"><div style="font-size:1.05rem;font-weight:700;color:var(--sage-dark);margin-bottom:3px;">📋 Visit Notes</div><div style="font-size:1rem;color:var(--text);">${a.visitNotes}</div></div>` : (isPast || attended) ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:1.05rem;" onclick="editAppointment(${a.id})">📋 Add visit notes</button>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        ${!isPast && !attended ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="markAttended(${a.id})">✓ Attended</button>` : ''}
+        ${!isPast ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="printVisitPrep(${a.id})" title="Print visit prep sheet">🖨️ Prep</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="editAppointment(${a.id})" aria-label="Edit ${a.title}">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteAppointment(${a.id})" aria-label="Delete ${a.title}">✕</button>
+      </div>
+    </div>`;
+  };
+
+  let html = '';
+
+  if (upcoming.length) {
+    html += `<div style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--sage-dark);padding:8px 0 10px;">Upcoming</div>`;
+    html += upcoming.map(a => renderAppt(a, false)).join('');
+  }
+
+  if (past.length) {
+    html += `<div style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);padding:20px 0 10px;border-top:1px solid var(--border);margin-top:8px;">Past</div>`;
+    html += [...past].reverse().map(a => renderAppt(a, true)).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════
+//  CARE TEAM
+// ════════════════════════════════════════════════
+function addContact() {
+  const name = document.getElementById('ct-name').value.trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  const data = {
+    name,
+    role: document.getElementById('ct-role').value,
+    phone: document.getElementById('ct-phone').value,
+    fax: document.getElementById('ct-fax').value,
+    email: document.getElementById('ct-email').value,
+    facility: document.getElementById('ct-facility').value,
+    notes: document.getElementById('ct-notes').value,
+  };
+  let team = load(KEYS.careteam);
+  if (editingContactId) {
+    team = team.map(c => c.id === editingContactId ? { ...c, ...data } : c);
+    editingContactId = null;
+    document.querySelector('#page-careteam .btn-primary').textContent = '➕ Add Contact';
+  } else {
+    team.push({ id: Date.now(), ...data });
+  }
+  save(KEYS.careteam, team);
+  ['ct-name','ct-role','ct-phone','ct-fax','ct-email','ct-facility','ct-notes'].forEach(id => document.getElementById(id).value = '');
+  renderCareTeam();
+  showToast('👥 Contact saved');
+}
+
+function editContact(id) {
+  const c = load(KEYS.careteam).find(x => x.id === id);
+  if (!c) return;
+  editingContactId = id;
+  document.getElementById('ct-name').value = c.name || '';
+  document.getElementById('ct-role').value = c.role || '';
+  document.getElementById('ct-phone').value = c.phone || '';
+  document.getElementById('ct-fax').value = c.fax || '';
+  document.getElementById('ct-email').value = c.email || '';
+  document.getElementById('ct-facility').value = c.facility || '';
+  document.getElementById('ct-notes').value = c.notes || '';
+  document.querySelector('#page-careteam .btn-primary').textContent = '💾 Update Contact';
+  document.getElementById('ct-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function deleteContact(id) {
+  if (editingContactId === id) { editingContactId = null; document.querySelector('#page-careteam .btn-primary').textContent = '➕ Add Contact'; }
+  save(KEYS.careteam, load(KEYS.careteam).filter(c => c.id !== id));
+  renderCareTeam();
+}
+
+function renderCareTeam() {
+  const team = load(KEYS.careteam);
+  const el = document.getElementById('careteam-list');
+  if (!team.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>No contacts yet. Add your care team above.</p></div>';
+    return;
+  }
+  el.innerHTML = team.map(c => `
+    <div class="contact-card">
+      <div class="contact-avatar">${c.name[0]}</div>
+      <div class="contact-info">
+        <h4>${c.name}</h4>
+        <p>${c.role || ''}${c.facility ? ' · ' + c.facility : ''}</p>
+        ${c.phone ? `<div class="contact-phone">📞 ${c.phone}</div>` : ''}
+        ${c.email ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">✉️ <a href="mailto:${c.email}" style="color:var(--sage-dark);">${c.email}</a></p>` : ''}
+        ${c.fax ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">Fax: ${c.fax}</p>` : ''}
+        ${c.notes ? `<p style="font-size:1.05rem;margin-top:4px;">${c.notes}</p>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn btn-ghost btn-sm no-print" onclick="editContact(${c.id})" aria-label="Edit ${c.name}">✏️</button>
+        <button class="btn btn-ghost btn-sm no-print" onclick="deleteContact(${c.id})" aria-label="Delete ${c.name}">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════
+//  HANDOFF NOTES
+// ════════════════════════════════════════════════
+function addHandoff() {
+  const date = document.getElementById('ho-date').value;
+  if (!date) { alert('Please select a date.'); return; }
+  const data = {
+    date,
+    shift: document.getElementById('ho-shift').value,
+    caregiver: document.getElementById('ho-caregiver').value,
+    meds: document.getElementById('ho-meds').value,
+    meals: document.getElementById('ho-meals').value,
+    mood: document.getElementById('ho-mood').value,
+    watch: document.getElementById('ho-watch').value,
+    notes: document.getElementById('ho-notes').value,
+  };
+  const now = new Date().toISOString();
+  let handoffs = load(KEYS.handoff);
+  if (editingHandoffId) {
+    handoffs = handoffs.map(h => h.id === editingHandoffId ? { ...h, ...data, updatedAt: now } : h);
+    editingHandoffId = null;
+    document.querySelector('#page-handoff .btn-primary').textContent = '💾 Save Handoff Note';
+  } else {
+    handoffs.unshift({ id: Date.now(), ...data, createdAt: now, updatedAt: now });
+  }
+  save(KEYS.handoff, handoffs);
+  ['ho-meds','ho-meals','ho-mood','ho-watch','ho-notes','ho-caregiver'].forEach(id => document.getElementById(id).value = '');
+  renderHandoff();
+  showToast('📝 Handoff note saved');
+}
+
+function editHandoff(id) {
+  const h = load(KEYS.handoff).find(x => x.id === id);
+  if (!h) return;
+  editingHandoffId = id;
+  document.getElementById('ho-date').value = h.date || '';
+  document.getElementById('ho-shift').value = h.shift || 'Morning';
+  document.getElementById('ho-caregiver').value = h.caregiver || '';
+  document.getElementById('ho-meds').value = h.meds || '';
+  document.getElementById('ho-meals').value = h.meals || '';
+  document.getElementById('ho-mood').value = h.mood || '';
+  document.getElementById('ho-watch').value = h.watch || '';
+  document.getElementById('ho-notes').value = h.notes || '';
+  document.querySelector('#page-handoff .btn-primary').textContent = '💾 Update Handoff Note';
+  document.getElementById('ho-date').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function deleteHandoff(id) {
+  if (editingHandoffId === id) { editingHandoffId = null; document.querySelector('#page-handoff .btn-primary').textContent = '💾 Save Handoff Note'; }
+  save(KEYS.handoff, load(KEYS.handoff).filter(h => h.id !== id));
+  renderHandoff();
+}
+
+function renderHandoff() {
+  const notes = load(KEYS.handoff);
+  const el = document.getElementById('handoff-list');
+  if (!notes.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔄</div><p>No handoff notes yet.</p></div>';
+    return;
+  }
+  el.innerHTML = notes.map(n => `
+    <div class="handoff-card">
+      <div class="handoff-header">
+        <div>
+          <h4>${formatDate(n.date)} — ${n.shift}</h4>
+          ${n.caregiver ? `<p style="font-size:1.05rem;color:var(--text-muted);">By: ${n.caregiver}</p>` : ''}
+          ${n.updatedAt ? `<p style="font-size:1rem;color:var(--text-muted);margin-top:2px;">✏️ ${n.updatedAt !== n.createdAt ? 'Edited' : 'Saved'} ${new Date(n.updatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${new Date(n.updatedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</p>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="editHandoff(${n.id})" aria-label="Edit handoff note">✏️</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteHandoff(${n.id})" aria-label="Delete handoff note">✕</button>
+        </div>
+      </div>
+      ${n.meds ? `<p class="text-sm"><strong>Medications:</strong> ${n.meds}</p>` : ''}
+      ${n.meals ? `<p class="text-sm" style="margin-top:6px;"><strong>Meals/Fluids:</strong> ${n.meals}</p>` : ''}
+      ${n.mood ? `<p class="text-sm" style="margin-top:6px;"><strong>Mood:</strong> ${n.mood}</p>` : ''}
+      ${n.watch ? `<p class="text-sm" style="margin-top:6px;color:var(--rose-dark);"><strong>⚠️ Watch for:</strong> ${n.watch}</p>` : ''}
+      ${n.notes ? `<p class="text-sm" style="margin-top:6px;"><strong>Notes:</strong> ${n.notes}</p>` : ''}
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════
+//  MEMORIES
+// ════════════════════════════════════════════════
+function selectMemMood(mood) {
+  selectedMemMood = mood;
+  document.querySelectorAll('#mem-mood-selector .mood-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.mood === mood);
+  });
+}
+
+function addMemory() {
+  const title = document.getElementById('mem-title').value.trim();
+  if (!title) { alert('Please add a title for this memory.'); return; }
+  const data = {
+    title, date: document.getElementById('mem-date').value,
+    text: document.getElementById('mem-text').value,
+    mood: selectedMemMood,
+  };
+  let mems = load(KEYS.memories);
+  if (editingMemoryId) {
+    mems = mems.map(m => m.id === editingMemoryId ? { ...m, ...data } : m);
+    editingMemoryId = null;
+    document.querySelector('#page-memory .btn-gold').textContent = '💛 Save Memory';
+  } else {
+    mems.unshift({ id: Date.now(), ...data });
+  }
+  save(KEYS.memories, mems);
+  ['mem-title','mem-text'].forEach(id => document.getElementById(id).value = '');
+  selectedMemMood = '';
+  document.querySelectorAll('#mem-mood-selector .mood-btn').forEach(b => b.classList.remove('selected'));
+  renderMemories();
+  showToast('💛 Memory saved');
+}
+
+function editMemory(id) {
+  const m = load(KEYS.memories).find(x => x.id === id);
+  if (!m) return;
+  editingMemoryId = id;
+  document.getElementById('mem-title').value = m.title || '';
+  document.getElementById('mem-date').value = m.date || '';
+  document.getElementById('mem-text').value = m.text || '';
+  selectMemMood(m.mood || '');
+  document.querySelector('#page-memory .btn-gold').textContent = '💛 Update Memory';
+  document.getElementById('mem-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function deleteMemory(id) {
+  if (editingMemoryId === id) { editingMemoryId = null; document.querySelector('#page-memory .btn-gold').textContent = '💛 Save Memory'; }
+  save(KEYS.memories, load(KEYS.memories).filter(m => m.id !== id));
+  renderMemories();
+}
+
+function renderMemories() {
+  const mems = load(KEYS.memories);
+  const el = document.getElementById('memory-list');
+  if (!mems.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">💛</div><p>Your memory box is empty.<br>Add your first precious moment above.</p></div>';
+    return;
+  }
+  el.innerHTML = mems.map(m => `
+    <div class="memory-card">
+      ${m.mood ? `<div class="memory-mood">${m.mood}</div>` : ''}
+      <div class="memory-date">${formatDate(m.date)}</div>
+      <div class="memory-title">${m.title}</div>
+      ${m.text ? `<div class="memory-text">${m.text}</div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="editMemory(${m.id})">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteMemory(${m.id})">✕ Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════
+//  WELLBEING / STRESS
+// ════════════════════════════════════════════════
+function selectStress(n) {
+  selectedStress = n;
+  document.querySelectorAll('.stress-btn').forEach((b, i) => {
+    b.classList.remove('selected-low','selected-mid','selected-high');
+    if (i + 1 === n) {
+      b.classList.add(n <= 3 ? 'selected-high' : n <= 6 ? 'selected-mid' : 'selected-low');
+    }
+  });
+}
+
+function addStressEntry() {
+  if (!selectedStress) { alert('Please select your wellbeing level.'); return; }
+  const data = {
+    date: new Date().toISOString().split('T')[0],
+    score: selectedStress,
+    notes: document.getElementById('stress-notes').value,
+    gratitude: document.getElementById('stress-gratitude').value,
+  };
+  let entries = load(KEYS.stress);
+  if (editingStressId) {
+    entries = entries.map(e => e.id === editingStressId ? { ...e, ...data } : e);
+    editingStressId = null;
+    document.querySelector('#page-stress .btn-primary').textContent = '💾 Save Check-In';
+  } else {
+    entries.unshift({ id: Date.now(), ...data });
+  }
+  save(KEYS.stress, entries);
+  selectedStress = null;
+  document.querySelectorAll('.stress-btn').forEach(b => b.classList.remove('selected-low','selected-mid','selected-high'));
+  document.getElementById('stress-notes').value = '';
+  document.getElementById('stress-gratitude').value = '';
+  renderStress();
+  showToast('🌿 Wellbeing check-in saved');
+}
+
+function editStress(id) {
+  const e = load(KEYS.stress).find(x => x.id === id);
+  if (!e) return;
+  editingStressId = id;
+  selectStress(e.score);
+  document.getElementById('stress-notes').value = e.notes || '';
+  document.getElementById('stress-gratitude').value = e.gratitude || '';
+  document.querySelector('#page-stress .btn-primary').textContent = '💾 Update Check-In';
+  document.querySelector('.stress-btn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function renderStress() {
+  const entries = load(KEYS.stress);
+  const el = document.getElementById('stress-log-list');
+
+  // Check for burnout
+  if (entries.length >= 3) {
+    const recent = entries.slice(0, 5).map(e => e.score);
+    const avg = recent.reduce((a,b) => a+b, 0) / recent.length;
+    document.getElementById('burnout-alert').style.display = avg <= 4 ? 'block' : 'none';
+  }
+
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🌿</div><p>No check-ins yet. How are you doing today?</p></div>';
+    return;
+  }
+  el.innerHTML = entries.map(e => `
+    <div class="log-entry" style="border-left-color:${e.score <= 3 ? 'var(--rose)' : e.score <= 6 ? 'var(--gold)' : 'var(--sage)'}">
+      <div class="log-date">${formatDate(e.date)} · Wellbeing: <strong>${e.score}/10</strong></div>
+      ${e.notes ? `<div class="log-text">${e.notes}</div>` : ''}
+      ${e.gratitude ? `<div style="margin-top:6px;font-size:1rem;color:var(--sage-dark);">🙏 ${e.gratitude}</div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="editStress(${e.id})">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteStress(${e.id})">✕ Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteStress(id) {
+  if (editingStressId === id) { editingStressId = null; document.querySelector('#page-stress .btn-primary').textContent = '💾 Save Check-In'; }
+  save(KEYS.stress, load(KEYS.stress).filter(e => e.id !== id));
+  renderStress();
+}
+
+// ════════════════════════════════════════════════
+//  EMERGENCY CARD
+// ════════════════════════════════════════════════
+function loadEmergencyCard() {
+  const profile   = load(KEYS.profile, {});
+  const meds      = load(KEYS.medications);
+  const team      = load(KEYS.careteam);
+  const saved     = load(KEYS.emergency, {});
+
+  // Auto-populate from profile if no saved data yet
+  const nameEl = document.getElementById('ec-name');
+  const dobEl  = document.getElementById('ec-dob');
+  const condEl = document.getElementById('ec-conditions');
+
+  nameEl.value = saved.name !== undefined ? saved.name : (profile.name || '');
+  dobEl.value  = saved.dob  !== undefined ? saved.dob  : (profile.dob  || '');
+  condEl.value = saved.conditions !== undefined ? saved.conditions : (profile.condition || '');
+
+  // Allergies, insurance, notes from saved only
+  document.getElementById('ec-allergies').value  = saved.allergies  || '';
+  document.getElementById('ec-insurance').value  = saved.insurance  || '';
+  document.getElementById('ec-notes').value      = saved.notes      || '';
+
+  // Auto-suggest blood type from saved
+  if (saved.blood) {
+    document.getElementById('ec-blood').value = saved.blood;
+  }
+
+  // Auto-populate contacts from care team if not already saved
+  if (!saved.contact1) {
+    // Find first non-doctor family/contact entry
+    const familyContact = team.find(c =>
+      c.role && (c.role.toLowerCase().includes('son') ||
+                 c.role.toLowerCase().includes('daughter') ||
+                 c.role.toLowerCase().includes('spouse') ||
+                 c.role.toLowerCase().includes('contact') ||
+                 c.role.toLowerCase().includes('family'))
+    );
+    if (familyContact) {
+      document.getElementById('ec-contact1').value =
+        `${familyContact.name} — ${familyContact.role} — ${familyContact.phone}`;
+    }
+  } else {
+    document.getElementById('ec-contact1').value = saved.contact1;
+  }
+
+  if (!saved.contact2) {
+    // Second family contact
+    const familyContacts = team.filter(c =>
+      c.role && (c.role.toLowerCase().includes('son') ||
+                 c.role.toLowerCase().includes('daughter') ||
+                 c.role.toLowerCase().includes('spouse') ||
+                 c.role.toLowerCase().includes('contact') ||
+                 c.role.toLowerCase().includes('family'))
+    );
+    if (familyContacts[1]) {
+      document.getElementById('ec-contact2').value =
+        `${familyContacts[1].name} — ${familyContacts[1].role} — ${familyContacts[1].phone}`;
+    }
+  } else {
+    document.getElementById('ec-contact2').value = saved.contact2;
+  }
+
+  if (!saved.doctor) {
+    // Auto-populate primary doctor from care team
+    const gp = team.find(c =>
+      c.role && (c.role.toLowerCase().includes('gp') ||
+                 c.role.toLowerCase().includes('general') ||
+                 c.role.toLowerCase().includes('family') ||
+                 c.role.toLowerCase().includes('doctor') ||
+                 c.role.toLowerCase().includes('physician'))
+    );
+    if (gp) {
+      document.getElementById('ec-doctor').value =
+        `${gp.name} — ${gp.phone}${gp.facility ? ' — ' + gp.facility : ''}`;
+    }
+  } else {
+    document.getElementById('ec-doctor').value = saved.doctor;
+  }
+
+  // Notify user if we auto-filled
+  const autoFilled = !saved.name && (profile.name || team.length > 0 || meds.length > 0);
+  if (autoFilled) {
+    const banner = document.getElementById('ec-autofill-banner');
+    if (banner) banner.style.display = 'block';
+  }
+
+  // Always render the preview immediately
+  updateEmergencyCard();
+}
+
+function saveEmergencyFields() {
+  const data = {
+    name:       document.getElementById('ec-name').value,
+    dob:        document.getElementById('ec-dob').value,
+    blood:      document.getElementById('ec-blood').value,
+    conditions: document.getElementById('ec-conditions').value,
+    allergies:  document.getElementById('ec-allergies').value,
+    contact1:   document.getElementById('ec-contact1').value,
+    contact2:   document.getElementById('ec-contact2').value,
+    doctor:     document.getElementById('ec-doctor').value,
+    insurance:  document.getElementById('ec-insurance').value,
+    notes:      document.getElementById('ec-notes').value,
+  };
+  save(KEYS.emergency, data);
+  updateEmergencyCard();
+
+  // Show saved confirmation
+  const btn = document.getElementById('ec-save-btn');
+  showToast('🚨 Emergency card saved');
+  if (btn) { btn.textContent = '✅ Saved!'; setTimeout(() => btn.textContent = '🔄 Save & Update Card', 1500); }
+}
+
+function updateEmergencyCard() {
+  const meds = load(KEYS.medications);
+  const name       = document.getElementById('ec-name').value || '—';
+  const dob        = document.getElementById('ec-dob').value;
+  const blood      = document.getElementById('ec-blood').value;
+  const conditions = document.getElementById('ec-conditions').value;
+  const allergies  = document.getElementById('ec-allergies').value;
+  const c1         = document.getElementById('ec-contact1').value;
+  const c2         = document.getElementById('ec-contact2').value;
+  const doctor     = document.getElementById('ec-doctor').value;
+  const insurance  = document.getElementById('ec-insurance').value;
+  const notes      = document.getElementById('ec-notes').value;
+
+  const medList = meds.length
+    ? meds.map(m => `${m.name} ${m.dose} — ${m.frequency}${m.food ? ' (' + m.food + ')' : ''}`).join('<br>')
+    : 'None recorded';
+
+  document.getElementById('ec-preview-content').innerHTML = `
+    <div class="emergency-row"><strong>Name:</strong><span>${name}</span></div>
+    ${dob    ? `<div class="emergency-row"><strong>Date of Birth:</strong><span>${formatDate(dob)}</span></div>` : ''}
+    ${blood  ? `<div class="emergency-row"><strong>Blood Type:</strong><span>${blood}</span></div>` : ''}
+    <hr class="divider">
+    <div class="emergency-row" style="align-items:flex-start;"><strong>Conditions:</strong><span>${conditions || '—'}</span></div>
+    <div class="emergency-row" style="align-items:flex-start;"><strong>Allergies:</strong><span style="color:var(--rose-dark);font-weight:700;">${allergies || 'None known'}</span></div>
+    <hr class="divider">
+    <div style="font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:8px;">Current Medications</div>
+    <div style="font-size:1.05rem;line-height:1.9;">${medList}</div>
+    <hr class="divider">
+    ${c1 ? `<div class="emergency-row"><strong>Emergency Contact 1:</strong><span>${c1}</span></div>` : ''}
+    ${c2 ? `<div class="emergency-row"><strong>Emergency Contact 2:</strong><span>${c2}</span></div>` : ''}
+    ${doctor    ? `<div class="emergency-row"><strong>Primary Doctor:</strong><span>${doctor}</span></div>` : ''}
+    ${insurance ? `<div class="emergency-row"><strong>Health Card:</strong><span>${insurance}</span></div>` : ''}
+    ${notes     ? `<hr class="divider"><div class="emergency-row" style="align-items:flex-start;"><strong>Notes:</strong><span>${notes}</span></div>` : ''}
+    <hr class="divider">
+    <div style="font-size:1.05rem;color:var(--text-muted);text-align:center;">Last updated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+  `;
+}
+
+// ════════════════════════════════════════════════
+//  MEDICATION DAILY CHECK-OFF PERSISTENCE
+// ════════════════════════════════════════════════
+function getTodayKey() {
+  return 'cc_medchecks_' + new Date().toISOString().split('T')[0];
+}
+
+function getMedChecksForToday() {
+  // Purge any old check keys (keep only today's)
+  const todayKey = getTodayKey();
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith('cc_medchecks_') && k !== todayKey) {
+      localStorage.removeItem(k);
+    }
+  });
+  try {
+    const raw = localStorage.getItem(todayKey);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function getDoseCount(m) {
+  const freq = (m.frequency || '').toLowerCase();
+  if (freq.includes('twice') || freq.includes('two')) return 2;
+  if (freq.includes('three') || freq.includes('3')) return 3;
+  if (freq.includes('every 8')) return 3;
+  if (freq.includes('every 6')) return 4;
+  // Also use times field as source of truth if provided
+  if (m.times) {
+    const count = m.times.split(',').filter(t => t.trim()).length;
+    if (count > 1) return count;
+  }
+  return 1;
+}
+
+function getDoseLabels(m) {
+  if (m.times) {
+    const parts = m.times.split(',').map(t => t.trim()).filter(Boolean);
+    if (parts.length > 1) return parts;
+  }
+  const count = getDoseCount(m);
+  if (count === 1) return [''];
+  return Array.from({ length: count }, (_, i) => `Dose ${i + 1}`);
+}
+
+function toggleMedCheck(medId, doseIdx, el) {
+  const todayKey = getTodayKey();
+  const checks = getMedChecksForToday();
+  const key = `${medId}_${doseIdx}`;
+  checks[key] = !checks[key];
+  localStorage.setItem(todayKey, JSON.stringify(checks));
+
+  const isDone = checks[key];
+  el.classList.toggle('done', isDone);
+  el.textContent = isDone ? '✓' : '';
+
+  // Recount scheduled doses only (exclude PRN)
+  const meds = load(KEYS.medications);
+  let totalDoses = 0, doneDoses = 0;
+  meds.forEach(med => {
+    if ((med.frequency || '').toLowerCase().includes('as needed')) return;
+    const count = getDoseCount(med);
+    totalDoses += count;
+    for (let i = 0; i < count; i++) {
+      if (checks[`${med.id}_${i}`]) doneDoses++;
+    }
+  });
+  const statEl = document.getElementById('stat-meds');
+  const subEl = document.getElementById('stat-meds-sub');
+  if (statEl) statEl.textContent = `${doneDoses}/${totalDoses}`;
+  if (subEl) subEl.textContent = doneDoses === totalDoses && totalDoses > 0
+    ? '✅ All given today!'
+    : `${totalDoses - doneDoses} remaining today`;
+}
+
+function logPRNDose(medId, btn) {
+  const todayKey = getTodayKey();
+  const checks = getMedChecksForToday();
+  const key = `${medId}_prn`;
+  checks[key] = (checks[key] || 0) + 1;
+  localStorage.setItem(todayKey, JSON.stringify(checks));
+  // Update the "Given Nx today" label inline
+  const li = btn.closest('li');
+  if (li) {
+    let label = li.querySelector('.prn-label');
+    if (!label) {
+      label = document.createElement('div');
+      label.className = 'prn-label';
+      label.style.cssText = 'font-size:1.05rem;color:var(--sage-dark);margin-top:2px;';
+      li.querySelector('div').appendChild(label);
+    }
+    label.textContent = `Given ${checks[key]}× today`;
+  }
+}
+
+// ════════════════════════════════════════════════
+//  GETTING STARTED CHECKLIST
+// ════════════════════════════════════════════════
+function renderGettingStarted() {
+  const strip = document.getElementById('getting-started');
+  if (!strip) return;
+
+  const meds    = load(KEYS.medications);
+  const team    = load(KEYS.careteam);
+  const logs    = load(KEYS.logs);
+  const ec      = load(KEYS.emergency, {});
+
+  const steps = {
+    meds:      meds.length > 0,
+    careteam:  team.length > 0,
+    emergency: !!(ec.name && ec.name.length > 0 && (ec.blood || ec.allergies || ec.contact1 || ec.conditions)),
+    log:       logs.length > 0,
+  };
+
+  const doneCount = Object.values(steps).filter(Boolean).length;
+  const allDone   = doneCount === 4;
+
+  // Hide entirely once everything is done
+  strip.style.display = allDone ? 'none' : 'block';
+  if (allDone) return;
+
+  // Update each step
+  const stepMap = { meds: 'gs-step-meds', careteam: 'gs-step-careteam', emergency: 'gs-step-emergency', log: 'gs-step-log' };
+  Object.entries(steps).forEach(([key, done]) => {
+    const el = document.getElementById(stepMap[key]);
+    if (!el) return;
+    el.classList.toggle('done', done);
+  });
+
+  // Progress bar
+  const pct = (doneCount / 4) * 100;
+  const fillEl  = document.getElementById('gs-progress-fill');
+  const labelEl = document.getElementById('gs-progress-label');
+  if (fillEl)  fillEl.style.width  = pct + '%';
+  if (labelEl) labelEl.textContent = `${doneCount} of 4 done`;
+}
+
+// ════════════════════════════════════════════════
+//  REFILL ALERTS
+// ════════════════════════════════════════════════
+function renderRefillAlerts() {
+  const el = document.getElementById('refill-alerts');
+  if (!el) return;
+  const meds = load(KEYS.medications);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const in7 = new Date(today);
+  in7.setDate(in7.getDate() + 7);
+
+  const overdue = [];
+  const soon = [];
+
+  meds.forEach(m => {
+    if (m.frequency === 'As needed') return;
+    const dailyDoses = freqToDoseCount(m.frequency);
+    const daysLeft = m.pills != null ? Math.floor(m.pills / dailyDoses) : null;
+
+    // Pills-based: running low
+    if (daysLeft != null && daysLeft <= 7) {
+      const entry = { name: m.name, refill: m.refill, daysLeft };
+      if (daysLeft <= 0) overdue.push(entry);
+      else soon.push(entry);
+      return;
+    }
+    // Date-based fallback
+    if (!m.refill) return;
+    const refillDate = new Date(m.refill + 'T12:00:00');
+    if (refillDate < today) {
+      overdue.push({ name: m.name, refill: m.refill, daysLeft: null });
+    } else if (refillDate <= in7) {
+      soon.push({ name: m.name, refill: m.refill, daysLeft: null });
+    }
+  });
+
+  if (!overdue.length && !soon.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  let html = '<div style="margin-bottom:20px;">';
+
+  if (overdue.length) {
+    html += `
+      <div style="background:rgba(201,132,122,0.1);border:1.5px solid var(--rose-light);border-radius:12px;padding:16px 20px;margin-bottom:10px;">
+        <div style="font-weight:700;color:var(--rose-dark);margin-bottom:8px;">🔴 Refill overdue</div>
+        ${overdue.map(m => `<div style="font-size:1rem;color:var(--text);padding:3px 0;">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? (m.daysLeft <= 0 ? 'out of pills' : m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left') : 'refill was due ' + formatDate(m.refill)}</div>`).join('')}
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="navigate('medications', document.querySelector('[onclick*=medications]'))">Go to Medications →</button>
+      </div>`;
+  }
+
+  if (soon.length) {
+    html += `
+      <div style="background:rgba(196,164,107,0.1);border:1.5px solid var(--gold-light);border-radius:12px;padding:16px 20px;">
+        <div style="font-weight:700;color:#7a5e2a;margin-bottom:8px;">🟡 Refill due soon</div>
+        ${soon.map(m => `<div style="font-size:1rem;color:var(--text);padding:3px 0;">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left' : 'due ' + formatDate(m.refill)}</div>`).join('')}
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="navigate('medications', document.querySelector('[onclick*=medications]'))">Go to Medications →</button>
+      </div>`;
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════
+//  DASHBOARD RENDER
+// ════════════════════════════════════════════════
+function renderDashboard() {
+  const meds   = load(KEYS.medications);
+  const logs   = load(KEYS.logs);
+  const appts  = sortAppointments(load(KEYS.appointments));
+  const profile = load(KEYS.profile, null);
+
+  if (profile) {
+    document.getElementById('sidebar-name').textContent = profile.name;
+    document.getElementById('hero-name').textContent = profile.name;
+  }
+
+  // Stats — always reset first so stale data never persists after clear
+  document.getElementById('stat-meds').textContent = meds.length;
+  document.getElementById('stat-meds-sub').textContent = meds.length + ' medication' + (meds.length !== 1 ? 's' : '') + ' tracked';
+  document.getElementById('stat-days').textContent = logs.length;
+  document.getElementById('stat-appt-detail').innerHTML = '<div class="stat-value" style="font-size:1.1rem;">—</div>';
+
+  // Next appointment
+  const today = new Date().toISOString().split('T')[0];
+  const upcoming = appts.filter(a => a.date >= today);
+  if (upcoming.length) {
+    const nextDate = upcoming[0].date;
+    const sameDay = upcoming.filter(a => a.date === nextDate);
+    const d = new Date(nextDate + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const laterCount = upcoming.length - sameDay.length;
+    const moreText = laterCount > 0 ? `<div style="font-size:1.05rem;color:var(--text-muted);margin-top:6px;">${laterCount} more appointment${laterCount !== 1 ? 's' : ''} coming up</div>` : '';
+    const apptCards = sameDay.map((a, i) => `
+      ${i > 0 ? '<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;">' : ''}
+      <div style="font-size:1rem;font-weight:700;color:var(--brown);margin-top:${i === 0 ? '4' : '0'}px;">${a.title}</div>
+      <div style="font-size:1rem;color:var(--text-muted);margin-top:3px;">📅 ${dateStr}${a.time ? ' · ' + formatTime(a.time) : ''}</div>
+    `).join('');
+    document.getElementById('stat-appt-detail').innerHTML = apptCards + moreText;
+  }
+
+  // Today's meds in dashboard
+  const medEl = document.getElementById('dashboard-meds');
+  const todayChecks = getMedChecksForToday();
+  if (!meds.length) {
+    medEl.innerHTML = '<li style="color:var(--text-muted);font-size:1rem;padding:12px 0;">No medications added yet.</li>';
+  } else {
+    let totalDoses = 0, doneDoses = 0;
+    medEl.innerHTML = meds.map(m => {
+      const isPRN = (m.frequency || '').toLowerCase().includes('as needed');
+      if (isPRN) {
+        const prnCount = todayChecks[`${m.id}_prn`] || 0;
+        return `
+        <li>
+          <div>
+            <span style="font-weight:700;">${m.name}</span>
+            <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose} · As needed</span>
+            ${prnCount > 0 ? `<div style="font-size:1.05rem;color:var(--sage-dark);margin-top:2px;">Given ${prnCount}× today</div>` : ''}
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="logPRNDose(${m.id}, this)" style="white-space:nowrap;">+ Log dose</button>
+        </li>`;
+      }
+      const labels = getDoseLabels(m);
+      const count = labels.length;
+      totalDoses += count;
+      if (count === 1) {
+        const key = `${m.id}_0`;
+        const isDone = todayChecks[key] === true;
+        if (isDone) doneDoses++;
+        return `
+        <li>
+          <div>
+            <span style="font-weight:700;">${m.name}</span>
+            <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose}${m.times ? ' · ' + m.times : ' · ' + m.frequency}</span>
+          </div>
+          <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, 0, this)">${isDone ? '✓' : ''}</div>
+        </li>`;
+      } else {
+        return labels.map((label, i) => {
+          const key = `${m.id}_${i}`;
+          const isDone = todayChecks[key] === true;
+          if (isDone) doneDoses++;
+          return `
+          <li>
+            <div>
+              <span style="font-weight:700;">${m.name}</span>
+              <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose}${label ? ' · ' + label : ''}</span>
+            </div>
+            <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, ${i}, this)">${isDone ? '✓' : ''}</div>
+          </li>`;
+        }).join('');
+      }
+    }).join('');
+    document.getElementById('stat-meds').textContent = `${doneDoses}/${totalDoses}`;
+    document.getElementById('stat-meds-sub').textContent = doneDoses === totalDoses && totalDoses > 0
+      ? '✅ All given today!'
+      : `${totalDoses - doneDoses} remaining today`;
+  }
+
+  // Recent log
+  const logEl = document.getElementById('dashboard-log');
+  if (!logs.length) {
+    logEl.innerHTML = '<div class="empty-state" style="padding:24px 0;"><div class="empty-icon">📝</div><p>No entries yet.</p></div>';
+  } else {
+    logEl.innerHTML = logs.slice(0,2).map(l => `
+      <div class="log-entry" style="margin-bottom:8px;">
+        <div class="log-date">${formatDate(l.date)} ${l.mood || ''}</div>
+        <div class="log-text" style="font-size:1rem;">${l.symptoms ? l.symptoms.substring(0,120) + (l.symptoms.length > 120 ? '…' : '') : 'No symptoms noted.'}</div>
+      </div>
+    `).join('');
+  }
+
+  // Upcoming appts in dashboard
+  const apptEl = document.getElementById('dashboard-appts');
+  const upcomingList = appts.filter(a => a.date >= today);
+  if (!upcomingList.length) {
+    apptEl.innerHTML = '<div class="empty-state" style="padding:16px 0;"><p>No upcoming appointments.</p></div>';
+  } else {
+    apptEl.innerHTML = upcomingList.map(a => {
+      const d = new Date(a.date + 'T12:00:00');
+      return `
+      <div class="appt-item">
+        <div class="appt-date-badge" onclick="navigateToAppointment(${a.id})" style="cursor:pointer;" title="View this appointment">
+          <div class="day">${d.getDate()}</div>
+          <div class="mon">${d.toLocaleDateString('en-US',{month:'short'})}</div>
+        </div>
+        <div class="appt-info" style="flex:1;">
+          <h4>${a.title} <span class="badge badge-sage">${a.category}</span></h4>
+          <p>${a.doctor ? a.doctor + ' · ' : ''}${a.time ? formatTime(a.time) : ''}</p>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  renderCharts();
+  renderGoodDays();
+  renderGettingStarted();
+  renderRefillAlerts();
+  renderMoodSnapshot();
+  renderGoodDaysWidget();
+}
+
+// ════════════════════════════════════════════════
+//  PRINT HELPERS
+// ════════════════════════════════════════════════
+function preparePrintHeaders() {
+  const profile = load(KEYS.profile, null);
+  const patientName = profile ? profile.name : 'Patient';
+  const today = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  const printDate = 'Printed: ' + today;
+  const patientLine = 'Patient: ' + patientName;
+  const pairs = [
+    ['med-print-header','med-print-patient','med-print-date'],
+    ['ct-print-header','ct-print-patient','ct-print-date'],
+    ['handoff-print-header','handoff-print-patient','handoff-print-date'],
+    ['ec-print-header','ec-print-patient','ec-print-date'],
+  ];
+  pairs.forEach(([hdr, pat, dt]) => {
+    const h = document.getElementById(hdr);
+    const p = document.getElementById(pat);
+    const d = document.getElementById(dt);
+    if (h) h.style.display = 'flex';
+    if (p) p.textContent = patientLine;
+    if (d) d.textContent = printDate;
+  });
+}
+
+function printMedicationList() {
+  const meds = load(KEYS.medications);
+  const wrap = document.getElementById('medications-print-table-wrap');
+  if (!wrap) return;
+  if (!meds.length) { alert('No medications to print.'); return; }
+
+  const rows = meds.map(m => {
+    const dailyDoses = freqToDoseCount(m.frequency);
+    const daysLeft = m.pills != null ? Math.floor(m.pills / dailyDoses) : null;
+    let supplyStr = '—';
+    if (m.pills != null) {
+      const cls = daysLeft <= 3 ? 'pill-low' : daysLeft <= 7 ? 'pill-warn' : '';
+      supplyStr = `${m.pills} pills${daysLeft != null ? ` <span class="${cls}">(~${daysLeft}d)</span>` : ''}`;
+    }
+    const freqTimes = [m.frequency, m.times].filter(Boolean).join(' · ');
+    const nameExtra = [m.food && m.food !== 'No preference' ? m.food : '', m.notes].filter(Boolean).join(' · ');
+    return `<tr>
+      <td><strong>${m.name}</strong>${nameExtra ? `<br><span style="font-size:8pt;color:#555;font-style:italic;">${nameExtra}</span>` : ''}</td>
+      <td>${m.dose || '—'}</td>
+      <td>${freqTimes || '—'}</td>
+      <td>${m.doctor || '—'}</td>
+      <td>${m.refill ? formatDate(m.refill) : '—'}</td>
+      <td>${supplyStr}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="medications-print-table">
+      <thead>
+        <tr>
+          <th style="width:22%">Medication</th>
+          <th style="width:10%">Dose</th>
+          <th style="width:22%">Frequency &amp; Times</th>
+          <th style="width:18%">Doctor</th>
+          <th style="width:16%">Refill Date</th>
+          <th style="width:12%">Supply</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="med-print-footer">
+      CareCompanion · This list is for personal reference only. Always verify medications with your pharmacist or physician before making changes.
+    </div>`;
+
+  renderCareTeamPrintGrid();
+  preparePrintHeaders();
+  window.print();
+
+  setTimeout(() => {
+    const pairs = ['med-print-header','ct-print-header','handoff-print-header','ec-print-header'];
+    pairs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  }, 1000);
+}
+
+function renderCareTeamPrintGrid() {
+  const grid = document.getElementById('ct-print-grid');
+  if (!grid) return;
+  const contacts = load(KEYS.careteam);
+  if (!contacts.length) { grid.style.display = 'none'; return; }
+  grid.className = 'ct-print-grid';
+  grid.style.display = 'grid';
+  grid.innerHTML = contacts.map(c => `
+    <div class="ct-print-card">
+      <div class="ct-print-card-header">
+        <h4>${c.name}</h4>
+        ${c.role ? `<div class="ct-role">${c.role}</div>` : ''}
+      </div>
+      <div class="ct-print-card-body">
+        ${c.phone  ? `<div class="ct-detail"><span class="ct-detail-icon">📞</span><span>${c.phone}</span></div>` : ''}
+        ${c.email  ? `<div class="ct-detail"><span class="ct-detail-icon">✉️</span><span>${c.email}</span></div>` : ''}
+        ${c.clinic ? `<div class="ct-detail"><span class="ct-detail-icon">🏥</span><span>${c.clinic}</span></div>` : ''}
+        ${c.notes  ? `<div class="ct-notes">${c.notes}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+}
+
+function formatTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hour = parseInt(h);
+  return `${hour > 12 ? hour - 12 : hour || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
+}
+
+// ════════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ════════════════════════════════════════════════
+function exportData() {
+  // Build export object using the actual localStorage keys as property names
+  // so import can restore them directly without any mapping
+  const data = {
+    _version: '1.1',
+    _exported: new Date().toISOString(),
+    _app: 'CareCompanion'
+  };
+
+  // Store every key explicitly by its localStorage key name
+  Object.values(KEYS).forEach(storageKey => {
+    const raw = localStorage.getItem(storageKey);
+    data[storageKey] = raw ? JSON.parse(raw) : null;
+  });
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const profile = load(KEYS.profile, null);
+  const nameSlug = profile && profile.name ? '-' + profile.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'') : '';
+  a.download = `carecompanion${nameSlug}-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Delay revoke so browser has time to start the download
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+  document.getElementById('export-status').textContent = '✅ Backup downloaded successfully!';
+  setTimeout(() => document.getElementById('export-status').textContent = '', 4000);
+
+  // Verify what was exported
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('import-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+
+      // Validate it's a real backup
+      if (!data._version || data._app !== 'CareCompanion') {
+        throw new Error('Not a valid CareCompanion backup file.');
+      }
+
+      // Count what we found
+      if (found.length === 0) throw new Error('Backup file appears to be empty.');
+
+      if (!confirm(`Restore backup from ${new Date(data._exported).toLocaleDateString()}?\n\nThis will replace all current data. Your API key will be kept.\n\nFound: ${found.length} data sections.`)) return;
+
+      // Restore each key directly to localStorage
+      Object.values(KEYS).forEach(storageKey => {
+        if (data[storageKey] !== null && data[storageKey] !== undefined) {
+          localStorage.setItem(storageKey, JSON.stringify(data[storageKey]));
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      });
+
+      document.getElementById('import-status').style.color = 'var(--sage-dark)';
+      document.getElementById('import-status').textContent = `✅ Restored ${found.length} data sections. Refreshing…`;
+
+      // Reload all UI manually — location.reload() is blocked on file:// protocol
+      setTimeout(() => {
+        // Re-render all sections
+        renderAll();
+        renderDataSummary();
+
+        // Restore profile display
+        const profile = load(KEYS.profile, null);
+        if (profile) updateProfileDisplay(profile);
+
+        document.getElementById('import-status').textContent = `✅ Restored successfully — ${found.length} data sections loaded.`;
+      }, 300);
+
+    } catch(err) {
+      document.getElementById('import-status').style.color = 'var(--rose-dark)';
+      document.getElementById('import-status').textContent = '❌ Error: ' + err.message;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('Delete ALL data permanently? This cannot be undone.\n\nConsider exporting a backup first.')) return;
+  if (!confirm('Are you absolutely sure? All medications, logs, appointments, memories, and contacts will be deleted.')) return;
+  localStorage.clear();
+
+  // Re-render everything manually
+  renderAll();
+  renderDataSummary();
+  updateProfileDisplay({ name: '—' });
+  document.getElementById('import-status').textContent = '';
+  document.getElementById('export-status').textContent = '✅ All data cleared.';
+
+  // Show disclaimer again for fresh start
+  save(KEYS.disclaimer, false);
+  document.getElementById('disclaimer-overlay').style.display = 'flex';
+}
+
+function renderDataSummary() {
+  const el = document.getElementById('data-summary');
+  if (!el) return;
+  const counts = [
+    ['💊 Medications', load(KEYS.medications).length],
+    ['📋 Symptom Log Entries', load(KEYS.logs).length],
+    ['📅 Appointments', load(KEYS.appointments).length],
+    ['👥 Care Team Contacts', load(KEYS.careteam).length],
+    ['🔄 Handoff Notes', load(KEYS.handoff).length],
+    ['💛 Memories', load(KEYS.memories).length],
+    ['🌿 Wellbeing Check-ins', load(KEYS.stress).length],
+  ];
+  el.innerHTML = counts.map(([label, count]) =>
+    `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--border);">
+      <span>${label}</span><strong>${count} ${count === 1 ? 'entry' : 'entries'}</strong>
+    </div>`
+  ).join('');
+}
+
+// ════════════════════════════════════════════════
+//  CHARTS
+// ════════════════════════════════════════════════
+const MOOD_SCORE = { '😊': 5, '😐': 3, '😴': 2, '😰': 2, '😔': 1, '😤': 1, '': 3 };
+const MOOD_COLOR = { '😊': 'var(--sage)', '😐': 'var(--sage-light)', '😴': 'var(--gold)', '😰': 'var(--gold)', '😔': 'var(--rose)', '😤': 'var(--rose)', '': 'var(--border)' };
+
+function renderCharts() {
+  const logs = load(KEYS.logs);
+  const stress = load(KEYS.stress);
+  const chartsEmpty = document.getElementById('charts-empty');
+  const chartsContent = document.getElementById('charts-content');
+  if (!chartsEmpty || !chartsContent) return;
+
+  if (!logs.length && !stress.length) {
+    chartsEmpty.style.display = 'block';
+    chartsContent.style.display = 'none';
+    return;
+  }
+  chartsEmpty.style.display = 'none';
+  chartsContent.style.display = 'block';
+
+  // Last 14 days
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+
+  // Mood chart
+  const moodEl = document.getElementById('chart-mood');
+  if (moodEl) {
+    moodEl.innerHTML = days.map(day => {
+      const entry = logs.find(l => l.date === day);
+      const score = entry ? (MOOD_SCORE[entry.mood] || 3) : 0;
+      const color = entry ? (MOOD_COLOR[entry.mood] || 'var(--border)') : 'var(--border)';
+      const pct = (score / 5) * 100;
+      const label = day.slice(5); // MM-DD
+      return `<div class="chart-bar-wrap">
+        ${entry ? `<div class="chart-value">${entry.mood || '—'}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
+        <div class="chart-bar" style="height:${pct}%;background:${color};width:100%;"></div>
+        <div class="chart-label">${label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Pain chart
+  const painEl = document.getElementById('chart-pain');
+  if (painEl) {
+    painEl.innerHTML = days.map(day => {
+      const entry = logs.find(l => l.date === day);
+      const pain = entry && entry.pain ? parseInt(entry.pain) : 0;
+      const pct = (pain / 10) * 100;
+      const color = pain >= 7 ? 'var(--rose)' : pain >= 4 ? 'var(--gold)' : 'var(--sage)';
+      return `<div class="chart-bar-wrap">
+        ${pain > 0 ? `<div class="chart-value">${pain}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
+        <div class="chart-bar" style="height:${Math.max(pct,2)}%;background:${pain > 0 ? color : 'var(--border)'};width:100%;opacity:${pain > 0 ? 1 : 0.3};"></div>
+        <div class="chart-label">${day.slice(5)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Stress chart
+  const stressEl = document.getElementById('chart-stress');
+  if (stressEl) {
+    stressEl.innerHTML = days.map(day => {
+      const entry = stress.find(s => s.date === day);
+      const score = entry ? entry.score : 0;
+      const pct = (score / 10) * 100;
+      const color = score <= 3 ? 'var(--rose)' : score <= 6 ? 'var(--gold)' : 'var(--sage)';
+      return `<div class="chart-bar-wrap">
+        ${score > 0 ? `<div class="chart-value">${score}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
+        <div class="chart-bar" style="height:${Math.max(pct,2)}%;background:${score > 0 ? color : 'var(--border)'};width:100%;opacity:${score > 0 ? 1 : 0.3};"></div>
+        <div class="chart-label">${day.slice(5)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Summary callouts ──
+  const summaryEl = document.getElementById('chart-summaries');
+  if (!summaryEl) return;
+
+  const loggedDays = days.filter(d => logs.find(l => l.date === d));
+  const MOOD_LABEL = { '😊': 'Good', '😐': 'Okay', '😴': 'Tired', '😰': 'Anxious', '😔': 'Low', '😤': 'Agitated' };
+
+  // Mood summary
+  let moodSummary = '—';
+  let moodColor = 'var(--sage-dark)';
+  let moodBg = 'rgba(122,158,135,0.1)';
+  if (loggedDays.length) {
+    const moodCounts = {};
+    loggedDays.forEach(d => {
+      const e = logs.find(l => l.date === d);
+      const m = e ? (e.mood || '') : '';
+      moodCounts[m] = (moodCounts[m] || 0) + 1;
+    });
+    const topMood = Object.entries(moodCounts).sort((a,b) => b[1]-a[1])[0][0];
+    const goodCount = moodCounts['😊'] || 0;
+    const pct = Math.round((goodCount / loggedDays.length) * 100);
+    moodSummary = `${topMood} ${MOOD_LABEL[topMood] || ''} most common · ${pct}% good days`;
+    if (goodCount / loggedDays.length >= 0.6) { moodColor = 'var(--sage-dark)'; moodBg = 'rgba(122,158,135,0.12)'; }
+    else if (goodCount / loggedDays.length >= 0.3) { moodColor = '#7a5e2a'; moodBg = 'rgba(196,164,107,0.12)'; }
+    else { moodColor = 'var(--rose-dark)'; moodBg = 'rgba(201,132,122,0.12)'; }
+  }
+
+  // Pain summary
+  let painSummary = '—';
+  let painColor = 'var(--sage-dark)';
+  let painBg = 'rgba(122,158,135,0.1)';
+  const painDays = loggedDays.filter(d => { const e = logs.find(l => l.date === d); return e && e.pain; });
+  if (painDays.length) {
+    const avg = painDays.reduce((s,d) => { const e = logs.find(l => l.date === d); return s + parseInt(e.pain || 0); }, 0) / painDays.length;
+    const avgRounded = avg.toFixed(1);
+    painSummary = `Avg ${avgRounded}/10 over ${painDays.length} logged day${painDays.length !== 1 ? 's' : ''}`;
+    if (avg <= 3) { painColor = 'var(--sage-dark)'; painBg = 'rgba(122,158,135,0.12)'; }
+    else if (avg <= 6) { painColor = '#7a5e2a'; painBg = 'rgba(196,164,107,0.12)'; }
+    else { painColor = 'var(--rose-dark)'; painBg = 'rgba(201,132,122,0.12)'; }
+  }
+
+  // Wellbeing summary
+  let wellSummary = '—';
+  let wellColor = 'var(--sage-dark)';
+  let wellBg = 'rgba(122,158,135,0.1)';
+  const wellDays = days.filter(d => stress.find(s => s.date === d));
+  if (wellDays.length) {
+    const avg = wellDays.reduce((s,d) => { const e = stress.find(x => x.date === d); return s + (e ? e.score : 0); }, 0) / wellDays.length;
+    const avgRounded = avg.toFixed(1);
+    wellSummary = `Avg ${avgRounded}/10 over ${wellDays.length} check-in${wellDays.length !== 1 ? 's' : ''}`;
+    if (avg >= 7) { wellColor = 'var(--sage-dark)'; wellBg = 'rgba(122,158,135,0.12)'; }
+    else if (avg >= 4) { wellColor = '#7a5e2a'; wellBg = 'rgba(196,164,107,0.12)'; }
+    else { wellColor = 'var(--rose-dark)'; wellBg = 'rgba(201,132,122,0.12)'; }
+  }
+
+  const chip = (icon, label, val, color, bg) => `
+    <div style="flex:1;min-width:180px;background:${bg};border-radius:10px;padding:12px 14px;border:1px solid ${color}22;">
+      <div style="font-size:1rem;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${icon} ${label}</div>
+      <div style="font-size:0.92rem;color:var(--text);line-height:1.4;">${val}</div>
+    </div>`;
+
+  summaryEl.innerHTML =
+    chip('😊', 'Mood This Week', loggedDays.length ? moodSummary : 'No entries yet', moodColor, moodBg) +
+    chip('💢', 'Pain Level', painDays.length ? painSummary : 'No pain logged', painColor, painBg) +
+    chip('🌿', 'Your Wellbeing', wellDays.length ? wellSummary : 'No check-ins yet', wellColor, wellBg);
+}
+
+// ════════════════════════════════════════════════
+//  GOOD DAYS STRIP
+// ════════════════════════════════════════════════
+function renderGoodDays() {
+  const logs = load(KEYS.logs);
+  // All happy-mood days, sorted newest first
+  const goodDays = logs.filter(l => l.mood === '😊').sort((a,b) => b.date.localeCompare(a.date)).slice(0, 10);
+  const strip = document.getElementById('good-days-strip');
+  const list = document.getElementById('good-days-list');
+  const streakEl = document.getElementById('good-days-streak');
+  const summaryEl = document.getElementById('good-days-summary');
+  if (!strip || !list) return;
+
+  if (!goodDays.length) { strip.style.display = 'none'; return; }
+  strip.style.display = 'block';
+
+  // ── Streak: consecutive 😊 days ending today or yesterday ──
+  const goodDateSet = new Set(logs.filter(l => l.mood === '😊').map(l => l.date));
+  let streak = 0;
+  const today = new Date();
+  // Allow streak to count if today has no entry yet (check from yesterday)
+  let check = new Date(today);
+  // If today is logged as good, start from today; otherwise start from yesterday
+  const todayKey = today.toISOString().split('T')[0];
+  if (!goodDateSet.has(todayKey)) check.setDate(check.getDate() - 1);
+  while (true) {
+    const key = check.toISOString().split('T')[0];
+    if (!goodDateSet.has(key)) break;
+    streak++;
+    check.setDate(check.getDate() - 1);
+    if (streak > 365) break; // safety
+  }
+
+  // ── Last 30 days count ──
+  const thirtyAgo = new Date(today);
+  thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+  const thirtyKey = thirtyAgo.toISOString().split('T')[0];
+  const last30Count = logs.filter(l => l.mood === '😊' && l.date >= thirtyKey).length;
+
+  // Render streak badge
+  if (streakEl) {
+    if (streak >= 2) {
+      streakEl.style.display = 'inline-block';
+      streakEl.textContent = `🔥 ${streak} day streak`;
+    } else {
+      streakEl.style.display = 'none';
+    }
+  }
+  if (summaryEl) {
+    summaryEl.textContent = last30Count + ' good day' + (last30Count !== 1 ? 's' : '') + ' in the last 30';
+  }
+
+  list.innerHTML = goodDays.map(l => `
+    <div class="good-day-chip">
+      <div class="chip-date">${formatDate(l.date)}</div>
+      <div class="chip-mood">${l.mood}</div>
+      <div class="chip-text">${(l.symptoms || '').substring(0, 80)}${(l.symptoms || '').length > 80 ? '…' : ''}</div>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════
+//  DASHBOARD WIDGETS — NEW FEATURES
+// ════════════════════════════════════════════════
+
+// ── Mood snapshot (last 7 days) ──
+function renderMoodSnapshot() {
+  const el = document.getElementById('dash-mood-snapshot');
+  if (!el) return;
+  const logs = load(KEYS.logs);
+  if (!logs.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:12px 0;"><div class="empty-icon">📝</div><p>No log entries yet.</p></div>';
+    return;
+  }
+  const today = new Date();
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+  const moodColor = { '😊': '#7a9e87', '😐': '#c4a46b', '😔': '#c9847a', '😤': '#c9847a', '😴': '#b09080', '😰': '#c4a46b' };
+  const moodLabel = { '😊': 'Good', '😐': 'Okay', '😔': 'Low', '😤': 'Agitated', '😴': 'Tired', '😰': 'Anxious' };
+  const byDate = {};
+  logs.forEach(l => { byDate[l.date] = l; });
+
+  const bars = days.map(date => {
+    const entry = byDate[date];
+    const d = new Date(date + 'T12:00:00');
+    const label = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const dayNum = d.getDate();
+    if (!entry) {
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;">
+        <div style="height:40px;width:28px;background:#f0ebe4;border-radius:6px;"></div>
+        <div style="font-size:0.8rem;color:var(--text-muted);">${label}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);">${dayNum}</div>
+      </div>`;
+    }
+    const mood = entry.mood || '😐';
+    const color = moodColor[mood] || '#b09080';
+    const tip = moodLabel[mood] || mood;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;" title="${tip}: ${entry.symptoms ? entry.symptoms.substring(0,60) : 'No notes'}">
+      <div style="height:40px;width:28px;background:${color};border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">${mood}</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);">${label}</div>
+      <div style="font-size:0.75rem;color:var(--text-muted);">${dayNum}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div style="display:flex;gap:4px;align-items:flex-end;padding:4px 0 8px;">${bars}</div>`;
+}
+
+// ── Good Days Dashboard Widget ──
+function renderGoodDaysWidget() {
+  const el = document.getElementById('dash-gooddays-content');
+  if (!el) return;
+  const logs = load(KEYS.logs);
+  const goodDays = logs.filter(l => l.mood === '😊').sort((a, b) => b.date.localeCompare(a.date));
+  if (!goodDays.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:12px 0;"><div class="empty-icon">🌟</div><p>No good days recorded yet.</p></div>';
+    return;
+  }
+  const today = new Date();
+  const thirtyAgo = new Date(today); thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+  const thirtyKey = thirtyAgo.toISOString().split('T')[0];
+  const last30 = goodDays.filter(l => l.date >= thirtyKey).length;
+  const totalGood = goodDays.length;
+
+  // Streak
+  const goodDateSet = new Set(goodDays.map(l => l.date));
+  let streak = 0;
+  const todayKey = today.toISOString().split('T')[0];
+  let check = new Date(today);
+  if (!goodDateSet.has(todayKey)) check.setDate(check.getDate() - 1);
+  while (streak < 365) {
+    const k = check.toISOString().split('T')[0];
+    if (!goodDateSet.has(k)) break;
+    streak++;
+    check.setDate(check.getDate() - 1);
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:80px;background:rgba(196,164,107,0.12);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:700;color:var(--gold);">${last30}</div>
+        <div style="font-size:0.9rem;color:var(--text-muted);">last 30 days</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:rgba(122,158,135,0.12);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:700;color:var(--sage-dark);">${totalGood}</div>
+        <div style="font-size:0.9rem;color:var(--text-muted);">total good days</div>
+      </div>
+      ${streak >= 2 ? `<div style="flex:1;min-width:80px;background:rgba(196,164,107,0.18);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:700;color:var(--brown);">🔥${streak}</div>
+        <div style="font-size:0.9rem;color:var(--text-muted);">day streak</div>
+      </div>` : ''}
+    </div>
+    <div style="font-size:1rem;color:var(--text-muted);font-style:italic;">Most recent: ${goodDays[0] ? formatDate(goodDays[0].date) : '—'}</div>
+  `;
+}
+
+// ── Medication Search ──
+function renderMedSearch(query) {
+  const el = document.getElementById('dash-med-results');
+  if (!el) return;
+  const meds = load(KEYS.medications);
+  if (!query || !query.trim()) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:1rem;padding:8px 0;">Type to search your medication list.</div>';
+    return;
+  }
+  const q = query.toLowerCase();
+  const matches = meds.filter(m =>
+    (m.name || '').toLowerCase().includes(q) ||
+    (m.dose || '').toLowerCase().includes(q) ||
+    (m.notes || '').toLowerCase().includes(q) ||
+    (m.frequency || '').toLowerCase().includes(q)
+  );
+  if (!matches.length) {
+    el.innerHTML = `<div style="color:var(--text-muted);font-size:1rem;padding:8px 0;">No medications matching "<strong>${query}</strong>".</div>`;
+    return;
+  }
+  el.innerHTML = matches.map(m => `
+    <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="font-weight:700;font-size:1rem;">${m.name} <span style="color:var(--text-muted);font-weight:400;">${m.dose}</span></div>
+      <div style="font-size:0.95rem;color:var(--text-muted);">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}${m.food ? ' · ' + m.food : ''}</div>
+      ${m.notes ? `<div style="font-size:0.9rem;color:var(--text-muted);font-style:italic;">${m.notes}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── Doctor Visit Prep Printer ──
+function printVisitPrep(apptId) {
+  const appts = load(KEYS.appointments);
+  const a = appts.find(x => x.id === apptId);
+  if (!a) return;
+  const profile = load(KEYS.profile, null);
+  const meds = load(KEYS.medications);
+  const logs = load(KEYS.logs).sort((x, y) => y.date.localeCompare(x.date)).slice(0, 5);
+  const patientName = profile ? profile.name : 'Patient';
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const apptDate = new Date(a.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const medRows = meds.length ? meds.map(m =>
+    `<tr><td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;font-weight:700;">${m.name}</td>
+     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.dose}</td>
+     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}</td>
+     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.food || ''}</td></tr>`
+  ).join('') : '<tr><td colspan="4" style="padding:10pt;color:#666;font-style:italic;">No medications recorded.</td></tr>';
+
+  const logItems = logs.length ? logs.map(l =>
+    `<div style="margin-bottom:10pt;padding-bottom:8pt;border-bottom:1pt solid #e0d8ce;">
+      <div style="font-weight:700;font-size:11pt;">${formatDate(l.date)} ${l.mood || ''}</div>
+      <div style="font-size:10pt;color:#444;">${l.symptoms || 'No notes.'}</div>
+     </div>`
+  ).join('') : '<p style="color:#666;font-style:italic;">No recent log entries.</p>';
+
+  const prepPage = document.getElementById('page-visit-prep');
+  document.getElementById('visit-prep-patient').textContent = 'Patient: ' + patientName;
+  document.getElementById('visit-prep-date').textContent = 'Printed: ' + today;
+  document.getElementById('visit-prep-content').innerHTML = `
+    <div style="padding:0 16pt;">
+      <div style="background:#f0f7f3;border:1pt solid #7a9e87;border-radius:8pt;padding:14pt 18pt;margin-bottom:18pt;">
+        <div style="font-size:16pt;font-weight:700;color:#4e7560;margin-bottom:6pt;">${a.title}</div>
+        <div style="font-size:11pt;color:#333;">${apptDate}${a.time ? ' · ' + formatTime(a.time) : ''}</div>
+        ${a.doctor ? `<div style="font-size:11pt;color:#333;">${a.doctor}</div>` : ''}
+        ${a.address ? `<div style="font-size:11pt;color:#333;">📍 ${a.address}</div>` : ''}
+        ${a.category ? `<div style="font-size:10pt;color:#666;margin-top:4pt;">${a.category}</div>` : ''}
+      </div>
+
+      ${a.notes ? `<div style="margin-bottom:18pt;">
+        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📋 Prep Notes</div>
+        <div style="font-size:11pt;">${a.notes}</div>
+      </div>` : ''}
+
+      <div style="margin-bottom:18pt;">
+        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">💊 Current Medications</div>
+        <table style="width:100%;border-collapse:collapse;font-size:10pt;">
+          <thead><tr style="background:#e8f0ec;">
+            <th style="padding:7pt 10pt;text-align:left;">Medication</th>
+            <th style="padding:7pt 10pt;text-align:left;">Dose</th>
+            <th style="padding:7pt 10pt;text-align:left;">Schedule</th>
+            <th style="padding:7pt 10pt;text-align:left;">With Food</th>
+          </tr></thead>
+          <tbody>${medRows}</tbody>
+        </table>
+      </div>
+
+      <div style="margin-bottom:18pt;">
+        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📝 Recent Symptom Log</div>
+        ${logItems}
+      </div>
+
+      <div style="margin-bottom:18pt;">
+        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">❓ Questions to Ask</div>
+        <div style="border:1pt solid #c8b8a8;border-radius:6pt;padding:12pt;">
+          ${['', '', '', '', ''].map((_, i) => `<div style="border-bottom:${i < 4 ? '1pt solid #e0d8ce' : 'none'};padding:14pt 0;min-height:30pt;">&nbsp;</div>`).join('')}
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📌 Doctor's Recommendations</div>
+        <div style="border:1pt solid #c8b8a8;border-radius:6pt;padding:12pt;">
+          ${['', '', ''].map((_, i) => `<div style="border-bottom:${i < 2 ? '1pt solid #e0d8ce' : 'none'};padding:14pt 0;min-height:30pt;">&nbsp;</div>`).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Show prep page, hide others, then print
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  prepPage.style.display = 'block';
+  window.print();
+  prepPage.style.display = 'none';
+  // Restore dashboard
+  document.getElementById('page-dashboard').classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+//  ONBOARDING TOOLTIPS
+// ════════════════════════════════════════════════
+const TOOLTIPS = [
+  {
+    title: '👋 Welcome to CareCompanion!',
+    body: "This quick tour will show you the key features. You'll be set up in under 2 minutes. Click Next to begin.",
+    navItem: null
+  },
+  {
+    title: '💊 Medications',
+    body: "Start by adding your loved one's medications — name, dose, timing, and special instructions. Check them off each day right from the Dashboard.",
+    navItem: 1
+  },
+  {
+    title: '📋 Symptom Log',
+    body: "Log daily observations — mood, sleep, appetite, pain, and notes. These entries power your trend charts and help at doctor visits.",
+    navItem: 2
+  },
+  {
+    title: '📅 Appointments',
+    body: "Track every upcoming appointment with notes and prep reminders. The Dashboard always shows what's coming up next.",
+    navItem: 3
+  },
+  {
+    title: '✨ AI Assistant',
+    body: "Enter your Anthropic API key to unlock AI features: ask care questions, generate family updates, and prep for doctor appointments automatically.",
+    navItem: 8
+  },
+  {
+    title: '💛 Memory Box',
+    body: "Capture precious moments and stories. This is a space for you as much as for your loved one — the small joys matter.",
+    navItem: 6
+  },
+  {
+    title: '💾 Back Up Your Data',
+    body: "Your data lives only on this device. Visit Data & Backup regularly to download a JSON backup — especially before clearing your browser.",
+    navItem: 8
+  },
+  {
+    title: "🌿 You're all set!",
+    body: "CareCompanion is ready to use. Remember: this is an organizer, not a medical device. Always consult your healthcare provider for medical decisions.",
+    navItem: null
+  },
+];
+
+let tooltipIndex = 0;
+
+function startTooltips() {
+  if (!localStorage.getItem('cc_tour_done')) {
+    tooltipIndex = 0;
+    showTooltip(0);
+  }
+}
+
+function showTooltip(i) {
+  const overlay = document.getElementById('tooltip-overlay');
+  const box = document.getElementById('tooltip-box');
+  if (!overlay || !box) return;
+
+  const tip = TOOLTIPS[i];
+  document.getElementById('tooltip-title').textContent = tip.title;
+  document.getElementById('tooltip-body').textContent = tip.body;
+  document.getElementById('tooltip-next-btn').textContent = i === TOOLTIPS.length - 1 ? 'Finish ✓' : 'Next →';
+
+  // Progress dots
+  document.getElementById('tooltip-dots').innerHTML = TOOLTIPS.map((_, idx) =>
+    `<div class="tooltip-dot ${idx === i ? 'active' : ''}"></div>`
+  ).join('');
+
+  overlay.style.display = 'block';
+  overlay.classList.add('active');
+
+  // Highlight the relevant nav item and position tooltip next to it
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(n => n.style.outline = '');
+
+  if (tip.navItem !== null && navItems[tip.navItem]) {
+    const target = navItems[tip.navItem];
+    target.style.outline = '2px solid var(--gold)';
+    target.style.outlineOffset = '-2px';
+    const rect = target.getBoundingClientRect();
+    box.style.position = 'fixed';
+    box.style.top = Math.min(Math.max(rect.top, 20), window.innerHeight - 300) + 'px';
+    box.style.left = (rect.right + 20) + 'px';
+    box.style.transform = 'none';
+  } else {
+    box.style.position = 'fixed';
+    box.style.top = '50%';
+    box.style.left = '50%';
+    box.style.transform = 'translate(-50%, -50%)';
+  }
+}
+
+function centerTooltip(box) {
+  box.style.position = 'fixed';
+  box.style.top = '50%';
+  box.style.left = '50%';
+  box.style.transform = 'translate(-50%, -50%)';
+}
+
+function nextTooltip() {
+  tooltipIndex++;
+  if (tooltipIndex >= TOOLTIPS.length) {
+    skipTooltips();
+  } else {
+    showTooltip(tooltipIndex);
+  }
+}
+
+function skipTooltips() {
+  localStorage.setItem('cc_tour_done', 'true');
+  const overlay = document.getElementById('tooltip-overlay');
+  if (overlay) { overlay.style.display = 'none'; overlay.classList.remove('active'); }
+  // Clear any nav highlights
+  document.querySelectorAll('.nav-item').forEach(n => n.style.outline = '');
+}</script>
+</body>
+</html>
