@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="CareCompanion">
+<link rel="apple-touch-icon" id="pwa-apple-icon" href="">
+<link rel="manifest" id="pwa-manifest" href="">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1038,6 +1040,34 @@
   .toast.success { background: var(--sage-dark); color: white; }
   .toast.error   { background: var(--rose-dark);  color: white; }
   .toast.info    { background: var(--brown);       color: white; }
+
+  /* PWA Install Banner */
+  #pwa-banner {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--sage-dark);
+    color: white;
+    padding: 14px 20px;
+    z-index: 9999;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.2);
+    font-family: 'Lato', sans-serif;
+    font-size: 14px;
+  }
+  #pwa-banner.visible { display: flex; }
+  #pwa-banner .pwa-icon { font-size: 28px; flex-shrink: 0; }
+  #pwa-banner .pwa-text { flex: 1; line-height: 1.4; color: white; }
+  #pwa-banner .pwa-text strong { color: white; display: block; font-size: 15px; }
+  #pwa-banner .pwa-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  #pwa-banner .pwa-btn {
+    padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 700; white-space: nowrap;
+  }
+  #pwa-banner .pwa-btn-install { background: white; color: var(--sage-dark); }
+  #pwa-banner .pwa-btn-dismiss { background: rgba(255,255,255,0.2); color: white; }
+  @media print { #pwa-banner { display: none !important; } }
 </style>
 </head>
 <body>
@@ -4239,6 +4269,142 @@ function skipTooltips() {
   if (overlay) { overlay.style.display = 'none'; overlay.classList.remove('active'); }
   // Clear any nav highlights
   document.querySelectorAll('.nav-item').forEach(n => n.style.outline = '');
-}</script>
+}
+
+// ── PWA HOME SCREEN INSTALL ─────────────────────────────────────────────────
+
+(function initPWA() {
+  // 1. App icon — green leaf SVG as data URI
+  const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="100" fill="#4e7560"/>
+    <text x="256" y="340" text-anchor="middle" font-size="300" font-family="Arial">🌿</text>
+  </svg>`;
+  const ICON_URL = 'data:image/svg+xml;base64,' + btoa(ICON_SVG);
+
+  // Set apple-touch-icon
+  const appleIcon = document.getElementById('pwa-apple-icon');
+  if (appleIcon) appleIcon.href = ICON_URL;
+
+  // 2. Inline Web App Manifest via Blob URL
+  const manifest = {
+    name: 'CareCompanion',
+    short_name: 'CareComp',
+    description: 'Your personal caregiving assistant',
+    start_url: './',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#faf7f2',
+    theme_color: '#7a9e87',
+    icons: [
+      { src: ICON_URL, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: ICON_URL, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+    ]
+  };
+  try {
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(blob);
+    const manifestLink = document.getElementById('pwa-manifest');
+    if (manifestLink) manifestLink.href = manifestURL;
+  } catch(e) { /* Blob URLs not available in all contexts */ }
+
+  // 3. Inline Service Worker via Blob URL (enables offline + installability)
+  const swCode = `
+const CACHE = 'carecompanion-v1';
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(cache =>
+      cache.addAll([self.location.href.replace('/sw-blob', '')])
+    ).catch(() => {})
+  );
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim());
+  caches.keys().then(keys => keys.filter(k => k !== CACHE).forEach(k => caches.delete(k)));
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
+  );
+});
+`;
+  if ('serviceWorker' in navigator) {
+    try {
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swURL = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swURL, { scope: './' }).catch(() => {});
+    } catch(e) { /* Blob SW not supported on all platforms */ }
+  }
+
+  // 4. Install banner
+  const banner = document.getElementById('pwa-banner');
+  if (!banner) return;
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+  const dismissed = localStorage.getItem('cc_pwa_dismissed');
+
+  if (isStandalone || dismissed) return; // Already installed or user dismissed
+
+  let deferredPrompt = null;
+
+  if (!isIOS) {
+    // Android / Chrome — wait for beforeinstallprompt
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      showBanner(false);
+    });
+  } else {
+    // iOS — show manual instructions after short delay
+    setTimeout(() => showBanner(true), 3000);
+  }
+
+  function showBanner(ios) {
+    const text = banner.querySelector('.pwa-text');
+    if (text) {
+      if (ios) {
+        text.innerHTML = '<strong>Add to Home Screen</strong>Tap the Share button (⬆) then "Add to Home Screen" to install CareCompanion like an app.';
+      } else {
+        text.innerHTML = '<strong>Install CareCompanion</strong>Add to your home screen for quick access — works offline too.';
+      }
+    }
+    const installBtn = banner.querySelector('.pwa-btn-install');
+    if (installBtn) {
+      if (ios) {
+        installBtn.style.display = 'none';
+      } else {
+        installBtn.style.display = '';
+        installBtn.addEventListener('click', () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => { deferredPrompt = null; hideBanner(); });
+          }
+        });
+      }
+    }
+    banner.classList.add('visible');
+  }
+
+  function hideBanner() {
+    banner.classList.remove('visible');
+    localStorage.setItem('cc_pwa_dismissed', '1');
+  }
+
+  const dismissBtn = banner.querySelector('.pwa-btn-dismiss');
+  if (dismissBtn) dismissBtn.addEventListener('click', hideBanner);
+
+})();</script>
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner">
+  <div class="pwa-icon">🌿</div>
+  <div class="pwa-text"><strong>Install CareCompanion</strong>Add to your home screen for quick access.</div>
+  <div class="pwa-actions">
+    <button class="pwa-btn pwa-btn-install">Install</button>
+    <button class="pwa-btn pwa-btn-dismiss">Not now</button>
+  </div>
+</div>
 </body>
 </html>
