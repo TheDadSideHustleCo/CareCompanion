@@ -444,9 +444,25 @@ check('Theme color meta tag', html.includes('name="theme-color"'));
 check('Apple mobile web app capable', html.includes('apple-mobile-web-app-capable'));
 check('Apple status bar style', html.includes('apple-mobile-web-app-status-bar-style'));
 check('Apple mobile title', html.includes('apple-mobile-web-app-title'));
+check('Apple touch icon link', html.includes('rel="apple-touch-icon"'));
+check('Manifest link present', html.includes('rel="manifest"'));
 check('Favicon defined', html.includes('rel="icon"'));
 check('Lang attribute on html', html.includes('lang="en"'));
 check('Charset UTF-8', html.includes('charset="UTF-8"'));
+
+// PWA Install Infrastructure
+check('initPWA function defined', js.includes('function initPWA') || js.includes('initPWA()'));
+check('Service worker registration', js.includes("serviceWorker' in navigator") || js.includes('"serviceWorker" in navigator'));
+check('Manifest blob created', js.includes('application/json') && js.includes('createObjectURL'));
+check('beforeinstallprompt handled', js.includes('beforeinstallprompt'));
+check('iOS detection present', js.includes('iphone|ipad|ipod') || js.includes('iphone') && js.includes('ipad'));
+check('Standalone mode check', js.includes('display-mode: standalone') || js.includes('standalone'));
+check('PWA banner in HTML', html.includes('id="pwa-banner"'));
+check('PWA install button', html.includes('pwa-btn-install'));
+check('PWA dismiss button', html.includes('pwa-btn-dismiss'));
+check('PWA dismissed flag in localStorage', js.includes('cc_pwa_dismissed'));
+check('Banner hidden when already installed', js.includes('isStandalone') || js.includes('display-mode: standalone'));
+check('PWA banner excluded from print', css.includes('#pwa-banner') && css.includes('@media print'));
 
 // ─────────────────────────────────────────────────────────────
 // 23. ACCESSIBILITY
