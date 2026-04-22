@@ -1387,7 +1387,9 @@
       </div>
       <p class="section-intro">Track all medications, dosages, and schedules. Check off doses as they're given each day.</p>
 
-      <div class="card no-print">
+      <button class="btn btn-primary no-print" id="med-form-toggle" onclick="toggleMedForm()" style="margin-bottom:14px;">➕ Add New Medication</button>
+
+      <div class="card no-print" id="med-form-card" style="display:none;">
         <div class="card-title"><span class="icon">➕</span> Add Medication</div>
         <div class="form-grid-2">
           <div><label>Medication Name</label><input type="text" id="med-name" placeholder="e.g. Lisinopril"></div>
@@ -1426,7 +1428,10 @@
           <div><label>Pills Remaining</label><input type="number" id="med-pills" placeholder="e.g. 30" min="0" step="1" oninput="updatePillDaysLeft()"></div>
           <div><label style="visibility:hidden;">spacer</label><div style="padding-top:8px;font-size:1rem;color:var(--text-muted);" id="med-days-left"></div></div>
         </div>
-        <button class="btn btn-primary" onclick="addMedication()">➕ Add Medication</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="addMedication()">➕ Add Medication</button>
+          <button class="btn btn-outline" onclick="toggleMedForm(false)">Cancel</button>
+        </div>
       </div>
 
       <div style="margin:12px 0 4px;">
@@ -2148,7 +2153,7 @@ function navigate(page, el) {
   if (page === 'careteam')      renderCareTeam();
   if (page === 'handoff')       renderHandoff();
   if (page === 'symptoms')      renderSymptomLog();
-  if (page === 'medications')   renderMedications();
+  if (page === 'medications')   { clearMedForm(); renderMedications(); }
   if (page === 'memories')      renderMemories();
   if (page === 'stress')        renderStress();
   if (page === 'export')        renderDataSummary();
@@ -2208,6 +2213,33 @@ function getMedTimesValue() {
   }).filter(Boolean).join(', ');
 }
 
+function toggleMedForm(forceShow) {
+  const card = document.getElementById('med-form-card');
+  const btn  = document.getElementById('med-form-toggle');
+  if (!card) return;
+  const show = forceShow !== undefined ? forceShow : card.style.display === 'none';
+  card.style.display = show ? 'block' : 'none';
+  if (btn) btn.textContent = show ? '✕ Cancel' : '➕ Add New Medication';
+  if (show) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    clearMedForm();
+  }
+}
+
+function clearMedForm() {
+  editingMedId = null;
+  ['med-name','med-dose','med-notes','med-doctor','med-refill','med-pills'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const freq = document.getElementById('med-freq'); if (freq) freq.selectedIndex = 0;
+  const food = document.getElementById('med-food'); if (food) food.selectedIndex = 0;
+  const daysLeft = document.getElementById('med-days-left'); if (daysLeft) daysLeft.textContent = '';
+  const btn = document.querySelector('#page-medications .btn-primary');
+  if (btn) btn.textContent = '➕ Add Medication';
+  updateMedTimeInputs();
+}
+
 function addMedication() {
   const name = document.getElementById('med-name').value.trim();
   if (!name) { alert('Please enter a medication name.'); return; }
@@ -2238,6 +2270,8 @@ function addMedication() {
   renderMedications();
   renderDashboard();
   showToast(editingMedId === null ? '💊 Medication saved' : '💊 Medication updated');
+  editingMedId = null;
+  toggleMedForm(false);
 }
 
 function updatePillDaysLeft() {
@@ -2283,6 +2317,11 @@ function editMedication(id) {
   // Rebuild time inputs for this frequency, pre-filled with saved times
   const savedTimes = m.times ? m.times.split(',').map(t => timeStrTo24(t)) : [];
   updateMedTimeInputs(savedTimes);
+  // Show form if hidden
+  const card = document.getElementById('med-form-card');
+  const toggleBtn = document.getElementById('med-form-toggle');
+  if (card) card.style.display = 'block';
+  if (toggleBtn) toggleBtn.textContent = '✕ Cancel';
   document.querySelector('#page-medications .btn-primary').textContent = '💾 Update Medication';
   document.getElementById('med-name').focus();
   document.getElementById('med-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -4049,12 +4088,35 @@ function renderMedSearch(query) {
     return;
   }
   el.innerHTML = matches.map(m => `
-    <div style="padding:8px 0;border-bottom:1px solid var(--border);">
-      <div style="font-weight:700;font-size:1rem;">${m.name} <span style="color:var(--text-muted);font-weight:400;">${m.dose}</span></div>
-      <div style="font-size:0.95rem;color:var(--text-muted);">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}${m.food ? ' · ' + m.food : ''}</div>
-      ${m.notes ? `<div style="font-size:0.9rem;color:var(--text-muted);font-style:italic;">${m.notes}</div>` : ''}
+    <div onclick="goToMedication(${m.id})" style="padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(122,158,135,0.1)'" onmouseout="this.style.background=''">
+      <div style="font-weight:700;font-size:1rem;">${m.name} <span style="color:var(--text-muted);font-weight:400;">${m.dose || ''}</span> <span style="font-size:0.8rem;color:var(--sage-dark);float:right;">View →</span></div>
+      <div style="font-size:0.9rem;color:var(--text-muted);">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}${m.food ? ' · ' + m.food : ''}</div>
+      ${m.notes ? `<div style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">${m.notes}</div>` : ''}
+      ${m.pills != null ? `<div style="font-size:0.85rem;color:var(--sage-dark);">💊 ${m.pills} pills remaining</div>` : ''}
     </div>
   `).join('');
+}
+
+function goToMedication(id) {
+  // Navigate to medications section
+  const navEl = document.querySelector('[onclick*="navigate(\'medications\'"]') || document.querySelectorAll('.nav-item')[1];
+  navigate('medications', navEl);
+  // After render, highlight the target med card
+  setTimeout(() => {
+    const cards = document.querySelectorAll('#medications-list .med-card');
+    const meds = load(KEYS.medications);
+    const idx = meds.findIndex(m => m.id === id);
+    if (idx >= 0 && cards[idx]) {
+      cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      cards[idx].style.transition = 'box-shadow 0.3s, background 0.3s';
+      cards[idx].style.boxShadow = '0 0 0 3px var(--sage)';
+      cards[idx].style.background = 'rgba(122,158,135,0.12)';
+      setTimeout(() => {
+        cards[idx].style.boxShadow = '';
+        cards[idx].style.background = '';
+      }, 2000);
+    }
+  }, 150);
 }
 
 // ── Doctor Visit Prep Printer ──
