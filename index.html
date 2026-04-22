@@ -2221,6 +2221,7 @@ function toggleMedForm(forceShow) {
   card.style.display = show ? 'block' : 'none';
   if (btn) btn.textContent = show ? '✕ Cancel' : '➕ Add New Medication';
   if (show) {
+    clearMedForm();
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } else {
     clearMedForm();
