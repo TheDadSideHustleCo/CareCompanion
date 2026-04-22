@@ -2045,7 +2045,6 @@ function setGreeting() {
 }
 
 function renderAll() {
-  renderDashboard();
   renderMedications();
   renderSymptomLog();
   renderAppointments();
@@ -2057,6 +2056,7 @@ function renderAll() {
   renderCharts();
   renderGoodDays();
   renderRefillAlerts();
+  renderDashboard(); // last — so stat cards aren't overwritten by renderMedications/renderSymptomLog
 }
 
 // ════════════════════════════════════════════════
@@ -2358,8 +2358,6 @@ function renderMedications() {
   }
   if (!meds.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>No medications match your search.</p></div>';
-    document.getElementById('stat-meds').textContent = allMeds.length;
-    document.getElementById('stat-meds-sub').textContent = allMeds.length + ' medication' + (allMeds.length !== 1 ? 's' : '') + ' tracked';
     return;
   }
   el.innerHTML = meds.map(m => `
@@ -2381,8 +2379,6 @@ function renderMedications() {
       </div>
     </div>
   `).join('');
-  document.getElementById('stat-meds').textContent = allMeds.length;
-  document.getElementById('stat-meds-sub').textContent = allMeds.length + ' medication' + (allMeds.length !== 1 ? 's' : '') + ' tracked';
 }
 
 // ════════════════════════════════════════════════
@@ -2446,7 +2442,6 @@ function editLog(id) {
 function renderSymptomLog() {
   const allLogs = load(KEYS.logs);
   const el = document.getElementById('symptom-log-list');
-  document.getElementById('stat-days').textContent = allLogs.length;
   if (!allLogs.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No entries yet. Log your first entry above.</p></div>';
     return;
