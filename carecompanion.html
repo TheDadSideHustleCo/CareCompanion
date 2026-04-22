@@ -2004,6 +2004,11 @@ document.addEventListener('DOMContentLoaded', () => {
   setGreeting();
   renderAll();
 
+  // Re-render dashboard after paint for returning users (ensures data appears without navigating away)
+  if (load(KEYS.disclaimer, false) && load(KEYS.profile, null)) {
+    setTimeout(() => renderDashboard(), 100);
+  }
+
   // Populate print tables before any print (Ctrl+P or browser menu)
   window.addEventListener('beforeprint', () => {
     preparePrintHeaders();
