@@ -4344,7 +4344,7 @@ function skipTooltips() {
 // ── PWA HOME SCREEN INSTALL ──────────────────────────────────────────────
 (function initPWA() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
   const banner = document.getElementById('pwa-banner');
   if (!banner) return;
