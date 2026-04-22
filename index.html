@@ -2333,6 +2333,7 @@ function saveEmergencyFields() {
     doctor:     document.getElementById('ec-doctor').value,
     insurance:  document.getElementById('ec-insurance').value,
     notes:      document.getElementById('ec-notes').value,
+    _saved:     true,
   };
   save(KEYS.emergency, data);
   updateEmergencyCard();
@@ -2438,7 +2439,7 @@ function renderGettingStarted() {
   const steps = {
     meds:      meds.length > 0,
     careteam:  team.length > 0,
-    emergency: ec.name && ec.name.length > 0,
+    emergency: ec._saved === true,
     log:       logs.length > 0,
   };
 
