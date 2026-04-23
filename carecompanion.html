@@ -3059,7 +3059,8 @@ function loadEmergencyCard() {
   const dobEl  = document.getElementById('ec-dob');
   const condEl = document.getElementById('ec-conditions');
 
-  nameEl.value = saved.name !== undefined ? saved.name : (profile.name || '');
+  // Always sync name from profile — profile is the source of truth
+  nameEl.value = profile.name || saved.name || '';
   dobEl.value  = saved.dob  !== undefined ? saved.dob  : (profile.dob  || '');
   condEl.value = saved.conditions !== undefined ? saved.conditions : (profile.condition || '');
 
