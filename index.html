@@ -3430,6 +3430,11 @@ function renderDashboard() {
   const profile = load(KEYS.profile, null);
 
   setGreeting(); // always refresh caregiver name in greeting
+  // Reset medication search on every dashboard load
+  const _si = document.getElementById('dash-med-search');
+  const _sr = document.getElementById('dash-med-results');
+  if (_si) _si.value = '';
+  if (_sr) _sr.innerHTML = '<div style="color:var(--text-muted);font-size:1rem;padding:8px 0;">Type to search your medication list.</div>';
   if (profile) {
     document.getElementById('sidebar-name').textContent = profile.name;
     document.getElementById('hero-name').textContent = profile.name;
@@ -4133,6 +4138,11 @@ function renderMedSearch(query) {
 }
 
 function goToMedication(id) {
+  // Clear the dashboard search box and results
+  const searchInput = document.getElementById('dash-med-search');
+  const searchResults = document.getElementById('dash-med-results');
+  if (searchInput) searchInput.value = '';
+  if (searchResults) searchResults.innerHTML = '';
   // Navigate to medications section
   const navEl = document.querySelector('[onclick*="navigate(\'medications\'"]') || document.querySelectorAll('.nav-item')[1];
   navigate('medications', navEl);
