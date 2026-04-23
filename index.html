@@ -2003,10 +2003,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!load(KEYS.disclaimer, false)) {} // covered above
   }
 
-  // API key
-  if (key) {
-  }
-
   setGreeting();
   renderAll();
 
@@ -3430,7 +3426,6 @@ function renderDashboard() {
   const meds   = load(KEYS.medications);
   const logs   = load(KEYS.logs);
   const appts  = sortAppointments(load(KEYS.appointments));
-  console.log('[CC] renderDashboard called — meds:', meds.length, 'logs:', logs.length, 'appts:', appts.length, 'keys:', Object.keys(localStorage));
   const profile = load(KEYS.profile, null);
 
   setGreeting(); // always refresh caregiver name in greeting
