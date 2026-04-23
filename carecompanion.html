@@ -2205,10 +2205,15 @@ const FREQ_DEFAULTS = {
 
 function updateMedTimeInputs(prefill) {
   const freq = document.getElementById('med-freq').value;
+  const isPRN = freq.toLowerCase().includes('as needed');
   const count = freqToDoseCount(freq);
   const container = document.getElementById('med-times-container');
   const defaults = FREQ_DEFAULTS[count] || ['08:00'];
   const label = count === 1 ? 'Time' : 'Dose times';
+  if (isPRN) {
+    container.innerHTML = `<div class="form-row"><label>${label}</label><div style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:#f5f5f5;color:var(--text-muted);font-size:1rem;">Not applicable — given as needed</div></div>`;
+    return;
+  }
   let html = `<div class="form-row"><label>${label}</label><div style="display:flex;gap:10px;flex-wrap:wrap;">`;
   for (let i = 0; i < count; i++) {
     const val = prefill && prefill[i] ? prefill[i] : defaults[i];
