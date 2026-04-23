@@ -1832,7 +1832,7 @@
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button id="ec-save-btn" class="btn btn-primary" onclick="saveEmergencyFields()">🔄 Save & Update Card</button>
-            <button class="btn btn-outline" onclick="loadEmergencyCard()">↺ Re-import from Profile</button>
+            <button class="btn btn-outline" onclick="reimportFromProfile()">↺ Re-import from Profile</button>
           </div>
         </div>
 
@@ -2267,18 +2267,24 @@ function clearMedForm() {
 function addMedication() {
   const name = document.getElementById('med-name').value.trim();
   if (!name) { alert('Please enter a medication name.'); return; }
+  const freq = document.getElementById('med-freq').value;
+  const isPRN = freq === 'As needed (PRN)';
   const data = {
     name, dose: document.getElementById('med-dose').value,
-    frequency: document.getElementById('med-freq').value,
-    times: getMedTimesValue(),
+    frequency: freq,
+    times: isPRN ? '' : getMedTimesValue(),
     food: document.getElementById('med-food').value,
     notes: document.getElementById('med-notes').value,
     doctor: document.getElementById('med-doctor').value,
     refill: document.getElementById('med-refill').value,
     pills: document.getElementById('med-pills').value ? parseInt(document.getElementById('med-pills').value) : null,
   };
+  if (data.pills != null) data.pillsMax = data.pills;
   let meds = load(KEYS.medications);
   if (editingMedId) {
+    // Preserve pillsMax from existing record if pills field not changed
+    const existing = meds.find(m => m.id === editingMedId);
+    if (existing && data.pills != null) data.pillsMax = Math.max(data.pills, existing.pillsMax || data.pills);
     meds = meds.map(m => m.id === editingMedId ? { ...m, ...data } : m);
     editingMedId = null;
     document.querySelector('#page-medications .btn-primary').textContent = '➕ Add Medication';
@@ -2517,9 +2523,11 @@ function renderSymptomLog() {
 }
 
 function deleteLog(id) {
+  if (!confirm('Remove this log entry?')) return;
   if (editingLogId === id) { editingLogId = null; document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Save Entry'; }
   save(KEYS.logs, load(KEYS.logs).filter(l => l.id !== id));
   renderSymptomLog();
+  renderDashboard();
 }
 
 // ════════════════════════════════════════════════
@@ -2781,6 +2789,7 @@ function editContact(id) {
 }
 
 function deleteContact(id) {
+  if (!confirm('Remove this contact?')) return;
   if (editingContactId === id) { editingContactId = null; document.querySelector('#page-careteam .btn-primary').textContent = '➕ Add Contact'; }
   save(KEYS.careteam, load(KEYS.careteam).filter(c => c.id !== id));
   renderCareTeam();
@@ -2860,6 +2869,7 @@ function editHandoff(id) {
 }
 
 function deleteHandoff(id) {
+  if (!confirm('Remove this handoff note?')) return;
   if (editingHandoffId === id) { editingHandoffId = null; document.querySelector('#page-handoff .btn-primary').textContent = '💾 Save Handoff Note'; }
   save(KEYS.handoff, load(KEYS.handoff).filter(h => h.id !== id));
   renderHandoff();
@@ -2941,6 +2951,7 @@ function editMemory(id) {
 }
 
 function deleteMemory(id) {
+  if (!confirm('Remove this memory?')) return;
   if (editingMemoryId === id) { editingMemoryId = null; document.querySelector('#page-memory .btn-gold').textContent = '💛 Save Memory'; }
   save(KEYS.memories, load(KEYS.memories).filter(m => m.id !== id));
   renderMemories();
@@ -3045,6 +3056,7 @@ function renderStress() {
 }
 
 function deleteStress(id) {
+  if (!confirm('Remove this check-in?')) return;
   if (editingStressId === id) { editingStressId = null; document.querySelector('#page-stress .btn-primary').textContent = '💾 Save Check-In'; }
   save(KEYS.stress, load(KEYS.stress).filter(e => e.id !== id));
   renderStress();
@@ -3053,6 +3065,17 @@ function deleteStress(id) {
 // ════════════════════════════════════════════════
 //  EMERGENCY CARD
 // ════════════════════════════════════════════════
+function reimportFromProfile() {
+  const profile = load(KEYS.profile, {});
+  const nameEl = document.getElementById('ec-name');
+  const dobEl  = document.getElementById('ec-dob');
+  const condEl = document.getElementById('ec-conditions');
+  if (nameEl) nameEl.value = profile.name || '';
+  if (dobEl)  dobEl.value  = profile.dob  || '';
+  if (condEl) condEl.value = profile.condition || '';
+  renderEmergencyCard();
+}
+
 function loadEmergencyCard() {
   const profile   = load(KEYS.profile, {});
   const meds      = load(KEYS.medications);
@@ -3263,7 +3286,8 @@ function toggleMedCheck(medId, doseIdx, el) {
   const allMeds = load(KEYS.medications);
   const medToUpdate = allMeds.find(m => m.id === medId);
   if (medToUpdate && medToUpdate.pills != null) {
-    medToUpdate.pills = Math.max(0, medToUpdate.pills + (isDone ? -1 : 1));
+    const cap = medToUpdate.pillsMax != null ? medToUpdate.pillsMax : medToUpdate.pills;
+    medToUpdate.pills = Math.min(cap, Math.max(0, medToUpdate.pills + (isDone ? -1 : 1)));
     save(KEYS.medications, allMeds);
     // Update pill display on med card if visible
     renderMedications();
