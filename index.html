@@ -1661,10 +1661,16 @@
           <div><label>Date</label><input type="date" id="ho-date"></div>
           <div><label>Shift</label>
             <select id="ho-shift">
-              <option>Morning (6am–2pm)</option>
-              <option>Afternoon (2pm–10pm)</option>
-              <option>Overnight (10pm–6am)</option>
-              <option>Full Day</option>
+              <option>Morning (7am–3pm)</option>
+              <option>Afternoon (3pm–11pm)</option>
+              <option>Evening (5pm–9pm)</option>
+              <option>Overnight (11pm–7am)</option>
+              <option>Day Shift (8am–4pm)</option>
+              <option>Full Day (7am–7pm)</option>
+              <option>Weekend Visit</option>
+              <option>Drop-in / Check-in</option>
+              <option>Hospital Sit</option>
+              <option>Custom</option>
             </select>
           </div>
           <div><label>Your Name</label><input type="text" id="ho-caregiver" placeholder="Your name"></div>
@@ -2095,6 +2101,14 @@ function saveSetup() {
   };
   save(KEYS.profile, profile);
   updateProfileDisplay(profile);
+  // Sync emergency card name/dob/condition if not manually saved yet
+  const ec = load(KEYS.emergency, {});
+  if (ec._saved !== true) {
+    ec.name = profile.name || ec.name || '';
+    ec.dob = profile.dob || ec.dob || '';
+    ec.conditions = profile.condition || ec.conditions || '';
+    save(KEYS.emergency, ec);
+  }
   document.getElementById('setup-overlay').classList.add('hidden');
   document.getElementById('setup-overlay').style.display = 'none';
   renderDashboard();
@@ -3240,8 +3254,19 @@ function toggleMedCheck(medId, doseIdx, el) {
   el.classList.toggle('done', isDone);
   el.textContent = isDone ? '✓' : '';
 
+  // Deduct or restore pill count
+  const allMeds = load(KEYS.medications);
+  const medToUpdate = allMeds.find(m => m.id === medId);
+  if (medToUpdate && medToUpdate.pills != null) {
+    medToUpdate.pills = Math.max(0, medToUpdate.pills + (isDone ? -1 : 1));
+    save(KEYS.medications, allMeds);
+    // Update pill display on med card if visible
+    renderMedications();
+    renderRefillAlerts();
+  }
+
   // Recount scheduled doses only (exclude PRN)
-  const meds = load(KEYS.medications);
+  const meds = allMeds;
   let totalDoses = 0, doneDoses = 0;
   meds.forEach(med => {
     if ((med.frequency || '').toLowerCase().includes('as needed')) return;
@@ -3265,6 +3290,14 @@ function logPRNDose(medId, btn) {
   const key = `${medId}_prn`;
   checks[key] = (checks[key] || 0) + 1;
   localStorage.setItem(todayKey, JSON.stringify(checks));
+  // Deduct 1 pill
+  const allMeds = load(KEYS.medications);
+  const med = allMeds.find(m => m.id === medId);
+  if (med && med.pills != null) {
+    med.pills = Math.max(0, med.pills - 1);
+    save(KEYS.medications, allMeds);
+    renderRefillAlerts();
+  }
   // Update the "Given Nx today" label inline
   const li = btn.closest('li');
   if (li) {
@@ -3396,6 +3429,7 @@ function renderDashboard() {
   const appts  = sortAppointments(load(KEYS.appointments));
   const profile = load(KEYS.profile, null);
 
+  setGreeting(); // always refresh caregiver name in greeting
   if (profile) {
     document.getElementById('sidebar-name').textContent = profile.name;
     document.getElementById('hero-name').textContent = profile.name;
