@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CareCompanion — Your Personal Caregiving Assistant</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%237a9e87'/%3E%3Cpath d='M50 75 C50 75 25 58 25 40 C25 30 32 23 40 23 C44 23 47 25 50 28 C53 25 56 23 60 23 C68 23 75 30 75 40 C75 58 50 75 50 75Z' fill='white'/%3E%3Cellipse cx='50' cy='46' rx='4' ry='10' fill='%237a9e87' transform='rotate(-20 50 46)'/%3E%3Cpath d='M46 56 Q50 42 58 36' stroke='%237a9e87' stroke-width='1.5' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#7a9e87">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1325,6 +1325,24 @@
           <div class="empty-state" style="padding:20px 0;">
             <p>No upcoming appointments.</p>
           </div>
+        </div>
+      </div>
+
+      <!-- MEMORY + WELLBEING SNIPPETS -->
+      <div class="grid-2 no-print">
+        <div class="card" id="dash-memory-card">
+          <div class="card-title"><span class="icon">💛</span> Latest Memory</div>
+          <div id="dash-memory-snippet">
+            <div class="empty-state" style="padding:16px 0;"><div class="empty-icon">💛</div><p>No memories yet.</p></div>
+          </div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="navigate('memory', document.querySelector('[onclick*=memory]'))">Memory Box →</button>
+        </div>
+        <div class="card" id="dash-wellbeing-card">
+          <div class="card-title"><span class="icon">🌿</span> My Wellbeing</div>
+          <div id="dash-wellbeing-snippet">
+            <div class="empty-state" style="padding:16px 0;"><div class="empty-icon">🌿</div><p>No check-ins yet.</p></div>
+          </div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="navigate('stress', document.querySelector('[onclick*=stress]'))">Log wellbeing →</button>
         </div>
       </div>
 
@@ -3585,6 +3603,46 @@ function renderDashboard() {
       </div>`;
     }).join('');
   }
+  // Latest Memory snippet
+  const memSnippet = document.getElementById('dash-memory-snippet');
+  if (memSnippet) {
+    const memories = load(KEYS.memories);
+    if (!memories.length) {
+      memSnippet.innerHTML = '<div class="empty-state" style="padding:16px 0;"><div class="empty-icon">💛</div><p>No memories yet.</p></div>';
+    } else {
+      const latest = memories[0];
+      memSnippet.innerHTML = `
+        <div style="padding:10px 0;">
+          <div style="font-size:1rem;color:var(--text-muted);margin-bottom:4px;">${formatDate(latest.date)}</div>
+          <div style="font-size:1.05rem;line-height:1.5;">${(latest.text || '').substring(0, 160)}${(latest.text || '').length > 160 ? '…' : ''}</div>
+          ${memories.length > 1 ? `<div style="font-size:0.95rem;color:var(--text-muted);margin-top:8px;">${memories.length - 1} more memor${memories.length - 1 !== 1 ? 'ies' : 'y'} saved</div>` : ''}
+        </div>`;
+    }
+  }
+
+  // Latest Wellbeing snippet
+  const wellSnippet = document.getElementById('dash-wellbeing-snippet');
+  if (wellSnippet) {
+    const stressEntries = load(KEYS.stress);
+    if (!stressEntries.length) {
+      wellSnippet.innerHTML = '<div class="empty-state" style="padding:16px 0;"><div class="empty-icon">🌿</div><p>No check-ins yet.</p></div>';
+    } else {
+      const latest = stressEntries[0];
+      const scoreColor = latest.score <= 3 ? 'var(--rose-dark)' : latest.score <= 6 ? 'var(--gold)' : 'var(--sage-dark)';
+      const scoreLabel = latest.score <= 3 ? 'Tough day' : latest.score <= 6 ? 'Getting by' : 'Doing well';
+      wellSnippet.innerHTML = `
+        <div style="padding:10px 0;">
+          <div style="font-size:1rem;color:var(--text-muted);margin-bottom:6px;">${formatDate(latest.date)}</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <span style="font-size:1.8rem;font-weight:700;color:${scoreColor};">${latest.score}/10</span>
+            <span style="font-size:1rem;color:${scoreColor};font-weight:600;">${scoreLabel}</span>
+          </div>
+          ${latest.notes ? `<div style="font-size:1rem;color:var(--text-muted);">${latest.notes.substring(0, 120)}${latest.notes.length > 120 ? '…' : ''}</div>` : ''}
+          ${latest.gratitude ? `<div style="font-size:1rem;color:var(--sage-dark);margin-top:6px;">🙏 ${latest.gratitude.substring(0, 100)}</div>` : ''}
+        </div>`;
+    }
+  }
+
   renderCharts();
   renderGoodDays();
   renderGettingStarted();
@@ -4417,7 +4475,23 @@ function skipTooltips() {
 // ── PWA HOME SCREEN INSTALL ──────────────────────────────────────────────
 (function initPWA() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // A new version is waiting — show update banner
+            const updateBanner = document.getElementById('update-banner');
+            if (updateBanner) updateBanner.style.display = 'flex';
+          }
+        });
+      });
+    }).catch(() => {});
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // New SW has taken control — re-render all UI with fresh data
+      renderAll();
+    });
   }
   const banner = document.getElementById('pwa-banner');
   if (!banner) return;
@@ -4455,6 +4529,13 @@ function skipTooltips() {
     setTimeout(() => showBanner(true), 3000);
   }
 })();</script>
+
+<!-- Update Available Banner -->
+<div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--sage-dark);color:#fff;padding:12px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.2);align-items:center;gap:14px;font-size:1rem;max-width:90vw;">
+  <span>🔄 A new version of CareCompanion is ready.</span>
+  <button onclick="document.getElementById('update-banner').style.display='none';navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.waiting){r.waiting.postMessage({type:'SKIP_WAITING'});}})" style="background:#fff;color:var(--sage-dark);border:none;padding:6px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;">Update now</button>
+  <button onclick="document.getElementById('update-banner').style.display='none'" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.9rem;">Later</button>
+</div>
 
 <!-- PWA Install Banner -->
 <div id="pwa-banner">

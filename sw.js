@@ -13,7 +13,11 @@ self.addEventListener('install', e => {
       Promise.allSettled(FILES.map(f => c.add(f)))
     )
   );
-  self.skipWaiting();
+  // Don't skipWaiting here — let the app control when to update
+});
+
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
