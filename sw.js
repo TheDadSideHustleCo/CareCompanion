@@ -1,11 +1,10 @@
-const CACHE = 'carecompanion-v2';
+const CACHE = 'carecompanion-v3';
 const FILES = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap',
+  '/CareCompanion/',
+  '/CareCompanion/index.html',
+  '/CareCompanion/manifest.json',
+  '/CareCompanion/icon-192.png',
+  '/CareCompanion/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
@@ -26,19 +25,16 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Cache-first for same-origin, network-first for Google Fonts
-  const url = new URL(e.request.url);
-  if (url.origin === location.origin) {
-    e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
         return res;
-      }))
-    );
-  } else {
-    e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request))
-    );
-  }
+      });
+    }).catch(() => caches.match('/CareCompanion/index.html'))
+  );
 });
