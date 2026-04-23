@@ -2010,16 +2010,19 @@ document.addEventListener('DOMContentLoaded', () => {
   setGreeting();
   renderAll();
 
-  // Re-render dashboard after paint for returning users (ensures data appears without navigating away)
-  if (load(KEYS.disclaimer, false) && load(KEYS.profile, null)) {
-    setTimeout(() => renderDashboard(), 100);
-  }
+  // Re-render dashboard after first paint — ensures stat cards populate for returning users
+  requestAnimationFrame(() => requestAnimationFrame(() => renderDashboard()));
 
   // Populate print tables before any print (Ctrl+P or browser menu)
   window.addEventListener('beforeprint', () => {
     preparePrintHeaders();
     printMedicationList();
     renderCareTeamPrintGrid();
+  });
+
+  // Re-render dashboard when app is brought back into focus (PWA resume from taskbar/desktop)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') renderDashboard();
   });
 
   // Start tour on reload if disclaimer AND setup are done but tour hasn't run yet
