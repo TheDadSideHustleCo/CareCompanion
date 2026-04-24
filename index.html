@@ -1681,7 +1681,7 @@
 
       <div id="careteam-list"></div>
       <div id="ct-print-grid" style="display:none;"></div>
-      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders();window.addEventListener('afterprint',function h(){document.getElementById('ct-print-grid').style.display='none';['ct-print-header','med-print-header','handoff-print-header','ec-print-header'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});window.removeEventListener('afterprint',h);});window.print();">🖨️ Print Care Team Directory</button>
+      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders('ct-print-header');window.addEventListener('afterprint',function h(){document.getElementById('ct-print-grid').style.display='none';['ct-print-header','med-print-header','handoff-print-header','ec-print-header'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});window.removeEventListener('afterprint',h);});window.print();">🖨️ Print Care Team Directory</button>
     </div>
 
     <!-- ═══════════════════════════════════ HANDOFF NOTES ═══ -->
@@ -1741,7 +1741,7 @@
       </div>
 
       <div id="handoff-list"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="preparePrintHeaders();window.print();">🖨️ Print Handoff Notes</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="preparePrintHeaders('handoff-print-header');window.addEventListener('afterprint',function h(){['med-print-header','ct-print-header','handoff-print-header','ec-print-header'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});window.removeEventListener('afterprint',h);});window.print();">🖨️ Print Handoff Notes</button>
     </div>
 
     <!-- ═══════════════════════════════════ MEMORY BOX ═══ -->
@@ -1885,7 +1885,7 @@
             </div>
           </div>
           <div class="flex gap-8 mt-16 no-print">
-            <button class="btn btn-rose" onclick="preparePrintHeaders();window.print();">🖨️ Print Card</button>
+            <button class="btn btn-rose" onclick="preparePrintHeaders('ec-print-header');window.addEventListener('afterprint',function h(){['med-print-header','ct-print-header','handoff-print-header','ec-print-header'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});window.removeEventListener('afterprint',h);});window.print();">🖨️ Print Card</button>
           </div>
         </div>
       </div>
@@ -2050,9 +2050,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Populate print tables before any print (Ctrl+P or browser menu)
   window.addEventListener('beforeprint', () => {
-    preparePrintHeaders();
-    prepareMedicationList();
-    renderCareTeamPrintGrid();
+    const active = document.querySelector('.page.active');
+    const pageId = active ? active.id : '';
+    const headerMap = {
+      'page-medications': 'med-print-header',
+      'page-careteam': 'ct-print-header',
+      'page-handoff': 'handoff-print-header',
+      'page-emergency': 'ec-print-header',
+    };
+    preparePrintHeaders(headerMap[pageId] || null);
+    if (pageId === 'page-medications') prepareMedicationList();
+    if (pageId === 'page-careteam') renderCareTeamPrintGrid();
   });
 
   // Re-render dashboard when app is brought back into focus (PWA resume from taskbar/desktop)
@@ -3687,25 +3695,27 @@ function renderDashboard() {
 // ════════════════════════════════════════════════
 //  PRINT HELPERS
 // ════════════════════════════════════════════════
-function preparePrintHeaders() {
+function preparePrintHeaders(headerId) {
   const profile = load(KEYS.profile, null);
   const patientName = profile ? profile.name : 'Patient';
   const today = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   const printDate = 'Printed: ' + today;
   const patientLine = 'Patient: ' + patientName;
-  const pairs = [
+  const allHeaders = [
     ['med-print-header','med-print-patient','med-print-date'],
     ['ct-print-header','ct-print-patient','ct-print-date'],
     ['handoff-print-header','handoff-print-patient','handoff-print-date'],
     ['ec-print-header','ec-print-patient','ec-print-date'],
   ];
-  pairs.forEach(([hdr, pat, dt]) => {
+  allHeaders.forEach(([hdr, pat, dt]) => {
     const h = document.getElementById(hdr);
     const p = document.getElementById(pat);
     const d = document.getElementById(dt);
-    if (h) h.style.display = 'flex';
-    if (p) p.textContent = patientLine;
-    if (d) d.textContent = printDate;
+    // Only show the requested header; hide all others
+    const show = !headerId || hdr === headerId;
+    if (h) h.style.display = show ? 'flex' : 'none';
+    if (show && p) p.textContent = patientLine;
+    if (show && d) d.textContent = printDate;
   });
 }
 
@@ -3753,7 +3763,7 @@ function prepareMedicationList() {
       CareCompanion · This list is for personal reference only. Always verify medications with your pharmacist or physician before making changes.
     </div>`;
 
-  preparePrintHeaders();
+  preparePrintHeaders('med-print-header');
   // window.print() called inline on the button (required for Safari iOS)
   // Clean up print headers after dialog closes
   window.addEventListener('afterprint', function cleanupMedPrint() {
