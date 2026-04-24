@@ -921,6 +921,12 @@
     body { background: white !important; font-family: Georgia, serif; font-size: 11pt; color: #1a1a1a !important; line-height: 1.6; }
     .page { display: none !important; }
     .page.active { display: block !important; padding: 0 !important; }
+    /* Print headers: always hidden unless body has matching data-print attribute */
+    #med-print-header, #ct-print-header, #handoff-print-header, #ec-print-header { display: none !important; }
+    body[data-print="med"] #med-print-header { display: flex !important; }
+    body[data-print="ct"] #ct-print-header { display: flex !important; }
+    body[data-print="handoff"] #handoff-print-header { display: flex !important; }
+    body[data-print="ec"] #ec-print-header { display: flex !important; }
     .section-intro { display: none !important; }
     /* Keep cards visible but clean */
     .card { box-shadow: none !important; border: 1pt solid #ddd !important; background: white !important; margin-bottom: 12pt !important; overflow: visible !important; max-width: none !important; }
@@ -1039,9 +1045,9 @@
     #page-emergency.active .grid-2 { display: block !important; }
     #page-emergency.active p[style*="font-size:0.8rem"] { display: none !important; }
 
-    /* ── Doctor Visit Prep — only show when body has print-visit-prep class ── */
-    body.print-visit-prep #page-visit-prep { display: block !important; }
-    body.print-visit-prep #page-visit-prep .print-doc-header { display: flex !important; }
+    /* ── Doctor Visit Prep — only show when body has data-print="visit" ── */
+    body[data-print="visit"] #page-visit-prep { display: block !important; }
+    body[data-print="visit"] #page-visit-prep .print-doc-header { display: flex !important; }
   }
 
   /* ── TOAST NOTIFICATIONS ── */
@@ -1480,7 +1486,7 @@
       </div>
       <div id="medications-list"></div>
       <div id="medications-print-table-wrap"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="if(prepareMedicationList())window.print()">🖨️ Print Medication List</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="if(prepareMedicationList()){document.body.dataset.print='med';window.print();}">🖨️ Print Medication List</button>
     </div>
 
     <!-- ═══════════════════════════════════ SYMPTOMS ═══ -->
@@ -1681,7 +1687,7 @@
 
       <div id="careteam-list"></div>
       <div id="ct-print-grid" style="display:none;"></div>
-      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders('ct-print-header');window.print();">🖨️ Print Care Team Directory</button>
+      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();document.body.dataset.print='ct';window.print();">🖨️ Print Care Team Directory</button>
     </div>
 
     <!-- ═══════════════════════════════════ HANDOFF NOTES ═══ -->
@@ -1741,7 +1747,7 @@
       </div>
 
       <div id="handoff-list"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="preparePrintHeaders('handoff-print-header');window.print();">🖨️ Print Handoff Notes</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="document.body.dataset.print='handoff';window.print();">🖨️ Print Handoff Notes</button>
     </div>
 
     <!-- ═══════════════════════════════════ MEMORY BOX ═══ -->
@@ -1885,7 +1891,7 @@
             </div>
           </div>
           <div class="flex gap-8 mt-16 no-print">
-            <button class="btn btn-rose" onclick="preparePrintHeaders('ec-print-header');window.print();">🖨️ Print Card</button>
+            <button class="btn btn-rose" onclick="document.body.dataset.print='ec';window.print();">🖨️ Print Card</button>
           </div>
         </div>
       </div>
@@ -2044,6 +2050,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setGreeting();
   renderAll();
+  // Pre-populate all print headers at startup so buttons need zero prep at tap time
+  preparePrintHeaders(null);
 
   // Re-render dashboard after first paint — ensures stat cards populate for returning users
   requestAnimationFrame(() => requestAnimationFrame(() => renderDashboard()));
@@ -2775,7 +2783,7 @@ function renderAppointments() {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
         ${!isPast && !attended ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="markAttended(${a.id})">✓ Attended</button>` : ''}
-        ${!isPast ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="if(prepareVisitPrep(${a.id}))window.print()" title="Print visit prep sheet">🖨️ Prep</button>` : ''}
+        ${!isPast ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="if(prepareVisitPrep(${a.id})){document.body.dataset.print='visit';window.print();}" title="Print visit prep sheet">🖨️ Prep</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="editAppointment(${a.id})" aria-label="Edit ${a.title}">✏️</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteAppointment(${a.id})" aria-label="Delete ${a.title}">✕</button>
       </div>
@@ -3695,6 +3703,7 @@ function renderDashboard() {
 // ════════════════════════════════════════════════
 //  PRINT HELPERS
 // ════════════════════════════════════════════════
+// Called once at startup and after any profile change — keeps print headers always ready
 function preparePrintHeaders(headerId) {
   const profile = load(KEYS.profile, null);
   const patientName = profile ? profile.name : 'Patient';
@@ -3716,18 +3725,14 @@ function preparePrintHeaders(headerId) {
     if (show && p) p.textContent = patientLine;
     if (show && d) d.textContent = printDate;
   });
-  // Register afterprint cleanup here so buttons only need to call window.print()
-  window.addEventListener('afterprint', function cleanupHeaders() {
-    allHeaders.forEach(([hdr]) => {
-      const h = document.getElementById(hdr);
-      if (h) h.style.display = 'none';
-    });
-    const grid = document.getElementById('ct-print-grid');
-    if (grid) grid.style.display = 'none';
-    document.body.classList.remove('print-visit-prep');
-    window.removeEventListener('afterprint', cleanupHeaders);
-  });
 }
+
+// Single afterprint handler — cleans up data-print attribute and care team grid
+window.addEventListener('afterprint', function() {
+  delete document.body.dataset.print;
+  const grid = document.getElementById('ct-print-grid');
+  if (grid) grid.style.display = 'none';
+});
 
 function prepareMedicationList() {
   const meds = load(KEYS.medications);
@@ -4381,10 +4386,7 @@ function prepareVisitPrep(apptId) {
     </div>
   `;
 
-  // Add class so @media print shows visit prep page
-  // preparePrintHeaders handles afterprint cleanup (removes class + hides headers)
-  document.body.classList.add('print-visit-prep');
-  preparePrintHeaders(null);
+  // data-print="visit" set on button inline; CSS @media print shows the page
   return true;
 }
 
