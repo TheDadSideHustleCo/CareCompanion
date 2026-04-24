@@ -1032,19 +1032,53 @@
     /* ── Emergency card ── */
     #page-emergency.active { padding: 0 !important; }
     #page-emergency.active .card { border: none !important; padding: 0 !important; margin: 0 !important; }
-    #page-emergency.active .emergency-preview {
-      border: 2pt solid #2d5a3d !important; border-radius: 4pt !important;
-      padding: 20pt !important; max-width: 100% !important;
-      page-break-inside: avoid; background: white !important;
-    }
-    #page-emergency.active .emergency-preview h3 {
-      font-family: Georgia, serif; font-size: 15pt !important; color: #2d5a3d;
-      border-bottom: 1.5pt solid #2d5a3d; padding-bottom: 8pt; margin-bottom: 14pt;
-    }
-    .emergency-row { font-size: 10.5pt !important; margin-bottom: 8pt !important; display: flex !important; }
-    .emergency-row strong { min-width: 140pt !important; color: #2d5a3d !important; display: inline-block; }
     #page-emergency.active .grid-2 { display: block !important; }
     #page-emergency.active p[style*="font-size:0.8rem"] { display: none !important; }
+
+    /* Card container — centered, card-like */
+    #page-emergency.active .emergency-preview {
+      max-width: 480pt !important; margin: 0 auto !important;
+      border: 1.5pt solid #2d5a3d !important; border-radius: 8pt !important;
+      overflow: hidden !important; page-break-inside: avoid;
+      background: white !important; box-shadow: none !important;
+      padding: 0 !important;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
+    /* Card header bar */
+    #page-emergency.active .emergency-preview h3 {
+      background: #2d5a3d !important; color: white !important;
+      font-family: Georgia, serif; font-size: 13pt !important;
+      margin: 0 !important; padding: 10pt 16pt !important;
+      border-bottom: none !important; letter-spacing: 0.03em;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
+    /* Card body padding */
+    #ec-preview-content { padding: 14pt 18pt 12pt !important; display: block !important; }
+
+    /* Row layout */
+    .emergency-row { font-size: 10pt !important; margin-bottom: 6pt !important; display: flex !important; align-items: baseline !important; }
+    .emergency-row strong { min-width: 110pt !important; color: #2d5a3d !important; font-size: 9pt !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; display: inline-block; }
+
+    /* Allergy row — prominent red */
+    .ec-allergy-row { background: #fff0f0 !important; border: 1pt solid #c0392b !important; border-radius: 4pt !important;
+      padding: 7pt 12pt !important; margin: 8pt 0 !important; display: flex !important; align-items: baseline !important;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .ec-allergy-row strong { color: #c0392b !important; font-size: 9pt !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; min-width: 80pt !important; }
+    .ec-allergy-row span { color: #8b0000 !important; font-weight: 700 !important; font-size: 10.5pt !important; }
+
+    /* Section headers inside card */
+    .ec-section-head { font-size: 8pt !important; font-weight: 700 !important; text-transform: uppercase !important;
+      letter-spacing: 0.07em !important; color: #2d5a3d !important; border-bottom: 0.75pt solid #c8d8c8 !important;
+      padding-bottom: 3pt !important; margin: 10pt 0 6pt !important; }
+
+    /* Medication list inside card */
+    .ec-med-row { font-size: 9pt !important; color: #1a1a1a !important; padding: 1.5pt 0 !important; line-height: 1.5; }
+
+    /* Footer bar */
+    .ec-footer { background: #f5f9f6 !important; border-top: 0.75pt solid #c8d8c8 !important;
+      padding: 6pt 16pt !important; font-size: 8pt !important; color: #666 !important;
+      text-align: center !important; margin: 0 !important;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
     /* ── Doctor Visit Prep — hidden unless data-print="visit" ── */
     #page-visit-prep { display: none !important; }
@@ -3266,28 +3300,34 @@ function updateEmergencyCard() {
   const insurance  = document.getElementById('ec-insurance').value;
   const notes      = document.getElementById('ec-notes').value;
 
-  const medList = meds.length
-    ? meds.map(m => `${m.name} ${m.dose} — ${m.frequency}${m.food ? ' (' + m.food + ')' : ''}`).join('<br>')
-    : 'None recorded';
+  const medRows = meds.length
+    ? meds.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(m =>
+        `<div class="ec-med-row">• <strong>${m.name}</strong> ${m.dose} — ${m.frequency}${m.food ? ' ('+m.food+')' : ''}</div>`
+      ).join('')
+    : '<div class="ec-med-row">None recorded</div>';
 
   document.getElementById('ec-preview-content').innerHTML = `
     <div class="emergency-row"><strong>Name:</strong><span>${name}</span></div>
-    ${dob    ? `<div class="emergency-row"><strong>Date of Birth:</strong><span>${formatDate(dob)}</span></div>` : ''}
-    ${blood  ? `<div class="emergency-row"><strong>Blood Type:</strong><span>${blood}</span></div>` : ''}
-    <hr class="divider">
-    <div class="emergency-row" style="align-items:flex-start;"><strong>Conditions:</strong><span>${conditions || '—'}</span></div>
-    <div class="emergency-row" style="align-items:flex-start;"><strong>Allergies:</strong><span style="color:var(--rose-dark);font-weight:700;">${allergies || 'None known'}</span></div>
-    <hr class="divider">
-    <div style="font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:8px;">Current Medications</div>
-    <div style="font-size:1.05rem;line-height:1.9;">${medList}</div>
-    <hr class="divider">
-    ${c1 ? `<div class="emergency-row"><strong>Emergency Contact 1:</strong><span>${c1}</span></div>` : ''}
-    ${c2 ? `<div class="emergency-row"><strong>Emergency Contact 2:</strong><span>${c2}</span></div>` : ''}
-    ${doctor    ? `<div class="emergency-row"><strong>Primary Doctor:</strong><span>${doctor}</span></div>` : ''}
+    ${dob   ? `<div class="emergency-row"><strong>DOB:</strong><span>${formatDate(dob)}</span></div>` : ''}
+    ${blood ? `<div class="emergency-row"><strong>Blood Type:</strong><span style="font-weight:700;">${blood}</span></div>` : ''}
+
+    ${conditions ? `<div class="ec-section-head">Medical Conditions</div>
+    <div style="font-size:1rem;line-height:1.6;margin-bottom:6px;">${conditions}</div>` : ''}
+
+    <div class="ec-section-head">Allergies</div>
+    <div class="ec-allergy-row"><strong>⚠ ALLERGIES:</strong><span>${allergies || 'None known'}</span></div>
+
+    <div class="ec-section-head">Current Medications</div>
+    ${medRows}
+
+    <div class="ec-section-head">Emergency Contacts</div>
+    ${c1 ? `<div class="emergency-row"><strong>Contact 1:</strong><span>${c1}</span></div>` : ''}
+    ${c2 ? `<div class="emergency-row"><strong>Contact 2:</strong><span>${c2}</span></div>` : ''}
+    ${doctor    ? `<div class="emergency-row"><strong>Doctor:</strong><span>${doctor}</span></div>` : ''}
     ${insurance ? `<div class="emergency-row"><strong>Health Card:</strong><span>${insurance}</span></div>` : ''}
-    ${notes     ? `<hr class="divider"><div class="emergency-row" style="align-items:flex-start;"><strong>Notes:</strong><span>${notes}</span></div>` : ''}
-    <hr class="divider">
-    <div style="font-size:1.05rem;color:var(--text-muted);text-align:center;">Last updated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+    ${notes     ? `<div class="ec-section-head">Notes</div><div style="font-size:1rem;line-height:1.6;">${notes}</div>` : ''}
+
+    <div class="ec-footer">Last updated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
   `;
 }
 
