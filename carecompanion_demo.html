@@ -3596,10 +3596,15 @@ function renderDashboard() {
       }
       const labels = getDoseLabels(m);
       labels.forEach((label, i) => {
-        // Parse the specific time for this dose row
-        const raw = (label || '').toLowerCase();
+        // Blank label = single-dose "Once daily" → sort to top with PRN
+        if (!label) {
+          doseItems.push({ m, isPRN: false, label, doseIdx: i, timeMin: -1 });
+          return;
+        }
+        // Parse the specific time for this labelled dose row
+        const raw = label.toLowerCase();
         const match = raw.match(/(\d+):(\d+)\s*(am|pm)/);
-        let timeMin = medTimeToMinutes(m); // fallback: first time on med
+        let timeMin = 9999; // unlabelled fallback sorts last
         if (match) {
           let h = parseInt(match[1]);
           const mn = parseInt(match[2]);
