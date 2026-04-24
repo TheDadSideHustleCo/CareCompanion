@@ -2035,9 +2035,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.visibilityState === 'visible') renderDashboard();
   });
 
-  // Start tour on reload if disclaimer AND setup are done but tour hasn't run yet
+  // Start tour only if brand new user — if they have any real data, mark tour done and skip
   if (load(KEYS.disclaimer, false) && profile && !localStorage.getItem('cc_tour_done')) {
-    setTimeout(startTooltips, 600);
+    const hasData = load(KEYS.medications).length > 0 || load(KEYS.logs).length > 0 ||
+                    load(KEYS.appointments).length > 0 || load(KEYS.careteam).length > 0;
+    if (hasData) {
+      localStorage.setItem('cc_tour_done', 'true'); // Returning user — suppress tour
+    } else {
+      setTimeout(startTooltips, 600); // Genuinely new user
+    }
   }
 
   // Swipe left to close sidebar on mobile
