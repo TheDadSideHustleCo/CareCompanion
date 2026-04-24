@@ -3822,7 +3822,7 @@ function importData(input) {
       const found = Object.values(KEYS).filter(k => data[k] !== undefined && data[k] !== null);
       if (found.length === 0) throw new Error('Backup file appears to be empty.');
 
-      if (!confirm(`Restore backup from ${new Date(data._exported).toLocaleDateString()}?\n\nThis will replace all current data. Your API key will be kept.\n\nFound: ${found.length} data sections.`)) return;
+      if (!confirm(`Restore backup from ${new Date(data._exported).toLocaleDateString()}?\n\nThis will replace all current data.\n\nFound: ${found.length} data sections.`)) return;
 
       // Restore each key directly to localStorage
       Object.values(KEYS).forEach(storageKey => {
