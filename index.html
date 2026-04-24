@@ -1480,7 +1480,7 @@
       </div>
       <div id="medications-list"></div>
       <div id="medications-print-table-wrap"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="printMedicationList()">🖨️ Print Medication List</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="if(prepareMedicationList())window.print()">🖨️ Print Medication List</button>
     </div>
 
     <!-- ═══════════════════════════════════ SYMPTOMS ═══ -->
@@ -2051,7 +2051,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Populate print tables before any print (Ctrl+P or browser menu)
   window.addEventListener('beforeprint', () => {
     preparePrintHeaders();
-    printMedicationList();
+    prepareMedicationList();
     renderCareTeamPrintGrid();
   });
 
@@ -2767,7 +2767,7 @@ function renderAppointments() {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
         ${!isPast && !attended ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="markAttended(${a.id})">✓ Attended</button>` : ''}
-        ${!isPast ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="printVisitPrep(${a.id})" title="Print visit prep sheet">🖨️ Prep</button>` : ''}
+        ${!isPast ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="if(prepareVisitPrep(${a.id}))window.print()" title="Print visit prep sheet">🖨️ Prep</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="editAppointment(${a.id})" aria-label="Edit ${a.title}">✏️</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteAppointment(${a.id})" aria-label="Delete ${a.title}">✕</button>
       </div>
@@ -3709,11 +3709,11 @@ function preparePrintHeaders() {
   });
 }
 
-function printMedicationList() {
+function prepareMedicationList() {
   const meds = load(KEYS.medications);
   const wrap = document.getElementById('medications-print-table-wrap');
-  if (!wrap) return;
-  if (!meds.length) { alert('No medications to print.'); return; }
+  if (!wrap) return false;
+  if (!meds.length) { alert('No medications to print.'); return false; }
 
   const rows = meds.map(m => {
     const dailyDoses = freqToDoseCount(m.frequency);
@@ -3754,14 +3754,14 @@ function printMedicationList() {
     </div>`;
 
   preparePrintHeaders();
-  window.print();
-
+  // window.print() called inline on the button (required for Safari iOS)
   setTimeout(() => {
     const pairs = ['med-print-header','ct-print-header','handoff-print-header','ec-print-header'];
     pairs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
     const grid = document.getElementById('ct-print-grid');
     if (grid) grid.style.display = 'none';
   }, 1000);
+  return true;
 }
 
 function renderCareTeamPrintGrid() {
@@ -4288,9 +4288,12 @@ function goToMedication(id) {
 
 // ── Doctor Visit Prep Printer ──
 function printVisitPrep(apptId) {
+  if (prepareVisitPrep(apptId)) window.print();
+}
+function prepareVisitPrep(apptId) {
   const appts = load(KEYS.appointments);
   const a = appts.find(x => x.id === apptId);
-  if (!a) return;
+  if (!a) return false;
   const profile = load(KEYS.profile, null);
   const meds = load(KEYS.medications);
   const logs = load(KEYS.logs).sort((x, y) => y.date.localeCompare(x.date)).slice(0, 5);
@@ -4365,13 +4368,16 @@ function printVisitPrep(apptId) {
     </div>
   `;
 
-  // Show prep page, hide others, then print
+  // Show prep page, hide others — window.print() called from printVisitPrep (Safari requires inline call)
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   prepPage.style.display = 'block';
-  window.print();
-  prepPage.style.display = 'none';
-  // Restore dashboard
-  document.getElementById('page-dashboard').classList.add('active');
+  // Cleanup after print dialog closes
+  window.addEventListener('afterprint', function restoreAfterPrep() {
+    prepPage.style.display = 'none';
+    document.getElementById('page-dashboard').classList.add('active');
+    window.removeEventListener('afterprint', restoreAfterPrep);
+  });
+  return true;
 }
 
 // ════════════════════════════════════════════════
