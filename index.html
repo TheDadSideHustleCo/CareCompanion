@@ -3593,8 +3593,8 @@ function renderDashboard() {
         doseItems.push({ m, isPRN: false, label, doseIdx: i, timeMin });
       });
     });
-    // Sort all dose rows by their specific time
-    doseItems.sort((a, b) => a.timeMin - b.timeMin);
+    // Sort by time first, then alphabetically within each time group
+    doseItems.sort((a, b) => a.timeMin - b.timeMin || (a.m.name || '').localeCompare(b.m.name || ''));
 
     let totalDoses = 0, doneDoses = 0;
     medEl.innerHTML = doseItems.map(({ m, isPRN, label, doseIdx }) => {
