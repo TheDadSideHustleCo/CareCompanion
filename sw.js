@@ -1,4 +1,4 @@
-const CACHE = 'carecompanion-v12';
+const CACHE = 'carecompanion-v13';
 const FILES = [
   '/CareCompanion/',
   '/CareCompanion/index.html',

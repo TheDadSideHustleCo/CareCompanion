@@ -1045,7 +1045,8 @@
     #page-emergency.active .grid-2 { display: block !important; }
     #page-emergency.active p[style*="font-size:0.8rem"] { display: none !important; }
 
-    /* ── Doctor Visit Prep — only show when body has data-print="visit" ── */
+    /* ── Doctor Visit Prep — hidden unless data-print="visit" ── */
+    #page-visit-prep { display: none !important; }
     body[data-print="visit"] #page-visit-prep { display: block !important; }
     body[data-print="visit"] #page-visit-prep .print-doc-header { display: flex !important; }
   }
@@ -1486,7 +1487,7 @@
       </div>
       <div id="medications-list"></div>
       <div id="medications-print-table-wrap"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="if(prepareMedicationList()){document.body.dataset.print='med';window.print();}">🖨️ Print Medication List</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="if(!load(KEYS.medications).length){alert('No medications to print.');return;}document.body.dataset.print='med';window.print();">🖨️ Print Medication List</button>
     </div>
 
     <!-- ═══════════════════════════════════ SYMPTOMS ═══ -->
@@ -2056,20 +2057,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Re-render dashboard after first paint — ensures stat cards populate for returning users
   requestAnimationFrame(() => requestAnimationFrame(() => renderDashboard()));
 
-  // Populate print tables before any print (Ctrl+P or browser menu)
-  window.addEventListener('beforeprint', () => {
-    const active = document.querySelector('.page.active');
-    const pageId = active ? active.id : '';
-    const headerMap = {
-      'page-medications': 'med-print-header',
-      'page-careteam': 'ct-print-header',
-      'page-handoff': 'handoff-print-header',
-      'page-emergency': 'ec-print-header',
-    };
-    preparePrintHeaders(headerMap[pageId] || null);
-    if (pageId === 'page-medications') prepareMedicationList();
-    if (pageId === 'page-careteam') renderCareTeamPrintGrid();
-  });
+  // Pre-render all print content at startup so no work is needed at tap time
+  renderMedicationPrintTable();
+  renderCareTeamPrintGrid();
 
   // Re-render dashboard when app is brought back into focus (PWA resume from taskbar/desktop)
   document.addEventListener('visibilitychange', () => {
@@ -2359,6 +2349,7 @@ function addMedication() {
   document.getElementById('med-food').selectedIndex = 0;
   updateMedTimeInputs();
   renderMedications();
+  renderMedicationPrintTable();
   renderDashboard();
   showToast(editingMedId === null ? '💊 Medication saved' : '💊 Medication updated');
   editingMedId = null;
@@ -2423,6 +2414,7 @@ function deleteMedication(id) {
   save(KEYS.medications, load(KEYS.medications).filter(m => m.id !== id));
   if (editingMedId === id) { editingMedId = null; document.querySelector('#page-medications .btn-primary').textContent = '➕ Add Medication'; }
   renderMedications();
+  renderMedicationPrintTable();
   renderDashboard();
 }
 
@@ -2831,6 +2823,7 @@ function addContact() {
   save(KEYS.careteam, team);
   ['ct-name','ct-role','ct-phone','ct-fax','ct-email','ct-facility','ct-notes'].forEach(id => document.getElementById(id).value = '');
   renderCareTeam();
+  renderCareTeamPrintGrid();
   showToast('👥 Contact saved');
 }
 
@@ -2854,6 +2847,7 @@ function deleteContact(id) {
   if (editingContactId === id) { editingContactId = null; document.querySelector('#page-careteam .btn-primary').textContent = '➕ Add Contact'; }
   save(KEYS.careteam, load(KEYS.careteam).filter(c => c.id !== id));
   renderCareTeam();
+  renderCareTeamPrintGrid();
 }
 
 function renderCareTeam() {
@@ -3734,11 +3728,12 @@ window.addEventListener('afterprint', function() {
   if (grid) grid.style.display = 'none';
 });
 
-function prepareMedicationList() {
+// Renders medication print table — called at startup and after any medication change
+function renderMedicationPrintTable() {
   const meds = load(KEYS.medications);
   const wrap = document.getElementById('medications-print-table-wrap');
-  if (!wrap) return false;
-  if (!meds.length) { alert('No medications to print.'); return false; }
+  if (!wrap) return;
+  if (!meds.length) { wrap.innerHTML = ''; return; }
 
   const rows = meds.map(m => {
     const dailyDoses = freqToDoseCount(m.frequency);
@@ -3777,11 +3772,6 @@ function prepareMedicationList() {
     <div class="med-print-footer">
       CareCompanion · This list is for personal reference only. Always verify medications with your pharmacist or physician before making changes.
     </div>`;
-
-  preparePrintHeaders('med-print-header');
-  // window.print() called inline on the button (required for Safari iOS)
-  // afterprint cleanup is registered inside preparePrintHeaders
-  return true;
 }
 
 function renderCareTeamPrintGrid() {
