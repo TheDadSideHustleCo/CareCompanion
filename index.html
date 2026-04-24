@@ -4583,7 +4583,7 @@ function skipTooltips() {
 <!-- Update Available Banner -->
 <div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--sage-dark);color:#fff;padding:12px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.2);align-items:center;gap:14px;font-size:1rem;max-width:90vw;">
   <span>🔄 A new version of CareCompanion is ready.</span>
-  <button onclick="document.getElementById('update-banner').style.display='none';navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.waiting){r.waiting.postMessage({type:'SKIP_WAITING'});}})" style="background:#fff;color:var(--sage-dark);border:none;padding:6px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;">Update now</button>
+  <button onclick="document.getElementById('update-banner').style.display='none';navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.waiting){navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload(),{once:true});r.waiting.postMessage({type:'SKIP_WAITING'});}})" style="background:#fff;color:var(--sage-dark);border:none;padding:6px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;">Update now</button>
   <button onclick="document.getElementById('update-banner').style.display='none'" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.9rem;">Later</button>
 </div>
 
