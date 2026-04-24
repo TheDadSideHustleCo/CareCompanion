@@ -4478,22 +4478,27 @@ function skipTooltips() {
 (function initPWA() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // A new version is waiting — show update banner
-            const updateBanner = document.getElementById('update-banner');
-            if (updateBanner) updateBanner.style.display = 'flex';
+      function showUpdateBanner() {
+        const updateBanner = document.getElementById('update-banner');
+        if (updateBanner) updateBanner.style.display = 'flex';
+      }
+      function trackInstalling(worker) {
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdateBanner();
           }
         });
+      }
+      // Already waiting (e.g. page was refreshed while update was pending)
+      if (reg.waiting) { showUpdateBanner(); return; }
+      // New SW found while page is open
+      if (reg.installing) trackInstalling(reg.installing);
+      reg.addEventListener('updatefound', () => {
+        if (reg.installing) trackInstalling(reg.installing);
       });
+      // Poll every 60s for updates
+      setInterval(() => reg.update(), 60000);
     }).catch(() => {});
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // New SW has taken control — re-render all UI with fresh data
-      renderAll();
-    });
   }
   const banner = document.getElementById('pwa-banner');
   if (!banner) return;

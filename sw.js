@@ -1,4 +1,4 @@
-const CACHE = 'carecompanion-v5';
+const CACHE = 'carecompanion-v6';
 const FILES = [
   '/CareCompanion/',
   '/CareCompanion/index.html',
@@ -13,7 +13,7 @@ self.addEventListener('install', e => {
       Promise.allSettled(FILES.map(f => c.add(f)))
     )
   );
-  self.skipWaiting(); // Take over immediately on install
+  // Wait for message from app before taking over
 });
 
 self.addEventListener('message', e => {
