@@ -169,9 +169,6 @@
   .btn-primary, .btn-rose, .btn-gold, .btn-danger { color: white !important; }
   .btn-primary *, .btn-rose *, .btn-gold *, .btn-danger * { color: white !important; }
 
-  .chat-msg.user .chat-bubble, .chat-msg.user .chat-bubble * { color: white !important; }
-  .chat-avatar.ai { color: white !important; }
-  .chat-avatar.user { color: var(--rose-dark) !important; }
 
   .dashboard-hero, .dashboard-hero * { color: white !important; }
   .dashboard-hero p { color: rgba(255,255,255,0.85) !important; }
@@ -688,7 +685,6 @@
     .dashboard-hero { padding: 22px 20px; }
     .dashboard-hero h2 { font-size: 1.4rem; }
     .stat-card .stat-value { font-size: 1.6rem; }
-    .chat-bubble { max-width: 90%; }
     .emergency-preview { padding: 16px; }
     .card { padding: 18px 16px; }
   }
@@ -1071,9 +1067,9 @@
   <div class="disclaimer-box">
     <h2>Welcome to CareCompanion</h2>
     <p>Before you begin, please read and acknowledge the following important notice.</p>
-    <p><strong>Not a Medical Device.</strong> CareCompanion is a personal organization and journaling tool. It does not provide medical advice, diagnosis, or treatment. All AI-generated responses are informational only.</p>
+    <p><strong>Not a Medical Device.</strong> CareCompanion is a personal organization and journaling tool. It does not provide medical advice, diagnosis, or treatment.</p>
     <p><strong>Always consult a qualified healthcare provider</strong> before making any medical decisions. Never disregard professional medical advice based on anything in this app.</p>
-    <p><strong>Privacy.</strong> All data is stored locally on your device. If you use AI features, health information you type will be sent to Anthropic's servers to generate responses. Avoid entering full legal names or identifying information in AI chat.</p>
+    <p><strong>Privacy.</strong> All data is stored locally on your device and never leaves it.</p>
     <label class="disclaimer-checkbox">
       <input type="checkbox" id="disclaimer-check" onchange="
         var btn = document.getElementById('disclaimer-accept');
@@ -1984,7 +1980,6 @@ function load(key, fallback=[]) {
 let selectedMood = '';
 let selectedMemMood = '';
 let selectedStress = null;
-let currentAiPanel = 'chat';
 let logShowAll = false;
 let editingMedId = null;
 let editingLogId = null;
