@@ -3591,7 +3591,7 @@ function renderDashboard() {
     meds.forEach(m => {
       const isPRN = (m.frequency || '').toLowerCase().includes('as needed');
       if (isPRN) {
-        doseItems.push({ m, isPRN: true, label: 'As needed', doseIdx: 'prn', timeMin: 99999 });
+        doseItems.push({ m, isPRN: true, label: 'As needed', doseIdx: 'prn', timeMin: -1 });
         return;
       }
       const labels = getDoseLabels(m);
@@ -3831,13 +3831,13 @@ function renderCareTeamPrintGrid() {
 }
 
 function medTimeToMinutes(m) {
-  // Extract first scheduled time from m.times (e.g. "8:00am, 8:00pm" → 480)
-  // PRN meds with no times sort to end
+  // PRN and no-specific-time meds sort to top (-1)
+  // Timed meds sort by their actual time in minutes
   const isPRN = (m.frequency || '').toLowerCase().includes('as needed');
-  if (isPRN) return 99999;
+  if (isPRN) return -1;
   const raw = (m.times || '').split(',')[0].trim().toLowerCase();
   const match = raw.match(/(\d+):(\d+)\s*(am|pm)/);
-  if (!match) return 99998;
+  if (!match) return -1; // Once daily / no specific time → top
   let h = parseInt(match[1]);
   const min = parseInt(match[2]);
   const ampm = match[3];
