@@ -3580,16 +3580,41 @@ function renderDashboard() {
     document.getElementById('stat-appt-detail').innerHTML = apptCards + moreText;
   }
 
-  // Today's meds in dashboard — sorted by first scheduled time
+  // Today's meds — flatten all individual doses, sort by actual dose time
   const medEl = document.getElementById('dashboard-meds');
   const todayChecks = getMedChecksForToday();
-  const sortedMeds = [...meds].sort((a, b) => medTimeToMinutes(a) - medTimeToMinutes(b));
   if (!meds.length) {
     medEl.innerHTML = '<li style="color:var(--text-muted);font-size:1rem;padding:12px 0;">No medications added yet.</li>';
   } else {
-    let totalDoses = 0, doneDoses = 0;
-    medEl.innerHTML = sortedMeds.map(m => {
+    // Build flat list: one entry per dose (not per medication)
+    const doseItems = [];
+    meds.forEach(m => {
       const isPRN = (m.frequency || '').toLowerCase().includes('as needed');
+      if (isPRN) {
+        doseItems.push({ m, isPRN: true, label: 'As needed', doseIdx: 'prn', timeMin: 99999 });
+        return;
+      }
+      const labels = getDoseLabels(m);
+      labels.forEach((label, i) => {
+        // Parse the specific time for this dose row
+        const raw = (label || '').toLowerCase();
+        const match = raw.match(/(\d+):(\d+)\s*(am|pm)/);
+        let timeMin = medTimeToMinutes(m); // fallback: first time on med
+        if (match) {
+          let h = parseInt(match[1]);
+          const mn = parseInt(match[2]);
+          if (match[3] === 'pm' && h !== 12) h += 12;
+          if (match[3] === 'am' && h === 12) h = 0;
+          timeMin = h * 60 + mn;
+        }
+        doseItems.push({ m, isPRN: false, label, doseIdx: i, timeMin });
+      });
+    });
+    // Sort all dose rows by their specific time
+    doseItems.sort((a, b) => a.timeMin - b.timeMin);
+
+    let totalDoses = 0, doneDoses = 0;
+    medEl.innerHTML = doseItems.map(({ m, isPRN, label, doseIdx }) => {
       if (isPRN) {
         const prnCount = todayChecks[`${m.id}_prn`] || 0;
         return `
@@ -3602,36 +3627,18 @@ function renderDashboard() {
           <button class="btn btn-outline btn-sm" onclick="logPRNDose(${m.id}, this)" style="white-space:nowrap;">+ Log dose</button>
         </li>`;
       }
-      const labels = getDoseLabels(m);
-      const count = labels.length;
-      totalDoses += count;
-      if (count === 1) {
-        const key = `${m.id}_0`;
-        const isDone = todayChecks[key] === true;
-        if (isDone) doneDoses++;
-        return `
-        <li>
-          <div>
-            <span style="font-weight:700;">${m.name}</span>
-            <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose}${m.times ? ' · ' + m.times : ' · ' + m.frequency}</span>
-          </div>
-          <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, 0, this)">${isDone ? '✓' : ''}</div>
-        </li>`;
-      } else {
-        return labels.map((label, i) => {
-          const key = `${m.id}_${i}`;
-          const isDone = todayChecks[key] === true;
-          if (isDone) doneDoses++;
-          return `
-          <li>
-            <div>
-              <span style="font-weight:700;">${m.name}</span>
-              <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose}${label ? ' · ' + label : ''}</span>
-            </div>
-            <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, ${i}, this)">${isDone ? '✓' : ''}</div>
-          </li>`;
-        }).join('');
-      }
+      totalDoses++;
+      const key = `${m.id}_${doseIdx}`;
+      const isDone = todayChecks[key] === true;
+      if (isDone) doneDoses++;
+      return `
+      <li>
+        <div>
+          <span style="font-weight:700;">${m.name}</span>
+          <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose}${label ? ' · ' + label : ' · ' + m.frequency}</span>
+        </div>
+        <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, ${doseIdx}, this)">${isDone ? '✓' : ''}</div>
+      </li>`;
     }).join('');
     document.getElementById('stat-meds').textContent = `${doneDoses}/${totalDoses}`;
     document.getElementById('stat-meds-sub').textContent = doneDoses === totalDoses && totalDoses > 0
