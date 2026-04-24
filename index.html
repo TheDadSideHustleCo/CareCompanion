@@ -1681,7 +1681,7 @@
 
       <div id="careteam-list"></div>
       <div id="ct-print-grid" style="display:none;"></div>
-      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders('ct-print-header');window.addEventListener('afterprint',function h(){document.getElementById('ct-print-grid').style.display='none';['ct-print-header','med-print-header','handoff-print-header','ec-print-header'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});window.removeEventListener('afterprint',h);});window.print();">🖨️ Print Care Team Directory</button>
+      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders('ct-print-header');window.print();">🖨️ Print Care Team Directory</button>
     </div>
 
     <!-- ═══════════════════════════════════ HANDOFF NOTES ═══ -->
@@ -1741,7 +1741,7 @@
       </div>
 
       <div id="handoff-list"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="preparePrintHeaders('handoff-print-header');window.addEventListener('afterprint',function h(){['med-print-header','ct-print-header','handoff-print-header','ec-print-header'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});window.removeEventListener('afterprint',h);});window.print();">🖨️ Print Handoff Notes</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="preparePrintHeaders('handoff-print-header');window.print();">🖨️ Print Handoff Notes</button>
     </div>
 
     <!-- ═══════════════════════════════════ MEMORY BOX ═══ -->
@@ -1885,7 +1885,7 @@
             </div>
           </div>
           <div class="flex gap-8 mt-16 no-print">
-            <button class="btn btn-rose" onclick="preparePrintHeaders('ec-print-header');window.addEventListener('afterprint',function h(){['med-print-header','ct-print-header','handoff-print-header','ec-print-header'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});window.removeEventListener('afterprint',h);});window.print();">🖨️ Print Card</button>
+            <button class="btn btn-rose" onclick="preparePrintHeaders('ec-print-header');window.print();">🖨️ Print Card</button>
           </div>
         </div>
       </div>
@@ -3711,11 +3711,21 @@ function preparePrintHeaders(headerId) {
     const h = document.getElementById(hdr);
     const p = document.getElementById(pat);
     const d = document.getElementById(dt);
-    // Only show the requested header; hide all others
     const show = !headerId || hdr === headerId;
     if (h) h.style.display = show ? 'flex' : 'none';
     if (show && p) p.textContent = patientLine;
     if (show && d) d.textContent = printDate;
+  });
+  // Register afterprint cleanup here so buttons only need to call window.print()
+  window.addEventListener('afterprint', function cleanupHeaders() {
+    allHeaders.forEach(([hdr]) => {
+      const h = document.getElementById(hdr);
+      if (h) h.style.display = 'none';
+    });
+    const grid = document.getElementById('ct-print-grid');
+    if (grid) grid.style.display = 'none';
+    document.body.classList.remove('print-visit-prep');
+    window.removeEventListener('afterprint', cleanupHeaders);
   });
 }
 
@@ -3765,14 +3775,7 @@ function prepareMedicationList() {
 
   preparePrintHeaders('med-print-header');
   // window.print() called inline on the button (required for Safari iOS)
-  // Clean up print headers after dialog closes
-  window.addEventListener('afterprint', function cleanupMedPrint() {
-    const pairs = ['med-print-header','ct-print-header','handoff-print-header','ec-print-header'];
-    pairs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-    const grid = document.getElementById('ct-print-grid');
-    if (grid) grid.style.display = 'none';
-    window.removeEventListener('afterprint', cleanupMedPrint);
-  });
+  // afterprint cleanup is registered inside preparePrintHeaders
   return true;
 }
 
@@ -4378,12 +4381,10 @@ function prepareVisitPrep(apptId) {
     </div>
   `;
 
-  // Add class so @media print shows visit prep page; clean up after print
+  // Add class so @media print shows visit prep page
+  // preparePrintHeaders handles afterprint cleanup (removes class + hides headers)
   document.body.classList.add('print-visit-prep');
-  window.addEventListener('afterprint', function restoreAfterPrep() {
-    document.body.classList.remove('print-visit-prep');
-    window.removeEventListener('afterprint', restoreAfterPrep);
-  });
+  preparePrintHeaders(null);
   return true;
 }
 
