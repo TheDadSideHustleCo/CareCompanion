@@ -2449,12 +2449,12 @@ function renderMedications() {
   const el = document.getElementById('medications-list');
   const searchEl = document.getElementById('med-search');
   const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
-  const meds = query ? allMeds.filter(m =>
+  const meds = (query ? allMeds.filter(m =>
     (m.name || '').toLowerCase().includes(query) ||
     (m.dose || '').toLowerCase().includes(query) ||
     (m.frequency || '').toLowerCase().includes(query) ||
     (m.notes || '').toLowerCase().includes(query)
-  ) : allMeds;
+  ) : allMeds).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   if (!allMeds.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">💊</div><p>No medications added yet.<br>Add the first one above.</p></div>';
     return;
