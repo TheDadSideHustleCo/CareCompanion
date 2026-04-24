@@ -1417,7 +1417,7 @@
               <option>Twice daily</option>
               <option>Three times daily</option>
               <option>Every 8 hours</option>
-              <option>As needed</option>
+              <option>As needed (PRN)</option>
               <option>Weekly</option>
             </select>
           </div>
@@ -2863,6 +2863,7 @@ function addHandoff() {
   save(KEYS.handoff, handoffs);
   ['ho-meds','ho-meals','ho-mood','ho-watch','ho-notes','ho-caregiver'].forEach(id => document.getElementById(id).value = '');
   renderHandoff();
+  renderDashboard();
   showToast('📝 Handoff note saved');
 }
 
@@ -2887,6 +2888,7 @@ function deleteHandoff(id) {
   if (editingHandoffId === id) { editingHandoffId = null; document.querySelector('#page-handoff .btn-primary').textContent = '💾 Save Handoff Note'; }
   save(KEYS.handoff, load(KEYS.handoff).filter(h => h.id !== id));
   renderHandoff();
+  renderDashboard();
 }
 
 function renderHandoff() {
@@ -2949,6 +2951,7 @@ function addMemory() {
   selectedMemMood = '';
   document.querySelectorAll('#mem-mood-selector .mood-btn').forEach(b => b.classList.remove('selected'));
   renderMemories();
+  renderDashboard();
   showToast('💛 Memory saved');
 }
 
@@ -2969,6 +2972,7 @@ function deleteMemory(id) {
   if (editingMemoryId === id) { editingMemoryId = null; document.querySelector('#page-memory .btn-gold').textContent = '💛 Save Memory'; }
   save(KEYS.memories, load(KEYS.memories).filter(m => m.id !== id));
   renderMemories();
+  renderDashboard();
 }
 
 function renderMemories() {
@@ -3027,6 +3031,7 @@ function addStressEntry() {
   document.getElementById('stress-notes').value = '';
   document.getElementById('stress-gratitude').value = '';
   renderStress();
+  renderDashboard();
   showToast('🌿 Wellbeing check-in saved');
 }
 
@@ -3074,6 +3079,7 @@ function deleteStress(id) {
   if (editingStressId === id) { editingStressId = null; document.querySelector('#page-stress .btn-primary').textContent = '💾 Save Check-In'; }
   save(KEYS.stress, load(KEYS.stress).filter(e => e.id !== id));
   renderStress();
+  renderDashboard();
 }
 
 // ════════════════════════════════════════════════
@@ -3413,7 +3419,7 @@ function renderRefillAlerts() {
   const soon = [];
 
   meds.forEach(m => {
-    if (m.frequency === 'As needed') return;
+    if ((m.frequency || '').toLowerCase().includes('as needed')) return;
     const dailyDoses = freqToDoseCount(m.frequency);
     const daysLeft = m.pills != null ? Math.floor(m.pills / dailyDoses) : null;
 
