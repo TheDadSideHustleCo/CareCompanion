@@ -3742,7 +3742,7 @@ window.addEventListener('afterprint', function() {
 
 // Renders medication print table — called at startup and after any medication change
 function renderMedicationPrintTable() {
-  const meds = load(KEYS.medications);
+  const meds = load(KEYS.medications).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const wrap = document.getElementById('medications-print-table-wrap');
   if (!wrap) return;
   if (!meds.length) { wrap.innerHTML = ''; return; }
