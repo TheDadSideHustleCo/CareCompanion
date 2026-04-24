@@ -1039,9 +1039,9 @@
     #page-emergency.active .grid-2 { display: block !important; }
     #page-emergency.active p[style*="font-size:0.8rem"] { display: none !important; }
 
-    /* ── Doctor Visit Prep ── */
-    #page-visit-prep { display: block !important; }
-    #page-visit-prep .print-doc-header { display: flex !important; }
+    /* ── Doctor Visit Prep — only show when body has print-visit-prep class ── */
+    body.print-visit-prep #page-visit-prep { display: block !important; }
+    body.print-visit-prep #page-visit-prep .print-doc-header { display: flex !important; }
   }
 
   /* ── TOAST NOTIFICATIONS ── */
@@ -1681,7 +1681,7 @@
 
       <div id="careteam-list"></div>
       <div id="ct-print-grid" style="display:none;"></div>
-      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders();window.print();">🖨️ Print Care Team Directory</button>
+      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders();window.addEventListener('afterprint',function h(){document.getElementById('ct-print-grid').style.display='none';['ct-print-header','med-print-header','handoff-print-header','ec-print-header'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});window.removeEventListener('afterprint',h);});window.print();">🖨️ Print Care Team Directory</button>
     </div>
 
     <!-- ═══════════════════════════════════ HANDOFF NOTES ═══ -->
@@ -3755,12 +3755,14 @@ function prepareMedicationList() {
 
   preparePrintHeaders();
   // window.print() called inline on the button (required for Safari iOS)
-  setTimeout(() => {
+  // Clean up print headers after dialog closes
+  window.addEventListener('afterprint', function cleanupMedPrint() {
     const pairs = ['med-print-header','ct-print-header','handoff-print-header','ec-print-header'];
     pairs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
     const grid = document.getElementById('ct-print-grid');
     if (grid) grid.style.display = 'none';
-  }, 1000);
+    window.removeEventListener('afterprint', cleanupMedPrint);
+  });
   return true;
 }
 
@@ -4287,9 +4289,7 @@ function goToMedication(id) {
 }
 
 // ── Doctor Visit Prep Printer ──
-function printVisitPrep(apptId) {
-  if (prepareVisitPrep(apptId)) window.print();
-}
+// window.print() is called inline on the button for Safari iOS compatibility
 function prepareVisitPrep(apptId) {
   const appts = load(KEYS.appointments);
   const a = appts.find(x => x.id === apptId);
@@ -4368,13 +4368,10 @@ function prepareVisitPrep(apptId) {
     </div>
   `;
 
-  // Show prep page, hide others — window.print() called from printVisitPrep (Safari requires inline call)
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  prepPage.style.display = 'block';
-  // Cleanup after print dialog closes
+  // Add class so @media print shows visit prep page; clean up after print
+  document.body.classList.add('print-visit-prep');
   window.addEventListener('afterprint', function restoreAfterPrep() {
-    prepPage.style.display = 'none';
-    document.getElementById('page-dashboard').classList.add('active');
+    document.body.classList.remove('print-visit-prep');
     window.removeEventListener('afterprint', restoreAfterPrep);
   });
   return true;
