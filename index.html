@@ -4538,6 +4538,10 @@ function skipTooltips() {
       // Poll every 60s for updates
       setInterval(() => reg.update(), 60000);
     }).catch(() => {});
+    // Reload page when new SW takes control so user gets fresh HTML
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
   }
   const banner = document.getElementById('pwa-banner');
   if (!banner) return;
