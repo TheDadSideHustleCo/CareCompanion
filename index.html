@@ -641,8 +641,8 @@
   .hamburger.open span:nth-child(2) { opacity: 0; }
   .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-  /* ── TABLET — icon-only sidebar (769–1024px) ── */
-  @media (max-width: 1024px) and (min-width: 769px) {
+  /* ── TABLET PORTRAIT — icon-only sidebar (769–1024px, portrait only) ── */
+  @media (max-width: 1024px) and (min-width: 769px) and (orientation: portrait) {
     .sidebar {
       width: 64px;
       overflow: visible;
@@ -660,6 +660,31 @@
     .top-bar { padding: 14px 24px; }
     .page { padding: 28px 24px; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* ── TABLET LANDSCAPE — compact labeled sidebar (landscape on tablets) ── */
+  @media (orientation: landscape) and (max-height: 820px) and (min-width: 769px) {
+    .sidebar { width: 200px; overflow-y: auto; }
+    .sidebar-brand { padding: 16px 14px 12px; }
+    .sidebar-brand h1 { font-size: 1.2rem; }
+    .sidebar-brand p { font-size: 0.8rem; }
+    .care-recipient-card { margin: 8px 10px; padding: 8px 10px; }
+    .care-recipient-card .label { font-size: 0.8rem; }
+    .care-recipient-card .name { font-size: 0.9rem; }
+    .nav-item { padding: 10px 14px; font-size: 0.9rem; gap: 10px; }
+    .nav-item .icon { font-size: 0.95rem; }
+    .nav-section-label { font-size: 0.72rem; padding: 6px 14px 2px; letter-spacing: 0.5px; }
+    .sidebar-footer { padding: 10px 14px; font-size: 0.8rem; }
+    .main-content { margin-left: 200px; }
+    .top-bar { padding: 10px 18px; }
+    .page { padding: 16px 18px; }
+    /* Stack all grids to single column — content area too narrow for multi-col */
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .form-grid-2, .form-grid-3 { grid-template-columns: 1fr 1fr !important; }
+    .dashboard-hero { padding: 18px 18px; }
+    .dashboard-hero h2 { font-size: 1.3rem; }
+    .stat-card .stat-value { font-size: 1.6rem; }
+    .card { padding: 14px 14px; }
   }
 
   /* ── MOBILE — slide-out sidebar (≤768px) ── */
@@ -3781,7 +3806,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '1.1',
+    _version: '1.2',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
