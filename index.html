@@ -1047,8 +1047,10 @@
 
     /* ── Doctor Visit Prep — hidden unless data-print="visit" ── */
     #page-visit-prep { display: none !important; }
+    body[data-print="visit"] .app-wrapper { display: block !important; }
+    body[data-print="visit"] .main-content { display: none !important; }
     body[data-print="visit"] .page.active { display: none !important; }
-    body[data-print="visit"] #page-visit-prep { display: block !important; }
+    body[data-print="visit"] #page-visit-prep { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
     body[data-print="visit"] #page-visit-prep .print-doc-header { display: flex !important; }
   }
 
