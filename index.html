@@ -1641,18 +1641,6 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════ DOCTOR VISIT PREP (print-only page) ═══ -->
-    <div id="page-visit-prep">
-      <div class="print-doc-header" id="visit-prep-print-header" style="display:none;">
-        <div>
-          <div class="prt-title">Doctor Visit Prep</div>
-          <div class="prt-sub" id="visit-prep-patient"></div>
-        </div>
-        <div class="prt-right" id="visit-prep-date"></div>
-      </div>
-      <div id="visit-prep-content"></div>
-    </div>
-
     <!-- ═══════════════════════════════════ CARE TEAM ═══ -->
     <div class="page" id="page-careteam">
       <div class="print-doc-header" id="ct-print-header" style="display:none;">
@@ -1941,6 +1929,18 @@
     </div>
 
   </div><!-- end main-content -->
+
+  <!-- ═══ DOCTOR VISIT PREP — print-only, outside all .page divs ═══ -->
+  <div id="page-visit-prep">
+    <div class="print-doc-header" id="visit-prep-print-header" style="display:none;">
+      <div>
+        <div class="prt-title">Doctor Visit Prep</div>
+        <div class="prt-sub" id="visit-prep-patient"></div>
+      </div>
+      <div class="prt-right" id="visit-prep-date"></div>
+    </div>
+    <div id="visit-prep-content"></div>
+  </div>
 </div><!-- end app-wrapper -->
 
 <!-- ONBOARDING TOOLTIP OVERLAY -->
