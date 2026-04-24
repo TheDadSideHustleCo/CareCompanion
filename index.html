@@ -1047,6 +1047,7 @@
 
     /* ── Doctor Visit Prep — hidden unless data-print="visit" ── */
     #page-visit-prep { display: none !important; }
+    body[data-print="visit"] .page.active { display: none !important; }
     body[data-print="visit"] #page-visit-prep { display: block !important; }
     body[data-print="visit"] #page-visit-prep .print-doc-header { display: flex !important; }
   }
@@ -4311,68 +4312,83 @@ function prepareVisitPrep(apptId) {
   const apptDate = new Date(a.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const medRows = meds.length ? meds.map(m =>
-    `<tr><td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;font-weight:700;">${m.name}</td>
-     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.dose}</td>
-     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}</td>
-     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.food || ''}</td></tr>`
-  ).join('') : '<tr><td colspan="4" style="padding:10pt;color:#666;font-style:italic;">No medications recorded.</td></tr>';
+    `<tr><td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-weight:700;font-size:9.5pt;">${m.name}</td>
+     <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${m.dose}</td>
+     <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}</td>
+     <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${m.food || ''}</td></tr>`
+  ).join('') : '<tr><td colspan="4" style="padding:6pt;color:#666;font-style:italic;font-size:9.5pt;">No medications recorded.</td></tr>';
 
   const logItems = logs.length ? logs.map(l =>
-    `<div style="margin-bottom:10pt;padding-bottom:8pt;border-bottom:1pt solid #e0d8ce;">
-      <div style="font-weight:700;font-size:11pt;">${formatDate(l.date)} ${l.mood || ''}</div>
-      <div style="font-size:10pt;color:#444;">${l.symptoms || 'No notes.'}</div>
+    `<div style="margin-bottom:5pt;padding-bottom:4pt;border-bottom:1pt solid #e0d8ce;">
+      <div style="font-weight:700;font-size:9.5pt;">${formatDate(l.date)} ${l.mood || ''}</div>
+      <div style="font-size:9pt;color:#444;">${l.symptoms || 'No notes.'}</div>
      </div>`
-  ).join('') : '<p style="color:#666;font-style:italic;">No recent log entries.</p>';
+  ).join('') : '<p style="color:#666;font-style:italic;font-size:9.5pt;">No recent log entries.</p>';
 
   const prepPage = document.getElementById('page-visit-prep');
   document.getElementById('visit-prep-patient').textContent = 'Patient: ' + patientName;
   document.getElementById('visit-prep-date').textContent = 'Printed: ' + today;
+  // Collect questions from recent symptom logs
+  const questions = logs.map(l => (l.questions || '').trim()).filter(q => q.length > 0);
+
+  const questionsHtml = questions.length
+    ? questions.map(q => `<div style="font-size:10.5pt;padding:4pt 0 4pt 10pt;border-left:2.5pt solid #7a9e87;margin-bottom:6pt;">${q}</div>`).join('')
+    : '<div style="font-size:10pt;color:#888;font-style:italic;">No questions recorded in recent logs.</div>';
+
+  // Ruled lines for handwritten recommendations
+  const ruledLines = [1,2,3,4,5].map(() =>
+    `<div style="border-bottom:1pt solid #bbb;height:22pt;margin-bottom:2pt;"></div>`
+  ).join('');
+
   document.getElementById('visit-prep-content').innerHTML = `
-    <div style="padding:0 16pt;">
-      <div style="background:#f0f7f3;border:1pt solid #7a9e87;border-radius:8pt;padding:14pt 18pt;margin-bottom:18pt;">
-        <div style="font-size:16pt;font-weight:700;color:#4e7560;margin-bottom:6pt;">${a.title}</div>
-        <div style="font-size:11pt;color:#333;">${apptDate}${a.time ? ' · ' + formatTime(a.time) : ''}</div>
-        ${a.doctor ? `<div style="font-size:11pt;color:#333;">${a.doctor}</div>` : ''}
-        ${a.address ? `<div style="font-size:11pt;color:#333;">📍 ${a.address}</div>` : ''}
-        ${a.category ? `<div style="font-size:10pt;color:#666;margin-top:4pt;">${a.category}</div>` : ''}
+    <div style="padding:0 12pt;">
+
+      <!-- Appointment summary bar -->
+      <div style="display:flex;align-items:baseline;gap:16pt;padding:8pt 12pt;background:#f0f7f3;border-left:4pt solid #4e7560;margin-bottom:12pt;flex-wrap:wrap;">
+        <span style="font-size:13pt;font-weight:700;color:#4e7560;">${a.title}</span>
+        <span style="font-size:10pt;color:#333;">${apptDate}${a.time ? ' · ' + formatTime(a.time) : ''}</span>
+        ${a.doctor ? `<span style="font-size:10pt;color:#555;">${a.doctor}</span>` : ''}
+        ${a.address ? `<span style="font-size:10pt;color:#555;">📍 ${a.address}</span>` : ''}
+        ${a.category ? `<span style="font-size:9.5pt;color:#777;">${a.category}</span>` : ''}
       </div>
 
-      ${a.notes ? `<div style="margin-bottom:18pt;">
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📋 Prep Notes</div>
-        <div style="font-size:11pt;">${a.notes}</div>
+      ${a.notes ? `<div style="margin-bottom:10pt;">
+        <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">📋 Prep Notes</div>
+        <div style="font-size:10.5pt;">${a.notes}</div>
       </div>` : ''}
 
-      <div style="margin-bottom:18pt;">
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">💊 Current Medications</div>
-        <table style="width:100%;border-collapse:collapse;font-size:10pt;">
-          <thead><tr style="background:#e8f0ec;">
-            <th style="padding:7pt 10pt;text-align:left;">Medication</th>
-            <th style="padding:7pt 10pt;text-align:left;">Dose</th>
-            <th style="padding:7pt 10pt;text-align:left;">Schedule</th>
-            <th style="padding:7pt 10pt;text-align:left;">With Food</th>
-          </tr></thead>
-          <tbody>${medRows}</tbody>
-        </table>
-      </div>
-
-      <div style="margin-bottom:18pt;">
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📝 Recent Symptom Log</div>
-        ${logItems}
-      </div>
-
-      <div style="margin-bottom:18pt;">
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">❓ Questions to Ask</div>
-        <div style="border:1pt solid #c8b8a8;border-radius:6pt;padding:12pt;">
-          ${['', '', '', '', ''].map((_, i) => `<div style="border-bottom:${i < 4 ? '1pt solid #e0d8ce' : 'none'};padding:14pt 0;min-height:30pt;">&nbsp;</div>`).join('')}
+      <!-- Two-column: Meds left, Symptoms right -->
+      <div style="display:flex;gap:16pt;margin-bottom:10pt;align-items:flex-start;">
+        <div style="flex:1.4;min-width:0;">
+          <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">💊 Current Medications</div>
+          <table style="width:100%;border-collapse:collapse;font-size:9.5pt;">
+            <thead><tr style="background:#e8f0ec;">
+              <th style="padding:4pt 6pt;text-align:left;font-size:9pt;">Medication</th>
+              <th style="padding:4pt 6pt;text-align:left;font-size:9pt;">Dose</th>
+              <th style="padding:4pt 6pt;text-align:left;font-size:9pt;">Schedule</th>
+              <th style="padding:4pt 6pt;text-align:left;font-size:9pt;">Food</th>
+            </tr></thead>
+            <tbody>${medRows}</tbody>
+          </table>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">📝 Recent Symptoms</div>
+          ${logItems}
         </div>
       </div>
 
+      <!-- Questions to ask (from app data) -->
+      <div style="margin-bottom:10pt;">
+        <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">❓ Questions to Ask</div>
+        ${questionsHtml}
+      </div>
+
+      <!-- Doctor's Recommendations (blank ruled lines) -->
       <div>
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📌 Doctor's Recommendations</div>
-        <div style="border:1pt solid #c8b8a8;border-radius:6pt;padding:12pt;">
-          ${['', '', ''].map((_, i) => `<div style="border-bottom:${i < 2 ? '1pt solid #e0d8ce' : 'none'};padding:14pt 0;min-height:30pt;">&nbsp;</div>`).join('')}
-        </div>
+        <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:6pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">📌 Doctor's Recommendations</div>
+        ${ruledLines}
       </div>
+
     </div>
   `;
 
