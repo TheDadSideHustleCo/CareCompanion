@@ -99,19 +99,27 @@ sw_v = find(r"carecompanion-v(\d+)")
 if sw_v:
     ok(f"SW cache versioned (v{sw_v.group(1)})")
 else:
-    # SW may be a separate file — check for sw.js in same dir
+    # SW may be a separate file — check same dir, parent dir, and gitpush/ sibling
     import os as _os
-    sw_path = _os.path.join(_os.path.dirname(_os.path.abspath(sys.argv[1])), 'sw.js')
-    if _os.path.exists(sw_path):
-        sw_content = open(sw_path).read()
-        sw_v2 = re.search(r"carecompanion-v(\d+)", sw_content)
-        if sw_v2:
-            ok(f"SW cache versioned in sw.js (v{sw_v2.group(1)})")
-        else:
-            warn("SW cache version", "Not found in HTML or sw.js")
-    else:
-        # HTML embeds SW inline — version should be present
-        warn("SW cache version", "Not found in HTML and no sw.js found")
+    html_dir = _os.path.dirname(_os.path.abspath(sys.argv[1]))
+    candidate_paths = [
+        _os.path.join(html_dir, 'sw.js'),
+        _os.path.join(html_dir, '..', 'gitpush', 'sw.js'),
+        _os.path.join(html_dir, 'gitpush', 'sw.js'),
+    ]
+    sw_found = False
+    for sw_path in candidate_paths:
+        if _os.path.exists(sw_path):
+            sw_content = open(sw_path).read()
+            sw_v2 = re.search(r"carecompanion-v(\d+)", sw_content)
+            if sw_v2:
+                ok(f"SW cache versioned in sw.js (v{sw_v2.group(1)})")
+            else:
+                warn("SW cache version", f"sw.js found at {sw_path} but no version string")
+            sw_found = True
+            break
+    if not sw_found:
+        warn("SW cache version", "No sw.js found — cannot verify cache version")
 
 if has("SKIP_WAITING"): ok("SKIP_WAITING handler present")
 else: fail("SKIP_WAITING", "Update mechanism missing")
@@ -884,6 +892,102 @@ if chart_bars_css:
         ok("chart-bars uses align-items:flex-end — bars grow from baseline up")
     else:
         warn("chart-bars align-items not flex-end", "Bars may not align to baseline correctly")
+
+
+# ════════════════════════════════════════
+#  LAYER 20 — MISSING COVERAGE GAPS
+#  Checks identified from real bugs found in production:
+#  confirm() on all deletes, PRN division-by-zero, scroll targets,
+#  toast calls, todayKey format, nav highlight index, refill guard.
+# ════════════════════════════════════════
+
+# 20a — confirm() on ALL destructive deletes (not just 4)
+for fn in ['deleteMedication', 'deleteAppointment']:
+    block = find(rf'function {fn}.*?^}}', re.DOTALL | re.MULTILINE)
+    if block and 'confirm(' in block.group(0):
+        ok(f"{fn}() has confirm() before delete")
+    else:
+        warn(f"{fn}() missing confirm()", "Accidental deletes with no undo")
+
+# 20b — PRN division-by-zero guard in pill/refill math
+# freqToDoseCount must have a default return of 1 (not 0) so Math.floor(pills/doses) never divides by zero
+freq_body = fn_body('freqToDoseCount')
+if freq_body:
+    # Extract the final return value (default case, after all .includes() branches)
+    default_returns = re.findall(r'return\s+(\d+)\s*;', freq_body)
+    if default_returns and default_returns[-1] == '1':
+        ok("freqToDoseCount default return is 1 — no divide-by-zero in daysLeft")
+    else:
+        fail("freqToDoseCount default return", f"Default return is '{default_returns[-1] if default_returns else 'missing'}' — should be 1 to prevent divide-by-zero")
+else:
+    warn("freqToDoseCount not found", "Cannot verify divide-by-zero protection")
+
+# 20c — goToMedication uses getElementById (scroll target must be rendered first)
+gotoMed = fn_body('goToMedication')
+if gotoMed:
+    if 'getElementById' in gotoMed and 'scrollIntoView' in gotoMed:
+        ok("goToMedication() uses getElementById + scrollIntoView (unambiguous scroll target)")
+    else:
+        fail("goToMedication()", "Must use getElementById for scroll target, not querySelector")
+
+# 20d — navigateToAppointment uses getElementById
+gotoAppt = fn_body('navigateToAppointment')
+if gotoAppt:
+    if 'getElementById' in gotoAppt and 'scrollIntoView' in gotoAppt:
+        ok("navigateToAppointment() uses getElementById + scrollIntoView")
+    else:
+        fail("navigateToAppointment()", "Must use getElementById for scroll target")
+
+# 20e — showToast() called after key mutations (save and delete)
+toast_calls = count(r'showToast\(')
+if toast_calls >= 6:
+    ok(f"showToast() called after mutations ({toast_calls} call sites)")
+else:
+    warn(f"showToast() only {toast_calls} call sites", "Users may not get feedback after save/delete — aim for ≥6")
+
+# 20f — todayKey format is stable (date-only string, not datetime)
+# getTodayKey() should return a date-only key (not datetime) so checks survive page reloads
+getTodayKey_body = fn_body('getTodayKey')
+if getTodayKey_body:
+    if re.search(r"split\(['\"]T['\"]\)\[0\]|toLocaleDateString|slice\(0,\s*10\)", getTodayKey_body):
+        ok("getTodayKey() returns date-only string — med checks stable across midnight")
+    else:
+        warn("getTodayKey() format unclear", "Key may include time component — checks could reset mid-day")
+else:
+    warn("getTodayKey() not found", "Cannot verify med check key format is date-only")
+
+# 20g — navigate() uses el parameter for highlight (not fragile index lookup)
+# Best pattern: navigate(page, el) → el.classList.add('active')
+# This is immune to index mis-counts (the [2] vs [3] bug).
+nav_fn_body = fn_body('navigate')
+if nav_fn_body:
+    # Check it removes active from all nav items first
+    if re.search(r"querySelectorAll.*nav-item.*forEach.*remove.*active|forEach.*classList\.remove.*active", nav_fn_body):
+        ok("navigate() clears all nav-item active classes before setting new one")
+    else:
+        warn("navigate() active-clear", "May not clear previous active nav item before highlighting new one")
+    # Check it adds active via the passed element, not a hardcoded index
+    if re.search(r"\bel\b.*classList.*add.*active|classList.*add.*active.*\bel\b", nav_fn_body):
+        ok("navigate() highlights active nav via passed 'el' parameter — immune to index bugs")
+    elif re.search(r"navItems\s*\[\s*\d+\s*\].*active", nav_fn_body):
+        warn("navigate() uses hardcoded navItems[N] index", "Index must match DOM order exactly — easy to break (the [2] vs [3] bug)")
+    else:
+        warn("navigate() active highlight method unclear", "Verify correct nav item is highlighted on each page transition")
+else:
+    warn("navigate() body not found", "Cannot verify nav highlight logic")
+
+# 20h — refill threshold guard (daysLeft threshold defined, not hardcoded 0)
+if find(r'daysLeft\s*[<>]=?\s*\d+|refillThreshold|LOW_SUPPLY|days.*<.*\d'):
+    ok("Refill alert has threshold comparison (not just == 0)")
+else:
+    warn("Refill threshold", "Could not confirm daysLeft threshold — may only alert at exactly 0 days")
+
+# 20i — deleteLog has confirm() guard (function is named deleteLog, not deleteLogEntry)
+block = find(r'function deleteLog\b.*?^}', re.DOTALL | re.MULTILINE)
+if block and 'confirm(' in block.group(0):
+    ok("deleteLog() has confirm() before delete")
+else:
+    warn("deleteLog() missing confirm()", "Log entries can be deleted with no undo dialog")
 
 
 # ════════════════════════════════════════
