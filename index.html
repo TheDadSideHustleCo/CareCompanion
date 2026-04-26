@@ -3514,21 +3514,6 @@ function goToMedication(medId) {
   }, 120);
 }
 
-function quickUpdatePills(id, inputEl) {
-  const val = parseInt(inputEl.value);
-  if (isNaN(val) || val < 0) { showToast('Enter a valid pill count', 'error'); return; }
-  const meds = load(KEYS.medications);
-  const med = meds.find(m => m.id === id);
-  if (!med) return;
-  med.pills = val;
-  med.pillsMax = Math.max(val, med.pillsMax || val);
-  save(KEYS.medications, meds);
-  renderMedications();
-  renderMedicationPrintTable();
-  renderRefillAlerts();
-  renderDashboard();
-  showToast('💊 Pill count updated');
-}
 
 function renderRefillAlerts() {
   const el = document.getElementById('refill-alerts');
