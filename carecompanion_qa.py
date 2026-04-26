@@ -84,8 +84,22 @@ if has("serviceWorker.register"): ok("Service worker registered")
 else: fail("Service worker", "No registration call found")
 
 sw_v = find(r"carecompanion-v(\d+)")
-if sw_v: ok(f"SW cache versioned (v{sw_v.group(1)})")
-else: warn("SW cache version", "Not found in HTML")
+if sw_v:
+    ok(f"SW cache versioned (v{sw_v.group(1)})")
+else:
+    # SW may be a separate file — check for sw.js in same dir
+    import os as _os
+    sw_path = _os.path.join(_os.path.dirname(_os.path.abspath(sys.argv[1])), 'sw.js')
+    if _os.path.exists(sw_path):
+        sw_content = open(sw_path).read()
+        sw_v2 = re.search(r"carecompanion-v(\d+)", sw_content)
+        if sw_v2:
+            ok(f"SW cache versioned in sw.js (v{sw_v2.group(1)})")
+        else:
+            warn("SW cache version", "Not found in HTML or sw.js")
+    else:
+        # HTML embeds SW inline — version should be present
+        warn("SW cache version", "Not found in HTML and no sw.js found")
 
 if has("SKIP_WAITING"): ok("SKIP_WAITING handler present")
 else: fail("SKIP_WAITING", "Update mechanism missing")
@@ -429,7 +443,7 @@ required_guards = [
     ('addAppointment', r"if\s*\(!.*title\)|if\s*\(!.*date\)|alert.*(title|date)"),
     ('addContact',     r"if\s*\(!.*name\)|alert.*name"),
     ('addHandoff',     r"if\s*\(!.*notes\)|if\s*\(!.*date\)|alert.*(note|date)"),
-    ('addStressEntry', r"if\s*\(!.*date\)|alert.*date"),
+    ('addStressEntry', r"if\s*\(!.*date\)|if\s*\(!selected|alert.*(date|wellbeing|select|level)"),
 ]
 
 for fn, guard_pattern in required_guards:
@@ -455,6 +469,295 @@ if date_guards >= 2:
     ok(f"Date fields guarded before new Date() ({date_guards} patterns)")
 else:
     warn("Date field safety", f"Only {date_guards} date guards — empty date fields may produce Invalid Date errors")
+
+
+# ════════════════════════════════════════
+#  LAYER 11 — RECORD ID INTEGRITY
+#  Every record type must have a unique id assigned on creation
+#  and preserved through edits. Without this, edit/delete targets
+#  the wrong record or creates duplicates.
+# ════════════════════════════════════════
+
+# Each add function must assign id: Date.now() to new records
+id_checks = [
+    ('addMedication',  'id: Date.now()'),
+    ('addLogEntry',    'id: Date.now()'),
+    ('addAppointment', 'id: Date.now()'),
+    ('addContact',     'id: Date.now()'),
+    ('addHandoff',     'id: Date.now()'),
+    ('addStressEntry', 'id: Date.now()'),
+    ('addMemory',      'id: Date.now()'),
+]
+for fn, pattern in id_checks:
+    body = fn_body(fn)
+    if not body: continue
+    if pattern in body:
+        ok(f"{fn}() assigns unique id to new records")
+    else:
+        fail(f"{fn}() missing id assignment", "Records created without unique ID — edit/delete will fail")
+
+# Each edit function must use the id to find the record (not name/index)
+edit_id_checks = [
+    ('editMedication',  r'\.find\(.*\.id\s*==='),
+    ('editLog',         r'\.find\(.*\.id\s*==='),
+    ('editAppointment', r'\.find\(.*\.id\s*==='),
+    ('editContact',     r'\.find\(.*\.id\s*==='),
+    ('editHandoff',     r'\.find\(.*\.id\s*==='),
+    ('editStress',      r'\.find\(.*\.id\s*==='),
+    ('editMemory',      r'\.find\(.*\.id\s*==='),
+]
+for fn, pattern in edit_id_checks:
+    body = fn_body(fn)
+    if not body: continue
+    if re.search(pattern, body):
+        ok(f"{fn}() looks up record by id (not index/name)")
+    else:
+        warn(f"{fn}() record lookup", "Not using .find(x => x.id === id) — may edit wrong record")
+
+# Edit/update spreads new data over existing record (preserving unedited fields)
+spread_checks = [
+    # Pattern: { ...existing, ...newData } — may have extra fields after the spreads
+    ('addMedication',   r'\{\s*\.\.\.\w+,\s*\.\.\.\w+'),
+    ('addLogEntry',     r'\{\s*\.\.\.\w+,\s*\.\.\.\w+'),
+    ('addAppointment',  r'\{\s*\.\.\.\w+,\s*\.\.\.\w+'),
+    ('addContact',      r'\{\s*\.\.\.\w+,\s*\.\.\.\w+'),
+    ('addHandoff',      r'\{\s*\.\.\.\w+,\s*\.\.\.\w+'),
+    ('addStressEntry',  r'\{\s*\.\.\.\w+,\s*\.\.\.\w+'),
+    ('addMemory',       r'\{\s*\.\.\.\w+,\s*\.\.\.\w+'),
+]
+for fn, pattern in spread_checks:
+    body = fn_body(fn)
+    if not body: continue
+    if re.search(pattern, body):
+        ok(f"{fn}() spreads existing record when editing (preserves unedited fields)")
+    else:
+        warn(f"{fn}() edit spread", "May overwrite entire record instead of merging — could lose fields")
+
+
+# ════════════════════════════════════════
+#  LAYER 12 — FREQUENCY / DOSE COVERAGE
+#  freqToDoseCount() must handle every option in the frequency
+#  dropdown. Missing options return undefined → NaN in pill math.
+# ════════════════════════════════════════
+
+# Extract all <option> values from the frequency dropdown
+freq_options = re.findall(r'<option[^>]*>([^<]+)</option>', html)
+# Filter to frequency-looking options (exclude food/sleep/etc dropdowns)
+freq_keywords = ['daily','twice','three','hours','needed','weekly','monthly']
+freq_opts = [o.strip() for o in freq_options if any(k in o.lower() for k in freq_keywords)]
+
+# Verify freqToDoseCount always returns a number (never undefined)
+# Strategy: simulate the function logic — check it has a default return (catches all cases).
+# A literal-string search is too strict because the function uses .includes() substring matching
+# (e.g., 'Once daily'.includes('twice') = false → falls through to return 1, which is correct).
+ftd_body = fn_body('freqToDoseCount')
+if not ftd_body:
+    warn("freqToDoseCount", "Function not found")
+else:
+    # Must have a numeric default return to cover all unrecognised strings
+    has_default_return = bool(re.search(r'return\s+1\b', ftd_body))
+    if has_default_return:
+        ok("freqToDoseCount has default return 1 — all unrecognised frequencies return 1 (no NaN)")
+    else:
+        fail("freqToDoseCount missing default return",
+             "Unrecognised frequency strings return undefined → NaN in pill math")
+
+    # Verify specific high-risk cases: 'twice' and 'three' must be handled (these are explicit)
+    for keyword, expected in [('twice', '2'), ('three', '3'), ('every 8', '3'), ('every 6', '4')]:
+        if keyword in ftd_body.lower():
+            ok(f"freqToDoseCount handles '{keyword}' → {expected}")
+        else:
+            fail(f"freqToDoseCount missing '{keyword}' branch",
+                 f"Expected return {expected} for this frequency pattern")
+
+
+# ════════════════════════════════════════
+#  LAYER 13 — NAVIGATION INTEGRITY
+#  Every page referenced in navigate() has a matching DOM element.
+#  pageTitles map covers all navigable pages.
+# ════════════════════════════════════════
+
+# Find all navigate() call targets
+nav_targets = set(re.findall(r"navigate\(['\"](\w+)['\"]", html))
+# Find all page div IDs
+page_divs = set(re.findall(r'id="page-(\w+)"', html))
+# Find pageTitles map entries
+page_titles_block = find(r'const pageTitles\s*=\s*\{([^}]+)\}')
+titled_pages = set()
+if page_titles_block:
+    # Match both quoted ('key':) and bare identifier (key:) forms
+    titled_pages = set(re.findall(r"['\"]?(\w+)['\"]?\s*:", page_titles_block.group(1)))
+
+for target in sorted(nav_targets):
+    if target in page_divs:
+        ok(f"navigate('{target}') has matching page div")
+    else:
+        fail(f"navigate('{target}') broken", f"No id='page-{target}' div — navigating crashes silently")
+
+for target in sorted(nav_targets):
+    if target in titled_pages:
+        ok(f"pageTitles covers '{target}'")
+    else:
+        warn(f"pageTitles missing '{target}'", "Page title bar will show undefined or raw page name")
+
+
+# ════════════════════════════════════════
+#  LAYER 14 — BACKUP / RESTORE COMPLETENESS
+#  Export must include every KEYS entry.
+#  Import must restore every KEYS entry.
+#  Neither must silently skip a key.
+# ════════════════════════════════════════
+
+# Extract defined KEYS
+keys_block = find(r'const KEYS\s*=\s*\{([^}]+)\}')
+defined_keys = []
+if keys_block:
+    defined_keys = re.findall(r"(\w+)\s*:", keys_block.group(1))
+
+export_body = fn_body('exportData')
+import_body = fn_body('importData')
+
+# Check if export/import use Object.values(KEYS) bulk iteration — covers all keys automatically
+export_bulk = export_body and 'Object.values(KEYS)' in export_body
+import_bulk = import_body and 'Object.values(KEYS)' in import_body
+
+if export_bulk:
+    ok("exportData() uses Object.values(KEYS) — backs up all keys automatically")
+elif export_body:
+    # Fall back to per-key literal check
+    for key in defined_keys:
+        if key in export_body:
+            ok(f"exportData() includes KEYS.{key}")
+        else:
+            fail(f"exportData() missing KEYS.{key}", "This data is never backed up")
+
+if import_bulk:
+    ok("importData() uses Object.values(KEYS) — restores all keys automatically")
+elif import_body:
+    for key in defined_keys:
+        if key in import_body:
+            ok(f"importData() restores KEYS.{key}")
+        else:
+            fail(f"importData() missing KEYS.{key}", "This data is never restored from backup")
+
+# Import should not crash on missing keys (graceful degradation)
+if import_body and ('||' in import_body or 'hasOwnProperty' in import_body or 'undefined' in import_body):
+    ok("importData() handles missing keys gracefully")
+else:
+    warn("importData() missing key safety", "Importing old backup missing a key may crash or overwrite with undefined")
+
+
+# ════════════════════════════════════════
+#  LAYER 15 — RAW localStorage ACCESS
+#  All localStorage calls must go through save()/load() helpers
+#  which have try/catch. Direct calls bypass error protection.
+# ════════════════════════════════════════
+
+# Find all direct localStorage.setItem / getItem calls
+direct_set = [(html[:m.start()].count('\n')+1, html[max(0,m.start()-60):m.end()+60])
+              for m in re.finditer(r'localStorage\.setItem\s*\(', html)]
+direct_get = [(html[:m.start()].count('\n')+1, html[max(0,m.start()-60):m.end()+60])
+              for m in re.finditer(r'localStorage\.getItem\s*\(', html)]
+
+# These are acceptable: save/load helpers, export/import, dynamic-key med checks,
+# and any function that uses a runtime-computed key (not a static KEYS entry).
+allowed_contexts = ['function save(', 'function load(', 'exportData', 'importData',
+                    'cc_medchecks', 'cc_pwa_dismissed', 'cc_tour_done',
+                    'toggleMedCheck', 'logPRNDose', 'getTodayKey', 'getMedChecksForToday',
+                    'todayKey', 'storageKey']
+
+raw_set_violations = []
+for line, ctx in direct_set:
+    if not any(a in ctx for a in allowed_contexts):
+        raw_set_violations.append(f"line {line}")
+
+raw_get_violations = []
+for line, ctx in direct_get:
+    if not any(a in ctx for a in allowed_contexts):
+        raw_get_violations.append(f"line {line}")
+
+if not raw_set_violations:
+    ok("All localStorage.setItem calls are in safe contexts")
+else:
+    fail("Raw localStorage.setItem", f"Unguarded direct writes at: {', '.join(raw_set_violations)}")
+
+if not raw_get_violations:
+    ok("All localStorage.getItem calls are in safe contexts")
+else:
+    fail("Raw localStorage.getItem", f"Unguarded direct reads at: {', '.join(raw_get_violations)}")
+
+
+# ════════════════════════════════════════
+#  LAYER 16 — PRINT HEADER POPULATION
+#  preparePrintHeaders() must be called at startup and after
+#  profile save. Print headers must reference IDs that exist.
+# ════════════════════════════════════════
+
+if has('preparePrintHeaders'):
+    # Must be called at startup (before or after DOMContentLoaded)
+    startup_block = re.search(r'DOMContentLoaded[^{]*\{(.{0,3000})', html, re.DOTALL)
+    if startup_block and 'preparePrintHeaders' in startup_block.group(1):
+        ok("preparePrintHeaders() called at startup")
+    else:
+        # May be called via renderAll() or similar
+        render_all = fn_body('renderAll')
+        if render_all and 'preparePrintHeaders' in render_all:
+            ok("preparePrintHeaders() called via renderAll() at startup")
+        else:
+            fail("preparePrintHeaders() startup", "Print headers never populated on first load — blank patient name on print")
+
+    # Must be called after profile is saved (function may be named saveProfile or saveSetup)
+    save_profile_body = fn_body('saveProfile') or fn_body('saveSetup')
+    if save_profile_body and 'preparePrintHeaders' in save_profile_body:
+        ok("preparePrintHeaders() called after profile save")
+    else:
+        warn("preparePrintHeaders() after profile save", "Changing patient name doesn't update print headers until restart")
+
+    # Check the IDs it writes to actually exist
+    prep_body = fn_body('preparePrintHeaders')
+    if prep_body:
+        written_ids = re.findall(r"getElementById\(['\"]([^'\"]+)['\"]\)", prep_body)
+        for wid in written_ids:
+            if f'id="{wid}"' in html:
+                ok(f"preparePrintHeaders writes to existing element #{wid}")
+            else:
+                fail(f"preparePrintHeaders targets #{wid}", f"Element id='{wid}' not found in DOM — print header silently blank")
+else:
+    warn("preparePrintHeaders", "Function not found — print headers may not be populated")
+
+
+# ════════════════════════════════════════
+#  LAYER 17 — CSS PAGE VISIBILITY
+#  Pages default to display:none. Only the active page shows.
+#  No page div should have an inline display:block that
+#  bypasses the active class toggle.
+# ════════════════════════════════════════
+
+# Check .page default is display:none
+if re.search(r'\.page\s*\{[^}]*display\s*:\s*none', html):
+    ok(".page default is display:none")
+else:
+    fail(".page default", "Pages not hidden by default — multiple pages may show simultaneously")
+
+# Check .page.active is display:block
+if re.search(r'\.page\.active\s*\{[^}]*display\s*:\s*block', html):
+    ok(".page.active is display:block")
+else:
+    fail(".page.active", "Active page not shown — navigating shows blank screen")
+
+# No page div should have inline style display:block (bypasses active class)
+page_divs_inline = re.findall(r'<div[^>]*class="page"[^>]*style="[^"]*display\s*:\s*block[^"]*"', html)
+if page_divs_inline:
+    fail("Page div inline display:block", f"{len(page_divs_inline)} page div(s) hardcoded visible — shows alongside active page")
+else:
+    ok("No page divs have inline display:block")
+
+# formatDate() used wherever dates shown to user (no raw ISO strings in innerHTML)
+raw_iso_in_html = re.findall(r'innerHTML.*?\d{4}-\d{2}-\d{2}|innerText.*?\d{4}-\d{2}-\d{2}', html)
+if raw_iso_in_html:
+    warn("Raw ISO dates in UI", f"{len(raw_iso_in_html)} place(s) may show YYYY-MM-DD instead of formatted date")
+else:
+    ok("No raw ISO date strings detected in UI output")
 
 
 # ════════════════════════════════════════

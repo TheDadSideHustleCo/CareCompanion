@@ -2191,6 +2191,7 @@ function saveSetup() {
   };
   save(KEYS.profile, profile);
   updateProfileDisplay(profile);
+  preparePrintHeaders(null);
   // Sync emergency card name/dob/condition if not manually saved yet
   const ec = load(KEYS.emergency, {});
   if (ec._saved !== true) {
