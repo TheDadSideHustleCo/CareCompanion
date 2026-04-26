@@ -2492,13 +2492,6 @@ function renderMedications() {
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
-        ${m.pills != null ? `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;margin-bottom:4px;">
-          <input type="number" id="pill-input-${m.id}" value="${m.pills}" min="0" step="1"
-            style="width:54px;text-align:center;font-size:1rem;font-weight:700;border:1.5px solid var(--border);border-radius:8px;padding:4px 2px;background:var(--warm-white);"
-            aria-label="Pill count for ${m.name}">
-          <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:0.85rem;"
-            onclick="quickUpdatePills(${m.id}, document.getElementById('pill-input-${m.id}'))">💊</button>
-        </div>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="editMedication(${m.id})" aria-label="Edit ${m.name}">✏️</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteMedication(${m.id})" aria-label="Delete ${m.name}">✕</button>
       </div>
