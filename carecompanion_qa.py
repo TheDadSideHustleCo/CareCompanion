@@ -893,11 +893,11 @@ if chart_bars_css:
     else:
         warn("chart-bars align-items not flex-end", "Bars may not align to baseline correctly")
 
-# Chart labels show day-only (slice(8)) not full MM-DD (slice(5)) — prevents truncation on phone
-if find(r"slice\(8\)"):
-    ok("Chart labels use day-only format (slice(8)) — readable on narrow phone screens")
+# Chart labels show weekday name (Mon/Tue) not raw date — readable on narrow phone screens
+if find(r"weekday.*short|short.*weekday"):
+    ok("Chart labels use weekday short name (Mon/Tue) — readable on narrow phone screens")
 else:
-    warn("Chart date labels", "Labels may show MM-DD format — truncates to '04-1' on phone screens")
+    warn("Chart date labels", "Labels may show MM-DD format — truncates on phone screens")
 
 
 # ════════════════════════════════════════
