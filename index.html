@@ -3723,7 +3723,7 @@ function renderDashboard() {
 
   // Upcoming appts in dashboard
   const apptEl = document.getElementById('dashboard-appts');
-  const upcomingList = appts.filter(a => a.date >= today).slice(0, 5);
+  const upcomingList = appts.filter(a => a.date >= today && !a.attended).slice(0, 5);
   if (!upcomingList.length) {
     apptEl.innerHTML = '<div class="empty-state" style="padding:16px 0;"><p>No upcoming appointments.</p></div>';
   } else {
