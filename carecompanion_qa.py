@@ -784,6 +784,59 @@ else:
 
 
 # ════════════════════════════════════════
+#  LAYER 18 — MOBILE LAYOUT INTEGRITY
+#  Hard min-width values wider than a phone viewport (~390px) inside
+#  scrollable containers cause overflow that bleeds off-screen.
+#  Any element with a fixed min-width > 360px is a mobile layout risk.
+# ════════════════════════════════════════
+
+MOBILE_VIEWPORT = 390  # conservative phone width in px
+
+# Find all min-width declarations in CSS (px values only)
+min_width_decls = re.findall(r'([\w\-\.#]+[^{]*)\{[^}]*min-width\s*:\s*(\d+)px', html, re.DOTALL)
+for selector, val in min_width_decls:
+    px = int(val)
+    selector = selector.strip().split('\n')[-1].strip()
+    if px > MOBILE_VIEWPORT:
+        fail(f"Mobile overflow risk: {selector} min-width:{px}px",
+             f"Wider than mobile viewport ({MOBILE_VIEWPORT}px) — will overflow on phones")
+    elif px > 300:
+        # warn on anything that might be tight on narrow phones
+        warn(f"Mobile layout check: {selector} min-width:{px}px",
+             f"May be tight on narrow phones (viewport ~{MOBILE_VIEWPORT}px)")
+
+# Also catch inline style min-width overrides in templates (style="...min-width:Xpx...")
+# Exclude @media query conditions (min-width inside @media(...) is a breakpoint, not an element width)
+html_no_media = re.sub(r'@media[^{]+\{', '', html)  # strip media query headers
+inline_min = re.findall(r'style="[^"]*min-width\s*:\s*(\d+)px', html_no_media)
+inline_wide = [int(v) for v in inline_min if int(v) > MOBILE_VIEWPORT]
+if inline_wide:
+    for w in inline_wide:
+        fail(f"Inline style min-width:{w}px",
+             f"Hard-coded inline width wider than mobile viewport — will overflow on phones")
+else:
+    ok(f"No inline style min-width values wider than {MOBILE_VIEWPORT}px")
+
+# Check that chart containers have overflow-x:auto (so if they do scroll, it's intentional)
+chart_containers = re.findall(r'\.chart-container\s*\{([^}]+)\}', html)
+for block in chart_containers:
+    if 'overflow-x' in block or 'overflow' in block:
+        ok("chart-container has overflow-x set")
+    else:
+        fail("chart-container missing overflow-x",
+             "Charts that exceed container width will bleed off-screen instead of scrolling")
+
+# Check grid-2 collapses to single column on mobile
+mobile_blocks = re.findall(r'@media[^{]*max-width[^{]*\{(.+?)(?=@media|\Z)', html, re.DOTALL)
+grid2_collapses = any('grid-2' in b and '1fr' in b for b in mobile_blocks)
+if grid2_collapses:
+    ok("grid-2 collapses to single column on mobile")
+else:
+    fail("grid-2 mobile breakpoint missing",
+         "Two-column grid stays two columns on phones — content too narrow to read")
+
+
+# ════════════════════════════════════════
 #  REPORT
 # ════════════════════════════════════════
 print()
