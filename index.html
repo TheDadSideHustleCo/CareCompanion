@@ -834,11 +834,13 @@
     margin-top: 16px; position: relative;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
   }
+  .chart-wrap {
+    width: 100%;
+  }
   .chart-bars {
     display: flex; align-items: flex-end;
     gap: 4px; height: 120px;
     border-bottom: 2px solid var(--border);
-    padding-bottom: 4px;
     width: 100%;
   }
   .chart-bar-wrap {
@@ -850,12 +852,15 @@
     width: 100%; border-radius: 4px 4px 0 0;
     min-height: 4px; transition: height 0.4s ease;
   }
+  .chart-labels {
+    display: flex; gap: 4px; width: 100%; margin-top: 4px;
+  }
   .chart-label {
+    flex: 1; min-width: 18px;
     font-size: 0.65rem; color: var(--text-muted);
-    text-align: center; margin-top: 4px;
+    text-align: center;
     font-weight: 600; white-space: nowrap;
-    overflow: hidden; width: 100%;
-    text-overflow: clip;
+    overflow: hidden; text-overflow: clip;
   }
   .chart-value {
     font-size: 0.9rem; font-weight: 700;
@@ -4059,43 +4064,49 @@ function renderCharts() {
     days.push(d.toISOString().split('T')[0]);
   }
 
+  // Helper: render bars + separate label row so labels never clip inside bar area
+  function renderBarChart(el, barRows, labelDays) {
+    el.innerHTML =
+      `<div class="chart-bars">${barRows.join('')}</div>` +
+      `<div class="chart-labels">${labelDays.map(d => `<div class="chart-label">${d.slice(5)}</div>`).join('')}</div>`;
+  }
+
   // Mood chart
   const moodEl = document.getElementById('chart-mood');
   if (moodEl) {
-    moodEl.innerHTML = days.map(day => {
+    const bars = days.map(day => {
       const entry = logs.find(l => l.date === day);
       const score = entry ? (MOOD_SCORE[entry.mood] || 3) : 0;
       const color = entry ? (MOOD_COLOR[entry.mood] || 'var(--border)') : 'var(--border)';
       const pct = (score / 5) * 100;
-      const label = day.slice(5); // MM-DD
       return `<div class="chart-bar-wrap">
         ${entry ? `<div class="chart-value">${entry.mood || '—'}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
         <div class="chart-bar" style="height:${pct}%;background:${color};width:100%;"></div>
-        <div class="chart-label">${label}</div>
       </div>`;
-    }).join('');
+    });
+    renderBarChart(moodEl, bars, days);
   }
 
   // Pain chart
   const painEl = document.getElementById('chart-pain');
   if (painEl) {
-    painEl.innerHTML = days.map(day => {
+    const bars = days.map(day => {
       const entry = logs.find(l => l.date === day);
-      const pain = entry && entry.pain ? parseInt(entry.pain) : 0;
+      const pain = entry && entry.pain ? parseFloat(entry.pain) : 0;
       const pct = (pain / 10) * 100;
       const color = pain >= 7 ? 'var(--rose)' : pain >= 4 ? 'var(--gold)' : 'var(--sage)';
       return `<div class="chart-bar-wrap">
         ${pain > 0 ? `<div class="chart-value">${pain}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
         <div class="chart-bar" style="height:${Math.max(pct,2)}%;background:${pain > 0 ? color : 'var(--border)'};width:100%;opacity:${pain > 0 ? 1 : 0.3};"></div>
-        <div class="chart-label">${day.slice(5)}</div>
       </div>`;
-    }).join('');
+    });
+    renderBarChart(painEl, bars, days);
   }
 
   // Stress chart
   const stressEl = document.getElementById('chart-stress');
   if (stressEl) {
-    stressEl.innerHTML = days.map(day => {
+    const bars = days.map(day => {
       const entry = stress.find(s => s.date === day);
       const score = entry ? entry.score : 0;
       const pct = (score / 10) * 100;
@@ -4103,9 +4114,9 @@ function renderCharts() {
       return `<div class="chart-bar-wrap">
         ${score > 0 ? `<div class="chart-value">${score}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
         <div class="chart-bar" style="height:${Math.max(pct,2)}%;background:${score > 0 ? color : 'var(--border)'};width:100%;opacity:${score > 0 ? 1 : 0.3};"></div>
-        <div class="chart-label">${day.slice(5)}</div>
       </div>`;
-    }).join('');
+    });
+    renderBarChart(stressEl, bars, days);
   }
 
   // ── Summary callouts ──
