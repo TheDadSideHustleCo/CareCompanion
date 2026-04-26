@@ -837,6 +837,56 @@ else:
 
 
 # ════════════════════════════════════════
+#  LAYER 19 — CHART DOM INTEGRITY
+#  renderBarChart() must write bars directly into the .chart-bars element,
+#  not wrap them in a second .chart-bars div (causes nested containers,
+#  broken layout, labels clipped inside fixed-height area).
+#  Labels must live in a sibling .chart-labels div OUTSIDE .chart-bars.
+# ════════════════════════════════════════
+
+# Check renderBarChart doesn't create nested .chart-bars
+render_bar_fn = fn_body('renderBarChart')
+if render_bar_fn:
+    # Bad pattern: innerHTML includes a new chart-bars wrapper
+    if 'chart-bars' in render_bar_fn:
+        fail("renderBarChart nests chart-bars div",
+             "innerHTML contains a new .chart-bars wrapper inside the existing one — double container breaks layout")
+    else:
+        ok("renderBarChart writes bars directly into container, no nested chart-bars")
+
+    # Labels must be in a separate element outside the bar container
+    if 'chart-labels' in render_bar_fn and ('after(' in render_bar_fn or 'insertAdjacentHTML' in render_bar_fn or 'appendChild' in render_bar_fn):
+        ok("renderBarChart places labels in sibling element outside bar container")
+    elif 'chart-labels' in render_bar_fn:
+        warn("renderBarChart label placement unclear",
+             "Verify labels are outside fixed-height .chart-bars container or they will be clipped")
+    else:
+        warn("renderBarChart has no label row", "Date labels may be missing from charts")
+else:
+    # If renderBarChart doesn't exist, check each chart render directly
+    for chart_id in ['chart-mood', 'chart-pain', 'chart-stress']:
+        # Verify the chart element IDs exist in HTML
+        if f'id="{chart_id}"' in html:
+            ok(f"#{chart_id} element exists in DOM")
+        else:
+            fail(f"#{chart_id} missing", "Chart container not found — chart will silently fail to render")
+
+# Check chart-bars has padding-top to give room for values above bars
+chart_bars_css = re.search(r'\.chart-bars\s*\{([^}]+)\}', html)
+if chart_bars_css:
+    block = chart_bars_css.group(1)
+    if 'padding-top' in block or 'padding:' in block:
+        ok("chart-bars has padding-top — room for values above tallest bar")
+    else:
+        warn("chart-bars missing padding-top",
+             "Values/emojis above bars may be clipped by the container top edge")
+    if 'align-items: flex-end' in block or 'align-items:flex-end' in block:
+        ok("chart-bars uses align-items:flex-end — bars grow from baseline up")
+    else:
+        warn("chart-bars align-items not flex-end", "Bars may not align to baseline correctly")
+
+
+# ════════════════════════════════════════
 #  REPORT
 # ════════════════════════════════════════
 print()
