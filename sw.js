@@ -1,7 +1,6 @@
 const CACHE = 'carecompanion-v30';
 const FILES = [
   '/CareCompanion/',
-  '/CareCompanion/index.html',
   '/CareCompanion/manifest.json',
   '/CareCompanion/icon-192.png',
   '/CareCompanion/icon-512.png',
