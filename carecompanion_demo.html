@@ -1538,7 +1538,7 @@
           <div><label style="visibility:hidden;">spacer</label><div style="padding-top:8px;font-size:1rem;color:var(--text-muted);" id="med-days-left"></div></div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="addMedication()">➕ Add Medication</button>
+          <button class="btn btn-primary" id="med-save-btn" onclick="addMedication()">➕ Add Medication</button>
           <button class="btn btn-outline" onclick="toggleMedForm(false)">Cancel</button>
         </div>
       </div>
@@ -2372,7 +2372,7 @@ function clearMedForm() {
   const freq = document.getElementById('med-freq'); if (freq) freq.selectedIndex = 0;
   const food = document.getElementById('med-food'); if (food) food.selectedIndex = 0;
   const daysLeft = document.getElementById('med-days-left'); if (daysLeft) daysLeft.textContent = '';
-  const btn = document.querySelector('#page-medications .btn-primary');
+  const btn = document.getElementById('med-save-btn');
   if (btn) btn.textContent = '➕ Add Medication';
   updateMedTimeInputs();
 }
@@ -2400,7 +2400,7 @@ function addMedication() {
     if (existing && data.pills != null) data.pillsMax = Math.max(data.pills, existing.pillsMax || data.pills);
     meds = meds.map(m => m.id === editingMedId ? { ...m, ...data } : m);
     editingMedId = null;
-    document.querySelector('#page-medications .btn-primary').textContent = '➕ Add Medication';
+    document.getElementById('med-save-btn').textContent = '➕ Add Medication';
   } else {
     meds.push({ id: Date.now(), ...data });
   }
@@ -2466,7 +2466,7 @@ function editMedication(id) {
   const toggleBtn = document.getElementById('med-form-toggle');
   if (card) card.style.display = 'block';
   if (toggleBtn) toggleBtn.textContent = '✕ Cancel';
-  document.querySelector('#page-medications .btn-primary').textContent = '💾 Update Medication';
+  document.getElementById('med-save-btn').textContent = '💾 Update Medication';
   document.getElementById('med-name').focus();
   document.getElementById('med-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -2474,7 +2474,7 @@ function editMedication(id) {
 function deleteMedication(id) {
   if (!confirm('Remove this medication?')) return;
   save(KEYS.medications, load(KEYS.medications).filter(m => m.id !== id));
-  if (editingMedId === id) { editingMedId = null; document.querySelector('#page-medications .btn-primary').textContent = '➕ Add Medication'; }
+  if (editingMedId === id) { editingMedId = null; document.getElementById('med-save-btn').textContent = '➕ Add Medication'; }
   renderMedications();
   renderMedicationPrintTable();
   renderDashboard();
@@ -2500,7 +2500,7 @@ function renderMedications() {
     return;
   }
   el.innerHTML = meds.map(m => `
-    <div class="med-card" id="med-card-${CSS.escape(m.name || '')}" data-med-name="${(m.name||'').replace(/"/g,'&quot;')}">
+    <div class="med-card" id="med-card-${m.id}">
       <div class="med-info" style="flex:1;">
         <h4>${m.name} <span class="badge badge-sage">${m.dose || ''}</span></h4>
         <p>${m.frequency}${m.food ? ' · ' + m.food : ''}</p>
@@ -2512,7 +2512,14 @@ function renderMedications() {
           ${m.pills != null ? (() => { const d = Math.floor(m.pills / freqToDoseCount(m.frequency)); const c = d <= 3 ? 'var(--rose-dark)' : d <= 7 ? '#7a5e2a' : 'var(--sage-dark)'; return `<span class="med-time-pill" style="color:${c};font-weight:600;">💊 ${m.pills} pills (~${d}d supply)</span>`; })() : ''}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+        ${m.pills != null ? `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;margin-bottom:4px;">
+          <input type="number" id="pill-input-${m.id}" value="${m.pills}" min="0" step="1"
+            style="width:54px;text-align:center;font-size:1rem;font-weight:700;border:1.5px solid var(--border);border-radius:8px;padding:4px 2px;background:var(--warm-white);"
+            aria-label="Pill count for ${m.name}">
+          <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:0.85rem;"
+            onclick="quickUpdatePills(${m.id}, document.getElementById('pill-input-${m.id}'))">💊</button>
+        </div>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="editMedication(${m.id})" aria-label="Edit ${m.name}">✏️</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteMedication(${m.id})" aria-label="Delete ${m.name}">✕</button>
       </div>
@@ -3515,23 +3522,34 @@ function renderGettingStarted() {
 // ════════════════════════════════════════════════
 //  REFILL ALERTS
 // ════════════════════════════════════════════════
-function goToMedication(name) {
+function goToMedication(medId) {
   // Navigate to medications tab, then scroll to and highlight the specific card
   navigate('medications', document.querySelector('[onclick*=medications]'));
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const card = document.getElementById('med-card-' + CSS.escape(name));
-      if (!card) return;
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      card.style.transition = 'box-shadow 0.3s, outline 0.3s';
-      card.style.outline = '3px solid var(--primary)';
-      card.style.boxShadow = '0 0 0 6px rgba(122,158,135,0.25)';
-      setTimeout(() => {
-        card.style.outline = '';
-        card.style.boxShadow = '';
-      }, 2000);
-    });
-  });
+  setTimeout(() => {
+    const card = document.getElementById('med-card-' + medId);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.style.transition = 'box-shadow 0.4s, outline 0.4s';
+    card.style.outline = '3px solid var(--primary)';
+    card.style.boxShadow = '0 0 0 8px rgba(122,158,135,0.25)';
+    setTimeout(() => { card.style.outline = ''; card.style.boxShadow = ''; }, 2200);
+  }, 120);
+}
+
+function quickUpdatePills(id, inputEl) {
+  const val = parseInt(inputEl.value);
+  if (isNaN(val) || val < 0) { showToast('Enter a valid pill count', 'error'); return; }
+  const meds = load(KEYS.medications);
+  const med = meds.find(m => m.id === id);
+  if (!med) return;
+  med.pills = val;
+  med.pillsMax = Math.max(val, med.pillsMax || val);
+  save(KEYS.medications, meds);
+  renderMedications();
+  renderMedicationPrintTable();
+  renderRefillAlerts();
+  renderDashboard();
+  showToast('💊 Pill count updated');
 }
 
 function renderRefillAlerts() {
@@ -3553,7 +3571,7 @@ function renderRefillAlerts() {
 
     // Pills-based: running low
     if (daysLeft != null && daysLeft <= 7) {
-      const entry = { name: m.name, refill: m.refill, daysLeft };
+      const entry = { id: m.id, name: m.name, refill: m.refill, daysLeft };
       if (daysLeft <= 0) overdue.push(entry);
       else soon.push(entry);
       return;
@@ -3562,9 +3580,9 @@ function renderRefillAlerts() {
     if (!m.refill) return;
     const refillDate = new Date(m.refill + 'T12:00:00');
     if (refillDate < today) {
-      overdue.push({ name: m.name, refill: m.refill, daysLeft: null });
+      overdue.push({ id: m.id, name: m.name, refill: m.refill, daysLeft: null });
     } else if (refillDate <= in7) {
-      soon.push({ name: m.name, refill: m.refill, daysLeft: null });
+      soon.push({ id: m.id, name: m.name, refill: m.refill, daysLeft: null });
     }
   });
 
@@ -3579,7 +3597,7 @@ function renderRefillAlerts() {
     html += `
       <div style="background:rgba(201,132,122,0.1);border:1.5px solid var(--rose-light);border-radius:12px;padding:16px 20px;margin-bottom:10px;">
         <div style="font-weight:700;color:var(--rose-dark);margin-bottom:8px;">🔴 Refill overdue</div>
-        ${overdue.map(m => `<div onclick="goToMedication('${(m.name||'').replace(/'/g,"\\'")}') " style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(201,132,122,0.15)'" onmouseout="this.style.background=''">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? (m.daysLeft <= 0 ? 'out of pills' : m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left') : 'refill was due ' + formatDate(m.refill)} <span style="margin-left:auto;font-size:0.9rem;color:var(--rose-dark);">View →</span></div>`).join('')}
+        ${overdue.map(m => `<div onclick="goToMedication(${m.id})" style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(201,132,122,0.15)'" onmouseout="this.style.background=''">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? (m.daysLeft <= 0 ? 'out of pills' : m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left') : 'refill was due ' + formatDate(m.refill)} <span style="margin-left:auto;font-size:0.9rem;color:var(--rose-dark);">View →</span></div>`).join('')}
       </div>`;
   }
 
@@ -3587,7 +3605,7 @@ function renderRefillAlerts() {
     html += `
       <div style="background:rgba(196,164,107,0.1);border:1.5px solid var(--gold-light);border-radius:12px;padding:16px 20px;">
         <div style="font-weight:700;color:#7a5e2a;margin-bottom:8px;">🟡 Refill due soon</div>
-        ${soon.map(m => `<div onclick="goToMedication('${(m.name||'').replace(/'/g,"\\'")}') " style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(196,164,107,0.15)'" onmouseout="this.style.background=''">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left' : 'due ' + formatDate(m.refill)} <span style="margin-left:auto;font-size:0.9rem;color:#7a5e2a;">View →</span></div>`).join('')}
+        ${soon.map(m => `<div onclick="goToMedication(${m.id})" style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(196,164,107,0.15)'" onmouseout="this.style.background=''">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left' : 'due ' + formatDate(m.refill)} <span style="margin-left:auto;font-size:0.9rem;color:#7a5e2a;">View →</span></div>`).join('')}
       </div>`;
   }
 
