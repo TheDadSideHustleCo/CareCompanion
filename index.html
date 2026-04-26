@@ -834,37 +834,36 @@
     margin-top: 16px; position: relative;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
   }
-  .chart-wrap {
-    width: 100%;
-  }
   .chart-bars {
     display: flex; align-items: flex-end;
-    gap: 4px; height: 120px;
+    gap: 4px; height: 140px;
     border-bottom: 2px solid var(--border);
     width: 100%;
+    padding-top: 24px; /* room for values above tallest bar */
+    box-sizing: border-box;
   }
   .chart-bar-wrap {
-    flex: 1; min-width: 18px; display: flex; flex-direction: column;
-    align-items: center; gap: 2px; height: 100%;
-    justify-content: flex-end;
+    flex: 1; min-width: 18px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end;
+    height: 100%; position: relative;
   }
   .chart-bar {
     width: 100%; border-radius: 4px 4px 0 0;
-    min-height: 4px; transition: height 0.4s ease;
+    min-height: 3px;
+  }
+  .chart-value {
+    font-size: 0.85rem; font-weight: 700; line-height: 1;
+    margin-bottom: 2px; text-align: center;
   }
   .chart-labels {
-    display: flex; gap: 4px; width: 100%; margin-top: 4px;
+    display: flex; gap: 4px; width: 100%; margin-top: 6px;
   }
   .chart-label {
     flex: 1; min-width: 18px;
-    font-size: 0.65rem; color: var(--text-muted);
-    text-align: center;
-    font-weight: 600; white-space: nowrap;
-    overflow: hidden; text-overflow: clip;
-  }
-  .chart-value {
-    font-size: 0.9rem; font-weight: 700;
-    color: var(--text);
+    font-size: 0.6rem; color: var(--text-muted);
+    text-align: center; font-weight: 600;
+    white-space: nowrap; overflow: hidden;
   }
   .chart-legend {
     display: flex; gap: 20px; margin-top: 14px;
@@ -4064,11 +4063,16 @@ function renderCharts() {
     days.push(d.toISOString().split('T')[0]);
   }
 
-  // Helper: render bars + separate label row so labels never clip inside bar area
+  // Helper: render bars directly into el (which IS the chart-bars div), then append label row after it
   function renderBarChart(el, barRows, labelDays) {
-    el.innerHTML =
-      `<div class="chart-bars">${barRows.join('')}</div>` +
-      `<div class="chart-labels">${labelDays.map(d => `<div class="chart-label">${d.slice(5)}</div>`).join('')}</div>`;
+    el.innerHTML = barRows.join('');
+    // Remove any existing label row and add fresh one after el
+    const existing = el.nextElementSibling;
+    if (existing && existing.classList.contains('chart-labels')) existing.remove();
+    const labelRow = document.createElement('div');
+    labelRow.className = 'chart-labels';
+    labelRow.innerHTML = labelDays.map(d => `<div class="chart-label">${d.slice(5)}</div>`).join('');
+    el.after(labelRow);
   }
 
   // Mood chart
