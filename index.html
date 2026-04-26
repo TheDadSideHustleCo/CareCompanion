@@ -836,14 +836,14 @@
   }
   .chart-bars {
     display: flex; align-items: flex-end;
-    gap: 6px; height: 120px;
+    gap: 4px; height: 120px;
     border-bottom: 2px solid var(--border);
     padding-bottom: 4px;
-    min-width: 560px; /* ensures 14 bars never collapse below readable width */
+    width: 100%;
   }
   .chart-bar-wrap {
-    flex: 1; min-width: 28px; display: flex; flex-direction: column;
-    align-items: center; gap: 4px; height: 100%;
+    flex: 1; min-width: 18px; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; height: 100%;
     justify-content: flex-end;
   }
   .chart-bar {
@@ -851,9 +851,13 @@
     min-height: 4px; transition: height 0.4s ease;
   }
   .chart-label {
-    font-size: 0.9rem; color: var(--text-muted);
-    text-align: center; margin-top: 6px;
+    font-size: 0.7rem; color: var(--text-muted);
+    text-align: center; margin-top: 4px;
     font-weight: 700; white-space: nowrap;
+    overflow: hidden; max-width: 100%;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    height: 28px;
   }
   .chart-value {
     font-size: 0.9rem; font-weight: 700;
