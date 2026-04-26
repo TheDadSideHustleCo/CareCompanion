@@ -1609,7 +1609,7 @@
           <label>Questions for Doctor</label>
           <textarea id="log-questions" placeholder="Things to remember to ask at the next appointment…" style="min-height:55px;"></textarea>
         </div>
-        <button class="btn btn-primary" onclick="addLogEntry()">💾 Save Entry</button>
+        <button class="btn btn-primary" id="log-save-btn" onclick="addLogEntry()">💾 Save Entry</button>
       </div>
 
       <div class="card">
@@ -1694,7 +1694,7 @@
             <div style="font-size:0.95rem;color:var(--text-muted);margin-top:6px;">Max 52 occurrences. Each instance can be edited or deleted individually.</div>
           </div>
         </div>
-        <button class="btn btn-primary" onclick="addAppointment()">➕ Add Appointment</button>
+        <button class="btn btn-primary" id="appt-save-btn" onclick="addAppointment()">➕ Add Appointment</button>
       </div>
 
       <div class="card">
@@ -1733,7 +1733,7 @@
           <label>Notes</label>
           <input type="text" id="ct-notes" placeholder="e.g. Prefers calls in morning, referral needed…">
         </div>
-        <button class="btn btn-primary" onclick="addContact()">➕ Add Contact</button>
+        <button class="btn btn-primary" id="ct-save-btn" onclick="addContact()">➕ Add Contact</button>
       </div>
 
       <div id="careteam-list"></div>
@@ -1794,7 +1794,7 @@
           <label>General Notes</label>
           <textarea id="ho-notes" placeholder="Anything else the next caregiver needs to know…" style="min-height:70px;"></textarea>
         </div>
-        <button class="btn btn-primary" onclick="addHandoff()">💾 Save Handoff Note</button>
+        <button class="btn btn-primary" id="ho-save-btn" onclick="addHandoff()">💾 Save Handoff Note</button>
       </div>
 
       <div id="handoff-list"></div>
@@ -1860,7 +1860,7 @@
           <label>One thing I'm grateful for today</label>
           <input type="text" id="stress-gratitude" placeholder="Even small things count…">
         </div>
-        <button class="btn btn-primary" onclick="addStressEntry()">💾 Save Check-In</button>
+        <button class="btn btn-primary" id="stress-save-btn" onclick="addStressEntry()">💾 Save Check-In</button>
       </div>
 
       <div class="card" id="burnout-alert" style="display:none;background:rgba(201,132,122,0.08);border-color:var(--rose-light);">
@@ -2552,7 +2552,7 @@ function addLogEntry() {
   if (editingLogId) {
     logs = logs.map(l => l.id === editingLogId ? { ...l, ...data } : l);
     editingLogId = null;
-    document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Save Entry';
+    document.getElementById('log-save-btn').textContent = '💾 Save Entry';
   } else {
     logs.unshift({ id: Date.now(), ...data });
   }
@@ -2581,7 +2581,7 @@ function editLog(id) {
   document.getElementById('log-pain').value = l.pain || '';
   document.getElementById('log-symptoms').value = l.symptoms || '';
   document.getElementById('log-questions').value = l.questions || '';
-  document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Update Entry';
+  document.getElementById('log-save-btn').textContent = '💾 Update Entry';
   document.getElementById('log-date').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -2646,7 +2646,7 @@ function renderSymptomLog() {
 
 function deleteLog(id) {
   if (!confirm('Remove this log entry?')) return;
-  if (editingLogId === id) { editingLogId = null; document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Save Entry'; }
+  if (editingLogId === id) { editingLogId = null; document.getElementById('log-save-btn').textContent = '💾 Save Entry'; }
   save(KEYS.logs, load(KEYS.logs).filter(l => l.id !== id));
   renderSymptomLog();
   renderDashboard();
@@ -2693,7 +2693,7 @@ function addAppointment() {
   if (editingApptId) {
     appts = appts.map(a => a.id === editingApptId ? { ...a, ...data } : a);
     editingApptId = null;
-    document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment';
+    document.getElementById('appt-save-btn').textContent = '➕ Add Appointment';
   } else {
     const isRecurring = document.getElementById('appt-recurring').checked;
     const recurEnd = document.getElementById('appt-recur-end').value;
@@ -2739,7 +2739,7 @@ function editAppointment(id) {
   document.getElementById('appt-recurring').checked = false;
   document.getElementById('appt-recurring-fields').style.display = 'none';
   document.getElementById('appt-recurring-row').style.display = 'none';
-  document.querySelector('#page-appointments .btn-primary').textContent = '💾 Update Appointment';
+  document.getElementById('appt-save-btn').textContent = '💾 Update Appointment';
   document.getElementById('appt-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -2796,12 +2796,12 @@ function deleteAppointment(id) {
       if (choice) {
         save(KEYS.appointments, appts.filter(a => !(a.recurringGroupId === target.recurringGroupId && a.date >= target.date)));
         showToast(`🗑️ ${future.length} appointments removed`, 'info');
-        if (editingApptId === id) { editingApptId = null; document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
+        if (editingApptId === id) { editingApptId = null; document.getElementById('appt-save-btn').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
         renderAppointments(); renderDashboard(); return;
       }
     }
   }
-  if (editingApptId === id) { editingApptId = null; document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
+  if (editingApptId === id) { editingApptId = null; document.getElementById('appt-save-btn').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
   save(KEYS.appointments, appts.filter(a => a.id !== id));
   renderAppointments();
   renderDashboard();
@@ -2885,7 +2885,7 @@ function addContact() {
   if (editingContactId) {
     team = team.map(c => c.id === editingContactId ? { ...c, ...data } : c);
     editingContactId = null;
-    document.querySelector('#page-careteam .btn-primary').textContent = '➕ Add Contact';
+    document.getElementById('ct-save-btn').textContent = '➕ Add Contact';
   } else {
     team.push({ id: Date.now(), ...data });
   }
@@ -2907,13 +2907,13 @@ function editContact(id) {
   document.getElementById('ct-email').value = c.email || '';
   document.getElementById('ct-facility').value = c.facility || '';
   document.getElementById('ct-notes').value = c.notes || '';
-  document.querySelector('#page-careteam .btn-primary').textContent = '💾 Update Contact';
+  document.getElementById('ct-save-btn').textContent = '💾 Update Contact';
   document.getElementById('ct-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function deleteContact(id) {
   if (!confirm('Remove this contact?')) return;
-  if (editingContactId === id) { editingContactId = null; document.querySelector('#page-careteam .btn-primary').textContent = '➕ Add Contact'; }
+  if (editingContactId === id) { editingContactId = null; document.getElementById('ct-save-btn').textContent = '➕ Add Contact'; }
   save(KEYS.careteam, load(KEYS.careteam).filter(c => c.id !== id));
   renderCareTeam();
   renderCareTeamPrintGrid();
@@ -2966,7 +2966,7 @@ function addHandoff() {
   if (editingHandoffId) {
     handoffs = handoffs.map(h => h.id === editingHandoffId ? { ...h, ...data, updatedAt: now } : h);
     editingHandoffId = null;
-    document.querySelector('#page-handoff .btn-primary').textContent = '💾 Save Handoff Note';
+    document.getElementById('ho-save-btn').textContent = '💾 Save Handoff Note';
   } else {
     handoffs.unshift({ id: Date.now(), ...data, createdAt: now, updatedAt: now });
   }
@@ -2989,13 +2989,13 @@ function editHandoff(id) {
   document.getElementById('ho-mood').value = h.mood || '';
   document.getElementById('ho-watch').value = h.watch || '';
   document.getElementById('ho-notes').value = h.notes || '';
-  document.querySelector('#page-handoff .btn-primary').textContent = '💾 Update Handoff Note';
+  document.getElementById('ho-save-btn').textContent = '💾 Update Handoff Note';
   document.getElementById('ho-date').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function deleteHandoff(id) {
   if (!confirm('Remove this handoff note?')) return;
-  if (editingHandoffId === id) { editingHandoffId = null; document.querySelector('#page-handoff .btn-primary').textContent = '💾 Save Handoff Note'; }
+  if (editingHandoffId === id) { editingHandoffId = null; document.getElementById('ho-save-btn').textContent = '💾 Save Handoff Note'; }
   save(KEYS.handoff, load(KEYS.handoff).filter(h => h.id !== id));
   renderHandoff();
   renderDashboard();
@@ -3131,7 +3131,7 @@ function addStressEntry() {
   if (editingStressId) {
     entries = entries.map(e => e.id === editingStressId ? { ...e, ...data } : e);
     editingStressId = null;
-    document.querySelector('#page-stress .btn-primary').textContent = '💾 Save Check-In';
+    document.getElementById('stress-save-btn').textContent = '💾 Save Check-In';
   } else {
     entries.unshift({ id: Date.now(), ...data });
   }
@@ -3152,7 +3152,7 @@ function editStress(id) {
   selectStress(e.score);
   document.getElementById('stress-notes').value = e.notes || '';
   document.getElementById('stress-gratitude').value = e.gratitude || '';
-  document.querySelector('#page-stress .btn-primary').textContent = '💾 Update Check-In';
+  document.getElementById('stress-save-btn').textContent = '💾 Update Check-In';
   document.querySelector('.stress-btn').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -3186,7 +3186,7 @@ function renderStress() {
 
 function deleteStress(id) {
   if (!confirm('Remove this check-in?')) return;
-  if (editingStressId === id) { editingStressId = null; document.querySelector('#page-stress .btn-primary').textContent = '💾 Save Check-In'; }
+  if (editingStressId === id) { editingStressId = null; document.getElementById('stress-save-btn').textContent = '💾 Save Check-In'; }
   save(KEYS.stress, load(KEYS.stress).filter(e => e.id !== id));
   renderStress();
   renderDashboard();
