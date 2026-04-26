@@ -71,6 +71,18 @@ else: fail("AI remnants", f"Found: {found}")
 if find(r'const KEYS\s*=\s*\{'): ok("KEYS object defined")
 else: fail("KEYS object", "localStorage key map missing")
 
+# Check for duplicate function definitions — later definition silently overrides earlier one
+fn_names = re.findall(r'\bfunction\s+(\w+)\s*\(', combined)
+from collections import Counter as _Counter
+fn_counts = _Counter(fn_names)
+dupes = [name for name, cnt in fn_counts.items() if cnt > 1]
+if not dupes:
+    ok("No duplicate function definitions")
+else:
+    for name in dupes:
+        fail(f"Duplicate function: {name}()",
+             f"Defined {fn_counts[name]}x — later definition silently overrides earlier one")
+
 for k in ['profile','medications','logs','appointments','careteam','handoff','memories','stress','disclaimer','medChecks','emergency']:
     if k in html: ok(f"KEYS.{k} present")
     else: fail(f"KEYS.{k}", "Missing from KEYS object")

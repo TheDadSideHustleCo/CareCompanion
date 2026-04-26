@@ -3502,6 +3502,11 @@ function renderGettingStarted() {
 //  REFILL ALERTS
 // ════════════════════════════════════════════════
 function goToMedication(medId) {
+  // Clear dashboard search if open
+  const si = document.getElementById('dash-med-search');
+  const sr = document.getElementById('dash-med-results');
+  if (si) si.value = '';
+  if (sr) sr.innerHTML = '';
   // Navigate to medications tab, then scroll to and highlight the specific card
   navigate('medications', document.querySelector('[onclick*=medications]'));
   setTimeout(() => {
@@ -4365,32 +4370,7 @@ function renderMedSearch(query) {
   `).join('');
 }
 
-function goToMedication(id) {
-  // Clear the dashboard search box and results
-  const searchInput = document.getElementById('dash-med-search');
-  const searchResults = document.getElementById('dash-med-results');
-  if (searchInput) searchInput.value = '';
-  if (searchResults) searchResults.innerHTML = '';
-  // Navigate to medications section
-  const navEl = document.querySelector('[onclick*="navigate(\'medications\'"]') || document.querySelectorAll('.nav-item')[1];
-  navigate('medications', navEl);
-  // After render, highlight the target med card
-  setTimeout(() => {
-    const cards = document.querySelectorAll('#medications-list .med-card');
-    const meds = load(KEYS.medications);
-    const idx = meds.findIndex(m => m.id === id);
-    if (idx >= 0 && cards[idx]) {
-      cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      cards[idx].style.transition = 'box-shadow 0.3s, background 0.3s';
-      cards[idx].style.boxShadow = '0 0 0 3px var(--sage)';
-      cards[idx].style.background = 'rgba(122,158,135,0.12)';
-      setTimeout(() => {
-        cards[idx].style.boxShadow = '';
-        cards[idx].style.background = '';
-      }, 2000);
-    }
-  }, 150);
-}
+// NOTE: goToMedication is defined above (line ~3504) — do not redefine here
 
 // ── Doctor Visit Prep Printer ──
 // window.print() is called inline on the button for Safari iOS compatibility
