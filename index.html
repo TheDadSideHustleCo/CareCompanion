@@ -851,13 +851,11 @@
     min-height: 4px; transition: height 0.4s ease;
   }
   .chart-label {
-    font-size: 0.7rem; color: var(--text-muted);
+    font-size: 0.65rem; color: var(--text-muted);
     text-align: center; margin-top: 4px;
-    font-weight: 700; white-space: nowrap;
-    overflow: hidden; max-width: 100%;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    height: 28px;
+    font-weight: 600; white-space: nowrap;
+    overflow: hidden; width: 100%;
+    text-overflow: clip;
   }
   .chart-value {
     font-size: 0.9rem; font-weight: 700;
@@ -1438,23 +1436,21 @@
         </div>
         <div id="charts-content" style="display:none;">
           <div id="chart-summaries" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;"></div>
-          <div class="grid-2">
-            <div>
-              <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Mood Over Time</div>
-              <div class="chart-container">
-                <div class="chart-bars" id="chart-mood"></div>
-                <div class="chart-legend">
-                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--sage);"></div>Good/Okay</div>
-                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--gold);"></div>Tired/Anxious</div>
-                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--rose);"></div>Low/Agitated</div>
-                </div>
+          <div>
+            <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Mood Over Time</div>
+            <div class="chart-container">
+              <div class="chart-bars" id="chart-mood"></div>
+              <div class="chart-legend">
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--sage);"></div>Good/Okay</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--gold);"></div>Tired/Anxious</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--rose);"></div>Low/Agitated</div>
               </div>
             </div>
-            <div>
-              <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Pain Level (0–10)</div>
-              <div class="chart-container">
-                <div class="chart-bars" id="chart-pain"></div>
-              </div>
+          </div>
+          <div style="margin-top:20px;">
+            <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Pain Level (0–10)</div>
+            <div class="chart-container">
+              <div class="chart-bars" id="chart-pain"></div>
             </div>
           </div>
           <div style="margin-top:20px;">
@@ -4143,9 +4139,9 @@ function renderCharts() {
   let painSummary = '—';
   let painColor = 'var(--sage-dark)';
   let painBg = 'rgba(122,158,135,0.1)';
-  const painDays = loggedDays.filter(d => { const e = logs.find(l => l.date === d); return e && e.pain; });
+  const painDays = loggedDays.filter(d => { const e = logs.find(l => l.date === d); return e && e.pain !== '' && e.pain != null && !isNaN(parseFloat(e.pain)); });
   if (painDays.length) {
-    const avg = painDays.reduce((s,d) => { const e = logs.find(l => l.date === d); return s + parseInt(e.pain || 0); }, 0) / painDays.length;
+    const avg = painDays.reduce((s,d) => { const e = logs.find(l => l.date === d); return s + (parseFloat(e.pain) || 0); }, 0) / painDays.length;
     const avgRounded = avg.toFixed(1);
     painSummary = `Avg ${avgRounded}/10 over ${painDays.length} logged day${painDays.length !== 1 ? 's' : ''}`;
     if (avg <= 3) { painColor = 'var(--sage-dark)'; painBg = 'rgba(122,158,135,0.12)'; }
