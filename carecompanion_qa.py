@@ -612,6 +612,17 @@ for target in sorted(nav_targets):
     else:
         warn(f"pageTitles missing '{target}'", "Page title bar will show undefined or raw page name")
 
+# Check navigate() render dispatch — every page should have a render call inside navigate()
+navigate_body = fn_body('navigate')
+if navigate_body:
+    for target in sorted(nav_targets):
+        # Each page should have: if (page === 'target') renderXxx() or similar
+        if f"'{target}'" in navigate_body or f'"{target}"' in navigate_body:
+            ok(f"navigate('{target}') has render dispatch")
+        else:
+            warn(f"navigate('{target}') missing render dispatch",
+                 "Page may show stale data — render not called on navigation")
+
 
 # ════════════════════════════════════════
 #  LAYER 14 — BACKUP / RESTORE COMPLETENESS
