@@ -832,15 +832,17 @@
     background: var(--cream);
     border-radius: 10px; padding: 16px;
     margin-top: 16px; position: relative;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
   }
   .chart-bars {
     display: flex; align-items: flex-end;
     gap: 6px; height: 120px;
     border-bottom: 2px solid var(--border);
     padding-bottom: 4px;
+    min-width: 560px; /* ensures 14 bars never collapse below readable width */
   }
   .chart-bar-wrap {
-    flex: 1; display: flex; flex-direction: column;
+    flex: 1; min-width: 28px; display: flex; flex-direction: column;
     align-items: center; gap: 4px; height: 100%;
     justify-content: flex-end;
   }
@@ -849,12 +851,12 @@
     min-height: 4px; transition: height 0.4s ease;
   }
   .chart-label {
-    font-size: 1rem; color: var(--text-muted);
+    font-size: 0.9rem; color: var(--text-muted);
     text-align: center; margin-top: 6px;
     font-weight: 700; white-space: nowrap;
   }
   .chart-value {
-    font-size: 1rem; font-weight: 700;
+    font-size: 0.9rem; font-weight: 700;
     color: var(--text);
   }
   .chart-legend {
@@ -2498,7 +2500,7 @@ function renderMedications() {
     return;
   }
   el.innerHTML = meds.map(m => `
-    <div class="med-card">
+    <div class="med-card" id="med-card-${CSS.escape(m.name || '')}" data-med-name="${(m.name||'').replace(/"/g,'&quot;')}">
       <div class="med-info" style="flex:1;">
         <h4>${m.name} <span class="badge badge-sage">${m.dose || ''}</span></h4>
         <p>${m.frequency}${m.food ? ' · ' + m.food : ''}</p>
@@ -3513,6 +3515,25 @@ function renderGettingStarted() {
 // ════════════════════════════════════════════════
 //  REFILL ALERTS
 // ════════════════════════════════════════════════
+function goToMedication(name) {
+  // Navigate to medications tab, then scroll to and highlight the specific card
+  navigate('medications', document.querySelector('[onclick*=medications]'));
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const card = document.getElementById('med-card-' + CSS.escape(name));
+      if (!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.transition = 'box-shadow 0.3s, outline 0.3s';
+      card.style.outline = '3px solid var(--primary)';
+      card.style.boxShadow = '0 0 0 6px rgba(122,158,135,0.25)';
+      setTimeout(() => {
+        card.style.outline = '';
+        card.style.boxShadow = '';
+      }, 2000);
+    });
+  });
+}
+
 function renderRefillAlerts() {
   const el = document.getElementById('refill-alerts');
   if (!el) return;
@@ -3558,8 +3579,7 @@ function renderRefillAlerts() {
     html += `
       <div style="background:rgba(201,132,122,0.1);border:1.5px solid var(--rose-light);border-radius:12px;padding:16px 20px;margin-bottom:10px;">
         <div style="font-weight:700;color:var(--rose-dark);margin-bottom:8px;">🔴 Refill overdue</div>
-        ${overdue.map(m => `<div style="font-size:1rem;color:var(--text);padding:3px 0;">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? (m.daysLeft <= 0 ? 'out of pills' : m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left') : 'refill was due ' + formatDate(m.refill)}</div>`).join('')}
-        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="navigate('medications', document.querySelector('[onclick*=medications]'))">Go to Medications →</button>
+        ${overdue.map(m => `<div onclick="goToMedication('${(m.name||'').replace(/'/g,"\\'")}') " style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(201,132,122,0.15)'" onmouseout="this.style.background=''">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? (m.daysLeft <= 0 ? 'out of pills' : m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left') : 'refill was due ' + formatDate(m.refill)} <span style="margin-left:auto;font-size:0.9rem;color:var(--rose-dark);">View →</span></div>`).join('')}
       </div>`;
   }
 
@@ -3567,8 +3587,7 @@ function renderRefillAlerts() {
     html += `
       <div style="background:rgba(196,164,107,0.1);border:1.5px solid var(--gold-light);border-radius:12px;padding:16px 20px;">
         <div style="font-weight:700;color:#7a5e2a;margin-bottom:8px;">🟡 Refill due soon</div>
-        ${soon.map(m => `<div style="font-size:1rem;color:var(--text);padding:3px 0;">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left' : 'due ' + formatDate(m.refill)}</div>`).join('')}
-        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="navigate('medications', document.querySelector('[onclick*=medications]'))">Go to Medications →</button>
+        ${soon.map(m => `<div onclick="goToMedication('${(m.name||'').replace(/'/g,"\\'")}') " style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(196,164,107,0.15)'" onmouseout="this.style.background=''">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left' : 'due ' + formatDate(m.refill)} <span style="margin-left:auto;font-size:0.9rem;color:#7a5e2a;">View →</span></div>`).join('')}
       </div>`;
   }
 
