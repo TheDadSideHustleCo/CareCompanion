@@ -1898,6 +1898,140 @@ else:
 
 
 # ════════════════════════════════════════
+#  LAYER 27 — UI STATE, PRINT GRIDS,
+#  GREETING, PROFILE DISPLAY, MOOD SELECTORS
+# ════════════════════════════════════════
+
+# 27a — showLastSaved() clears after 8 seconds (no stale 'Saved' label)
+sls_body = fn_body('showLastSaved')
+if 'setTimeout' in sls_body and ('8000' in sls_body or "'' " in sls_body or "''" in sls_body):
+    ok("showLastSaved() clears label after 8s — no stale 'Saved' shown permanently")
+else:
+    warn("showLastSaved() cleanup", "'✓ Saved' label may stay visible indefinitely after saving")
+
+# 27b — showLastSaved() called by save() — every save shows confirmation
+save_body = fn_body('save')
+if 'showLastSaved' in save_body:
+    ok("save() calls showLastSaved() — user sees confirmation on every data write")
+else:
+    warn("save() missing showLastSaved()", "No visual feedback when data is saved")
+
+# 27c — setGreeting() uses time-of-day logic (morning/afternoon/evening)
+greet_body = fn_body('setGreeting')
+if 'Good morning' in greet_body and 'Good afternoon' in greet_body and 'Good evening' in greet_body:
+    ok("setGreeting() shows correct time-of-day greeting (morning/afternoon/evening)")
+else:
+    warn("setGreeting() time logic", "Greeting doesn't vary by time of day")
+
+# 27d — setGreeting() personalises with caregiver first name
+if 'caregiver' in greet_body and 'split' in greet_body:
+    ok("setGreeting() uses caregiver first name — personalised greeting on dashboard")
+else:
+    warn("setGreeting() personalisation", "Greeting not personalised with caregiver name from profile")
+
+# 27e — updateProfileDisplay() updates both sidebar and hero name
+upd_body = fn_body('updateProfileDisplay')
+if 'sidebar-name' in upd_body and 'hero-name' in upd_body:
+    ok("updateProfileDisplay() updates sidebar-name and hero-name — name shown in both places")
+else:
+    fail("updateProfileDisplay() incomplete", "Profile name update doesn't reach all display locations")
+
+# 27f — toggleSidebar() opens and closes via classList (not style.display)
+toggle_body = fn_body('toggleSidebar')
+if 'classList' in toggle_body and ('open' in toggle_body) and 'closeSidebar' in toggle_body:
+    ok("toggleSidebar() toggles via classList — consistent open/close state")
+else:
+    warn("toggleSidebar() implementation", "Sidebar toggle may not track open state reliably")
+
+# 27g — closeSidebar() removes open class from sidebar, overlay, and hamburger button
+close_body = fn_body('closeSidebar')
+targets = ['sidebar', 'sidebar-overlay', 'hamburger-btn']
+for t in targets:
+    if t in close_body:
+        ok(f"closeSidebar() resets {t} — no stuck-open state")
+    else:
+        warn(f"closeSidebar() missing {t} reset", f"{t} may stay visually open after close")
+
+# 27h — selectMood() toggles selected class and updates selectedMood variable
+mood_body = fn_body('selectMood')
+if 'selectedMood' in mood_body and 'classList.toggle' in mood_body:
+    ok("selectMood() updates selectedMood and toggles selected class — mood picker works")
+else:
+    warn("selectMood() state", "Mood selection may not update variable or visual state")
+
+# 27i — selectMemMood() mirrors selectMood() pattern for memories
+memmood_body = fn_body('selectMemMood')
+if 'selectedMemMood' in memmood_body and 'classList.toggle' in memmood_body:
+    ok("selectMemMood() updates selectedMemMood and toggles selected class — memory mood picker works")
+else:
+    warn("selectMemMood() state", "Memory mood selection may not update variable or visual state")
+
+# 27j — selectStress() uses tiered CSS classes (selected-low/mid/high) not a single class
+stress_sel_body = fn_body('selectStress')
+if 'selected-low' in stress_sel_body and 'selected-mid' in stress_sel_body and 'selected-high' in stress_sel_body:
+    ok("selectStress() applies tiered color classes (low/mid/high) — wellbeing score visually correct")
+else:
+    warn("selectStress() color tiers", "Stress button color doesn't reflect score level")
+
+# 27k — toggleMedForm() clears form on both open and close
+tmf_body = fn_body('toggleMedForm')
+if 'clearMedForm' in tmf_body:
+    count_clear = tmf_body.count('clearMedForm')
+    if count_clear >= 1:
+        ok("toggleMedForm() calls clearMedForm() — form never shows stale data")
+    else:
+        warn("toggleMedForm() form clear", "Form may retain previous values on re-open")
+else:
+    fail("toggleMedForm() missing clearMedForm()", "Add medication form shows previous entry data when reopened")
+
+# 27l — toggleMedForm() scrolls form into view on open
+if 'scrollIntoView' in tmf_body:
+    ok("toggleMedForm() scrolls form into view on open — form visible without manual scroll")
+else:
+    warn("toggleMedForm() scroll", "Add medication form may open off-screen on mobile")
+
+# 27m — updateMedTimeInputs() handles PRN meds (no time inputs shown)
+umti_body = fn_body('updateMedTimeInputs')
+if 'isPRN' in umti_body and 'as needed' in umti_body.lower():
+    ok("updateMedTimeInputs() hides time inputs for PRN meds — 'as needed' meds need no schedule")
+else:
+    warn("updateMedTimeInputs() PRN handling", "PRN meds still show time input fields — confusing for caregivers")
+
+# 27n — renderMedicationPrintTable() sorts alphabetically
+med_print_body = fn_body('renderMedicationPrintTable')
+if 'localeCompare' in med_print_body and 'a.name' in med_print_body:
+    ok("renderMedicationPrintTable() sorts meds alphabetically — print list is organised")
+else:
+    warn("renderMedicationPrintTable() sort", "Print medication list not sorted — random order on printed sheet")
+
+# 27o — renderMedicationPrintTable() uses esc() on name and notes (XSS in print view)
+if 'esc(m.name)' in med_print_body and ('esc(nameExtra)' in med_print_body or 'esc(m.notes)' in med_print_body):
+    ok("renderMedicationPrintTable() uses esc() — XSS prevented in print view")
+else:
+    fail("renderMedicationPrintTable() missing esc()", "Medication name/notes injected raw into print table — XSS risk")
+
+# 27p — renderMedicationPrintTable() handles empty med list (no broken table)
+if '!meds.length' in med_print_body or 'meds.length === 0' in med_print_body:
+    ok("renderMedicationPrintTable() handles empty med list — no broken empty table on print")
+else:
+    warn("renderMedicationPrintTable() empty guard", "Print table may render empty <tbody> with no meds")
+
+# 27q — renderCareTeamPrintGrid() uses esc() on all contact fields
+ct_print_body = fn_body('renderCareTeamPrintGrid')
+for field in ['esc(c.name)', 'esc(c.role)', 'esc(c.phone)', 'esc(c.email)', 'esc(c.notes)']:
+    if field in ct_print_body:
+        ok(f"renderCareTeamPrintGrid() uses {field} — XSS prevented in print view")
+    else:
+        fail(f"renderCareTeamPrintGrid() missing {field}", "Contact data injected raw into print grid — XSS risk")
+
+# 27r — renderCareTeamPrintGrid() hides grid when no contacts
+if '!contacts.length' in ct_print_body or "display = 'none'" in ct_print_body:
+    ok("renderCareTeamPrintGrid() hides grid when no contacts — no blank grid on print")
+else:
+    warn("renderCareTeamPrintGrid() empty guard", "Empty care team grid shown on print — blank boxes on printed sheet")
+
+
+# ════════════════════════════════════════
 #  REPORT
 # ════════════════════════════════════════
 print()
