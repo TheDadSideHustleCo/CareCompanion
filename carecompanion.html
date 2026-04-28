@@ -3115,8 +3115,8 @@ function renderMemories() {
     <div class="memory-card">
       ${m.mood ? `<div class="memory-mood">${m.mood}</div>` : ''}
       <div class="memory-date">${formatDate(m.date)}</div>
-      <div class="memory-title">${m.title}</div>
-      ${m.text ? `<div class="memory-text">${m.text}</div>` : ''}
+      <div class="memory-title">${esc(m.title)}</div>
+      ${m.text ? `<div class="memory-text">${esc(m.text)}</div>` : ''}
       <div style="display:flex;gap:8px;margin-top:12px;">
         <button class="btn btn-ghost btn-sm" onclick="editMemory(${m.id})">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteMemory(${m.id})">✕ Remove</button>

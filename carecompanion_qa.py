@@ -1727,6 +1727,177 @@ else:
 
 
 # ════════════════════════════════════════
+#  LAYER 26 — RENDER FUNCTIONS, LOAD/SAVE,
+#  EMERGENCY CARD, MED TIME SORT,
+#  DATA SUMMARY, GOOD DAYS WIDGET
+# ════════════════════════════════════════
+
+# 26a — load() has try/catch — bad JSON doesn't crash app
+load_body = fn_body('load')
+if 'try' in load_body and 'catch' in load_body and 'fallback' in load_body:
+    ok("load() wraps JSON.parse in try/catch — corrupt localStorage doesn't crash app")
+else:
+    fail("load() missing try/catch", "Corrupt localStorage entry throws exception — entire app crashes on load")
+
+# 26b — load() returns fallback when key is null
+if 'return d ? JSON.parse(d) : fallback' in load_body or ('return' in load_body and 'fallback' in load_body):
+    ok("load() returns fallback when key is null — first-run always works")
+else:
+    fail("load() no null check", "Missing localStorage key throws on JSON.parse(null)")
+
+# 26c — renderMedications() shows empty state when no meds
+med_body = fn_body('renderMedications')
+if 'empty-state' in med_body and 'No medications' in html:
+    ok("renderMedications() shows empty state — no blank panel on first load")
+else:
+    warn("renderMedications() empty state", "Blank panel shown when no medications added yet")
+
+# 26d — renderMedications() shows 'no match' state when search has no results
+if 'No medications match' in html or 'no.*match' in med_body.lower():
+    ok("renderMedications() shows no-match state when search returns nothing")
+else:
+    warn("renderMedications() search empty state", "Blank panel shown when search returns no results")
+
+# 26e — renderMedications() sorts alphabetically by name
+if 'localeCompare' in med_body and 'a.name' in med_body:
+    ok("renderMedications() sorts alphabetically by name — consistent list order")
+else:
+    warn("renderMedications() sort", "Medications not sorted — order changes on every add/edit")
+
+# 26f — renderMedications() uses esc() on med name in buttons (XSS in aria-label)
+if 'esc(m.name)' in med_body:
+    ok("renderMedications() uses esc(m.name) — XSS prevented in aria-label and display")
+else:
+    fail("renderMedications() missing esc(m.name)", "Med name injected raw into aria-label — XSS risk")
+
+# 26g — renderSymptomLog() shows empty state when no logs
+log_body = fn_body('renderSymptomLog')
+if 'empty-state' in log_body and 'No entries' in html:
+    ok("renderSymptomLog() shows empty state — no blank panel on first load")
+else:
+    warn("renderSymptomLog() empty state", "Blank panel shown when no log entries exist")
+
+# 26h — renderSymptomLog() supports mood filter and text search
+if 'moodFilter' in log_body and 'query' in log_body:
+    ok("renderSymptomLog() supports mood filter and text search — log is findable")
+else:
+    warn("renderSymptomLog() filtering", "No search/filter on symptom log — hard to find entries")
+
+# 26i — renderSymptomLog() paginates results (PAGE constant)
+if 'PAGE' in log_body and 'slice(0, PAGE)' in log_body:
+    ok("renderSymptomLog() paginates at PAGE entries — no DOM overload with large logs")
+else:
+    warn("renderSymptomLog() pagination", "All entries rendered at once — hundreds of logs will slow DOM")
+
+# 26j — renderCareTeam() shows empty state when no contacts
+ct_body = fn_body('renderCareTeam')
+if 'empty-state' in ct_body and 'No contacts' in html:
+    ok("renderCareTeam() shows empty state — no blank panel on first load")
+else:
+    warn("renderCareTeam() empty state", "Blank panel shown when no care team contacts added")
+
+# 26k — renderCareTeam() uses esc() on name, phone, email, notes
+for field in ['esc(c.name)', 'esc(c.phone)', 'esc(c.email)', 'esc(c.notes)']:
+    if field in ct_body:
+        ok(f"renderCareTeam() uses {field} — XSS prevented")
+    else:
+        fail(f"renderCareTeam() missing {field}", "User-entered contact data injected raw into innerHTML — XSS risk")
+
+# 26l — renderMemories() shows empty state when no memories
+mem_body = fn_body('renderMemories')
+if 'empty-state' in mem_body and 'memory box is empty' in html:
+    ok("renderMemories() shows empty state — no blank panel on first load")
+else:
+    warn("renderMemories() empty state", "Blank panel shown when no memories added yet")
+
+# 26m — renderMemories() missing esc() on title/text is a risk
+if 'esc(m.title)' in mem_body or 'esc(m.text)' in mem_body:
+    ok("renderMemories() uses esc() on memory title/text — XSS prevented")
+else:
+    # memories uses m.title and m.text directly — check raw injection
+    if 'm.title' in mem_body and 'esc' not in mem_body:
+        fail("renderMemories() missing esc()", "Memory title/text injected raw into innerHTML — XSS risk")
+    else:
+        warn("renderMemories() esc() check", "Verify memory title and text are sanitized before innerHTML injection")
+
+# 26n — loadEmergencyCard() syncs name from profile (source of truth)
+ec_load_body = fn_body('loadEmergencyCard')
+if 'profile.name' in ec_load_body and 'ec-name' in ec_load_body:
+    ok("loadEmergencyCard() syncs name from profile — emergency card always shows current name")
+else:
+    warn("loadEmergencyCard() name sync", "Emergency card name not synced from profile — may show stale name")
+
+# 26o — loadEmergencyCard() auto-populates contact1 from care team when not saved
+if 'contact1' in ec_load_body and ('team.find' in ec_load_body or 'careteam' in ec_load_body.lower()):
+    ok("loadEmergencyCard() auto-populates contact1 from care team — less duplicate data entry")
+else:
+    warn("loadEmergencyCard() contact auto-fill", "Emergency contacts not pre-filled from care team")
+
+# 26p — updateEmergencyCard() uses esc() on med name/dose/frequency (XSS in preview)
+ec_update_body = fn_body('updateEmergencyCard')
+if 'esc(m.name)' in ec_update_body and 'esc(m.dose)' in ec_update_body:
+    ok("updateEmergencyCard() uses esc() on med fields — XSS prevented in print preview")
+else:
+    fail("updateEmergencyCard() missing esc()", "Medication names injected raw into emergency card preview — XSS risk")
+
+# 26q — medTimeToMinutes() returns -1 for PRN meds (sorts to top)
+mttm_body = fn_body('medTimeToMinutes')
+if 'isPRN' in mttm_body and 'return -1' in mttm_body:
+    ok("medTimeToMinutes() returns -1 for PRN meds — as-needed meds sort to top of schedule")
+else:
+    warn("medTimeToMinutes() PRN sort", "PRN meds not sorted separately — mixed into timed med schedule")
+
+# 26r — medTimeToMinutes() parses 12h am/pm format correctly (handles 12am edge case)
+if "ampm === 'am' && h === 12" in mttm_body and 'h = 0' in mttm_body:
+    ok("medTimeToMinutes() handles 12:xx am → 0 hours (midnight) — 12h parsing correct")
+else:
+    fail("medTimeToMinutes() 12am edge case", "12:xx am parsed as noon (720 min) not midnight (0 min) — sort order wrong for midnight meds")
+
+# 26s — renderDataSummary() counts all 7 data sections
+ds_body = fn_body('renderDataSummary')
+section_keys = ['medications', 'logs', 'appointments', 'careteam', 'handoff', 'memories', 'stress']
+for key in section_keys:
+    if key in ds_body:
+        ok(f"renderDataSummary() includes {key} section count")
+    else:
+        warn(f"renderDataSummary() missing {key}", f"{key} not shown in data summary — user can't see backup completeness")
+
+# 26t — renderGoodDaysWidget() streak loop guarded at 365
+gdw_body = fn_body('renderGoodDaysWidget')
+if 'streak < 365' in gdw_body or 'streak > 365' in gdw_body or 'streak >= 365' in gdw_body:
+    ok("renderGoodDaysWidget() streak loop guarded at 365 — no infinite loop")
+else:
+    fail("renderGoodDaysWidget() streak loop unguarded", "while loop without exit guard could hang browser on corrupt data")
+
+# 26u — renderGoodDaysWidget() shows empty state when no good days
+if 'empty-state' in gdw_body and 'No good days' in html:
+    ok("renderGoodDaysWidget() shows empty state — no blank panel when no happy entries")
+else:
+    warn("renderGoodDaysWidget() empty state", "Blank dashboard panel when no 😊 entries exist")
+
+# 26v — toggleRecurringFields() shows/hides recurring fields based on checkbox
+recur_toggle_body = fn_body('toggleRecurringFields')
+if 'appt-recurring' in recur_toggle_body and 'appt-recurring-fields' in recur_toggle_body:
+    ok("toggleRecurringFields() shows/hides recurring fields based on checkbox state")
+else:
+    fail("toggleRecurringFields() broken", "Recurring fields always shown or always hidden — checkbox has no effect")
+
+# 26w — getMedTimesValue() converts 24h input to 12h am/pm display format
+gmtv_body = fn_body('getMedTimesValue')
+if 'ampm' in gmtv_body and ('am' in gmtv_body or 'pm' in gmtv_body):
+    ok("getMedTimesValue() converts 24h browser input → 12h am/pm — stored times are human-readable")
+else:
+    warn("getMedTimesValue() time format", "Med times stored in 24h format — displayed as '14:00' not '2:00pm'")
+
+# 26x — renderCharts() handles empty state (no logs or stress entries)
+charts_body = fn_body('renderCharts')
+if 'charts-empty' in charts_body and 'display' in charts_body:
+    ok("renderCharts() shows empty state when no data — no broken chart on first load")
+else:
+    warn("renderCharts() empty state", "Charts may render empty/broken when no log or stress entries exist")
+
+
+# ════════════════════════════════════════
 #  REPORT
 # ════════════════════════════════════════
 print()
