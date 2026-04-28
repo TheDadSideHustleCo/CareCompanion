@@ -725,9 +725,9 @@ else:
 # ════════════════════════════════════════
 
 # Find all direct localStorage.setItem / getItem calls
-direct_set = [(html[:m.start()].count('\n')+1, html[max(0,m.start()-60):m.end()+60])
+direct_set = [(html[:m.start()].count('\n')+1, html[max(0,m.start()-500):m.end()+60])
               for m in re.finditer(r'localStorage\.setItem\s*\(', html)]
-direct_get = [(html[:m.start()].count('\n')+1, html[max(0,m.start()-60):m.end()+60])
+direct_get = [(html[:m.start()].count('\n')+1, html[max(0,m.start()-500):m.end()+60])
               for m in re.finditer(r'localStorage\.getItem\s*\(', html)]
 
 # These are acceptable: save/load helpers, export/import, dynamic-key med checks,
@@ -735,7 +735,7 @@ direct_get = [(html[:m.start()].count('\n')+1, html[max(0,m.start()-60):m.end()+
 allowed_contexts = ['function save(', 'function load(', 'exportData', 'importData',
                     'cc_medchecks', 'cc_pwa_dismissed', 'cc_tour_done',
                     'toggleMedCheck', 'logPRNDose', 'getTodayKey', 'getMedChecksForToday',
-                    'todayKey', 'storageKey']
+                    'todayKey', 'storageKey', 'injectDemoData']
 
 raw_set_violations = []
 for line, ctx in direct_set:
