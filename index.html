@@ -556,8 +556,9 @@
   }
   .appt-date-badge .day { font-size: 1.3rem; font-weight: 700; line-height: 1; }
   .appt-date-badge .mon { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .appt-info { min-width: 0; }
   .appt-info h4 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-  .appt-info p { font-size: 1.05rem; color: var(--text-muted); }
+  .appt-info p { font-size: 1.05rem; color: var(--text-muted); word-break: break-word; }
 
   /* ── STRESS CHECK ── */
   .stress-scale {
@@ -727,7 +728,9 @@
     .stat-card { padding: 14px 12px !important; }
     .stat-card .stat-value { font-size: 1.4rem !important; }
     .appt-item { flex-wrap: wrap; gap: 8px; }
-    .appt-date-badge { min-width: 44px; }
+    .appt-item .appt-info { flex: 1 1 0; min-width: 0; width: calc(100% - 60px); }
+    .appt-item .appt-actions { flex-direction: row !important; flex-wrap: wrap; width: 100%; justify-content: flex-end; order: 3; }
+    .appt-date-badge { min-width: 44px; flex-shrink: 0; }
     #chart-summaries { flex-direction: column; }
     .med-card { flex-wrap: wrap; }
     .getting-started { padding: 18px 16px; }
@@ -2049,6 +2052,11 @@ function load(key, fallback=[]) {
   try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; }
   catch { return fallback; }
 }
+// Sanitize user-entered text before injecting into innerHTML — prevents XSS
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 // ════════════════════════════════════════════════
 //  INIT
@@ -2485,9 +2493,9 @@ function renderMedications() {
   el.innerHTML = meds.map(m => `
     <div class="med-card" id="med-card-${m.id}">
       <div class="med-info" style="flex:1;">
-        <h4>${m.name} <span class="badge badge-sage">${m.dose || ''}</span></h4>
-        <p>${m.frequency}${m.food ? ' · ' + m.food : ''}</p>
-        ${m.notes ? `<p style="margin-top:4px;color:var(--text);">${m.notes}</p>` : ''}
+        <h4>${esc(m.name)} <span class="badge badge-sage">${m.dose || ''}</span></h4>
+        <p>${esc(m.frequency)}${m.food ? ' · ' + m.food : ''}</p>
+        ${m.notes ? `<p style="margin-top:4px;color:var(--text);">${esc(m.notes)}</p>` : ''}
         <div class="med-times">
           ${m.times ? m.times.split(',').map(t => `<span class="med-time-pill">⏰ ${t.trim()}</span>`).join('') : ''}
           ${m.doctor ? `<span class="med-time-pill">👩‍⚕️ ${m.doctor}</span>` : ''}
@@ -2496,8 +2504,8 @@ function renderMedications() {
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
-        <button class="btn btn-ghost btn-sm" onclick="editMedication(${m.id})" aria-label="Edit ${m.name}">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteMedication(${m.id})" aria-label="Delete ${m.name}">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="editMedication(${m.id})" aria-label="Edit ${esc(m.name)}">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteMedication(${m.id})" aria-label="Delete ${esc(m.name)}">✕</button>
       </div>
     </div>
   `).join('');
@@ -2595,8 +2603,8 @@ function renderSymptomLog() {
         ${l.appetite ? `<span class="badge badge-muted">Appetite: ${l.appetite}</span>` : ''}
         ${l.pain ? `<span class="badge badge-rose">Pain: ${l.pain}/10</span>` : ''}
       </div>
-      ${l.symptoms ? `<div class="log-text">${l.symptoms}</div>` : ''}
-      ${l.questions ? `<div style="margin-top:8px;font-size:1.05rem;color:var(--sage-dark);">❓ <em>${l.questions}</em></div>` : ''}
+      ${l.symptoms ? `<div class="log-text">${esc(l.symptoms)}</div>` : ''}
+      ${l.questions ? `<div style="margin-top:8px;font-size:1.05rem;color:var(--sage-dark);">❓ <em>${esc(l.questions)}</em></div>` : ''}
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="btn btn-ghost btn-sm" onclick="editLog(${l.id})">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteLog(${l.id})">✕ Remove</button>
@@ -2704,7 +2712,8 @@ function addAppointment() {
     const isRecurring = document.getElementById('appt-recurring').checked;
     const recurEnd = document.getElementById('appt-recur-end').value;
     const recurFreq = document.getElementById('appt-recur-freq').value;
-    if (isRecurring && recurEnd && recurEnd > date) {
+    if (isRecurring && !recurEnd) { alert('Please set a "Repeat until" date.'); return; }
+    if (isRecurring && recurEnd && recurEnd >= date) {
       const groupId = Date.now();
       const dates = generateRecurringDates(date, recurFreq, recurEnd);
       dates.forEach((d, i) => {
@@ -2839,24 +2848,24 @@ function renderAppointments() {
         <div class="mon" style="color:${badgeTextColor};">${d.toLocaleDateString('en-US',{month:'short'})}</div>
       </div>
       <div class="appt-info" style="flex:1;min-width:0;">
-        <h4 style="margin-bottom:4px;">${a.title}</h4>
+        <h4 style="margin-bottom:4px;">${esc(a.title)}</h4>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
           <span class="badge badge-sage">${a.category}</span>
           ${a.recurringGroupId ? `<span class="badge" style="background:var(--gold-light);color:var(--brown);">🔁 Repeating</span>` : ''}
           ${attended ? `<span class="badge" style="background:var(--sage);color:white;">✓ Attended</span>` : isPast ? '<span class="badge badge-muted">Past</span>' : ''}
           ${attended ? `<button class="btn btn-ghost btn-sm" style="font-size:0.85rem;padding:2px 8px;color:var(--text-muted);" onclick="unmarkAttended(${a.id})" title="Undo attended">↩ Undo</button>` : ''}
         </div>
-        ${a.doctor ? `<p style="margin-bottom:2px;">👨‍⚕️ ${a.doctor}</p>` : ''}
-        ${a.time ? `<p style="margin-bottom:2px;">🕐 ${formatTime(a.time)}</p>` : ''}
-        ${a.address ? `<p style="margin-bottom:2px;">📍 ${a.address}</p>` : ''}
-        ${a.notes ? `<p style="margin-top:4px;font-size:1rem;color:var(--text-muted);">${a.notes}</p>` : ''}
-        ${a.visitNotes ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(122,158,135,0.1);border-left:3px solid var(--sage);border-radius:0 8px 8px 0;"><div style="font-size:1.05rem;font-weight:700;color:var(--sage-dark);margin-bottom:3px;">📋 Visit Notes</div><div style="font-size:1rem;color:var(--text);">${a.visitNotes}</div></div>` : (isPast || attended) ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:1.05rem;" onclick="editAppointment(${a.id})">📋 Add visit notes</button>` : ''}
+        ${a.doctor ? `<p style="margin-bottom:2px;display:flex;gap:4px;align-items:flex-start;"><span style="flex-shrink:0;">👨‍⚕️</span><span style="flex:1;min-width:0;word-break:break-word;overflow-wrap:anywhere;">${esc(a.doctor)}</span></p>` : ''}
+        ${a.time ? `<p style="margin-bottom:2px;display:flex;gap:4px;align-items:flex-start;"><span style="flex-shrink:0;">🕐</span><span>${formatTime(a.time)}</span></p>` : ''}
+        ${a.address ? `<p style="margin-bottom:2px;display:flex;gap:4px;align-items:flex-start;"><span style="flex-shrink:0;">📍</span><span style="flex:1;min-width:0;word-break:break-word;overflow-wrap:anywhere;">${esc(a.address)}</span></p>` : ''}
+        ${a.notes ? `<p style="margin-top:4px;font-size:1rem;color:var(--text-muted);">${esc(a.notes)}</p>` : ''}
+        ${a.visitNotes ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(122,158,135,0.1);border-left:3px solid var(--sage);border-radius:0 8px 8px 0;"><div style="font-size:1.05rem;font-weight:700;color:var(--sage-dark);margin-bottom:3px;">📋 Visit Notes</div><div style="font-size:1rem;color:var(--text);">${esc(a.visitNotes)}</div></div>` : (isPast || attended) ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:1.05rem;" onclick="editAppointment(${a.id})">📋 Add visit notes</button>` : ''}
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+      <div class="appt-actions" style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">
         ${!isPast && !attended ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="markAttended(${a.id})">✓ Attended</button>` : ''}
         ${!isPast ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="if(prepareVisitPrep(${a.id})){document.body.dataset.print='visit';window.print();}" title="Print visit prep sheet">🖨️ Prep</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="editAppointment(${a.id})" aria-label="Edit ${a.title}">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteAppointment(${a.id})" aria-label="Delete ${a.title}">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="editAppointment(${a.id})" aria-label="Edit ${esc(a.title)}">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteAppointment(${a.id})" aria-label="Delete ${esc(a.title)}">✕</button>
       </div>
     </div>`;
   };
@@ -2940,16 +2949,16 @@ function renderCareTeam() {
     <div class="contact-card">
       <div class="contact-avatar">${c.name[0]}</div>
       <div class="contact-info">
-        <h4>${c.name}</h4>
+        <h4>${esc(c.name)}</h4>
         <p>${c.role || ''}${c.facility ? ' · ' + c.facility : ''}</p>
-        ${c.phone ? `<div class="contact-phone">📞 ${c.phone}</div>` : ''}
-        ${c.email ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">✉️ <a href="mailto:${c.email}" style="color:var(--sage-dark);">${c.email}</a></p>` : ''}
-        ${c.fax ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">Fax: ${c.fax}</p>` : ''}
-        ${c.notes ? `<p style="font-size:1.05rem;margin-top:4px;">${c.notes}</p>` : ''}
+        ${c.phone ? `<div class="contact-phone">📞 ${esc(c.phone)}</div>` : ''}
+        ${c.email ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">✉️ <a href="mailto:${esc(c.email)}" style="color:var(--sage-dark);">${esc(c.email)}</a></p>` : ''}
+        ${c.fax ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">Fax: ${esc(c.fax)}</p>` : ''}
+        ${c.notes ? `<p style="font-size:1.05rem;margin-top:4px;">${esc(c.notes)}</p>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <button class="btn btn-ghost btn-sm no-print" onclick="editContact(${c.id})" aria-label="Edit ${c.name}">✏️</button>
-        <button class="btn btn-ghost btn-sm no-print" onclick="deleteContact(${c.id})" aria-label="Delete ${c.name}">✕</button>
+        <button class="btn btn-ghost btn-sm no-print" onclick="editContact(${c.id})" aria-label="Edit ${esc(c.name)}">✏️</button>
+        <button class="btn btn-ghost btn-sm no-print" onclick="deleteContact(${c.id})" aria-label="Delete ${esc(c.name)}">✕</button>
       </div>
     </div>
   `).join('');
@@ -3023,7 +3032,7 @@ function renderHandoff() {
       <div class="handoff-header">
         <div>
           <h4>${formatDate(n.date)} — ${n.shift}</h4>
-          ${n.caregiver ? `<p style="font-size:1.05rem;color:var(--text-muted);">By: ${n.caregiver}</p>` : ''}
+          ${n.caregiver ? `<p style="font-size:1.05rem;color:var(--text-muted);">By: ${esc(n.caregiver)}</p>` : ''}
           ${n.updatedAt ? `<p style="font-size:1rem;color:var(--text-muted);margin-top:2px;">✏️ ${n.updatedAt !== n.createdAt ? 'Edited' : 'Saved'} ${new Date(n.updatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${new Date(n.updatedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</p>` : ''}
         </div>
         <div style="display:flex;gap:6px;">
@@ -3031,11 +3040,11 @@ function renderHandoff() {
           <button class="btn btn-ghost btn-sm" onclick="deleteHandoff(${n.id})" aria-label="Delete handoff note">✕</button>
         </div>
       </div>
-      ${n.meds ? `<p class="text-sm"><strong>Medications:</strong> ${n.meds}</p>` : ''}
-      ${n.meals ? `<p class="text-sm" style="margin-top:6px;"><strong>Meals/Fluids:</strong> ${n.meals}</p>` : ''}
-      ${n.mood ? `<p class="text-sm" style="margin-top:6px;"><strong>Mood:</strong> ${n.mood}</p>` : ''}
-      ${n.watch ? `<p class="text-sm" style="margin-top:6px;color:var(--rose-dark);"><strong>⚠️ Watch for:</strong> ${n.watch}</p>` : ''}
-      ${n.notes ? `<p class="text-sm" style="margin-top:6px;"><strong>Notes:</strong> ${n.notes}</p>` : ''}
+      ${n.meds ? `<p class="text-sm"><strong>Medications:</strong> ${esc(n.meds)}</p>` : ''}
+      ${n.meals ? `<p class="text-sm" style="margin-top:6px;"><strong>Meals/Fluids:</strong> ${esc(n.meals)}</p>` : ''}
+      ${n.mood ? `<p class="text-sm" style="margin-top:6px;"><strong>Mood:</strong> ${esc(n.mood)}</p>` : ''}
+      ${n.watch ? `<p class="text-sm" style="margin-top:6px;color:var(--rose-dark);"><strong>⚠️ Watch for:</strong> ${esc(n.watch)}</p>` : ''}
+      ${n.notes ? `<p class="text-sm" style="margin-top:6px;"><strong>Notes:</strong> ${esc(n.notes)}</p>` : ''}
     </div>
   `).join('');
 }
@@ -3184,8 +3193,8 @@ function renderStress() {
   el.innerHTML = entries.map(e => `
     <div class="log-entry" style="border-left-color:${e.score <= 3 ? 'var(--rose)' : e.score <= 6 ? 'var(--gold)' : 'var(--sage)'}">
       <div class="log-date">${formatDate(e.date)} · Wellbeing: <strong>${e.score}/10</strong></div>
-      ${e.notes ? `<div class="log-text">${e.notes}</div>` : ''}
-      ${e.gratitude ? `<div style="margin-top:6px;font-size:1rem;color:var(--sage-dark);">🙏 ${e.gratitude}</div>` : ''}
+      ${e.notes ? `<div class="log-text">${esc(e.notes)}</div>` : ''}
+      ${e.gratitude ? `<div style="margin-top:6px;font-size:1rem;color:var(--sage-dark);">🙏 ${esc(e.gratitude)}</div>` : ''}
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="btn btn-ghost btn-sm" onclick="editStress(${e.id})">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteStress(${e.id})">✕ Remove</button>
@@ -3343,7 +3352,7 @@ function updateEmergencyCard() {
 
   const medRows = meds.length
     ? meds.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(m =>
-        `<div class="ec-med-row">• <strong>${m.name}</strong> ${m.dose} — ${m.frequency}${m.food ? ' ('+m.food+')' : ''}</div>`
+        `<div class="ec-med-row">• <strong>${esc(m.name)}</strong> ${esc(m.dose)} — ${esc(m.frequency)}${m.food ? ' ('+m.food+')' : ''}</div>`
       ).join('')
     : '<div class="ec-med-row">None recorded</div>';
 
@@ -3600,7 +3609,7 @@ function renderRefillAlerts() {
         ${overdue.map(m => `<div onclick="goToMedication(${m.id})" style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(201,132,122,0.15)'" onmouseout="this.style.background=''" >
           <span>💊</span>
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;">${m.name}</div>
+            <div style="font-weight:700;">${esc(m.name)}</div>
             <div style="font-size:0.85rem;color:var(--rose-dark);">${m.daysLeft != null ? (m.daysLeft <= 0 ? 'Out of pills' : m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left') : 'Refill was due ' + formatDate(m.refill)}</div>
           </div>
           <span style="flex-shrink:0;font-size:0.9rem;color:var(--rose-dark);">View →</span>
@@ -3615,7 +3624,7 @@ function renderRefillAlerts() {
         ${soon.map(m => `<div onclick="goToMedication(${m.id})" style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(196,164,107,0.15)'" onmouseout="this.style.background=''">
           <span>💊</span>
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;">${m.name}</div>
+            <div style="font-weight:700;">${esc(m.name)}</div>
             <div style="font-size:0.85rem;color:#7a5e2a;">${m.daysLeft != null ? m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left' : 'Due ' + formatDate(m.refill)}</div>
           </div>
           <span style="flex-shrink:0;font-size:0.9rem;color:#7a5e2a;">View →</span>
@@ -3665,7 +3674,7 @@ function renderDashboard() {
     const moreText = laterCount > 0 ? `<div style="font-size:1.05rem;color:var(--text-muted);margin-top:6px;">${laterCount} more appointment${laterCount !== 1 ? 's' : ''} coming up</div>` : '';
     const apptCards = sameDay.map((a, i) => `
       ${i > 0 ? '<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;">' : ''}
-      <div style="font-size:1rem;font-weight:700;color:var(--brown);margin-top:${i === 0 ? '4' : '0'}px;">${a.title}</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--brown);margin-top:${i === 0 ? '4' : '0'}px;">${esc(a.title)}</div>
       <div style="font-size:1rem;color:var(--text-muted);margin-top:3px;">📅 ${dateStr}${a.time ? ' · ' + formatTime(a.time) : ''}</div>
     `).join('');
     document.getElementById('stat-appt-detail').innerHTML = apptCards + moreText;
@@ -3716,8 +3725,8 @@ function renderDashboard() {
         return `
         <li>
           <div>
-            <span style="font-weight:700;">${m.name}</span>
-            <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose} · As needed</span>
+            <span style="font-weight:700;">${esc(m.name)}</span>
+            <span style="color:var(--text-muted);font-size:1rem;"> ${esc(m.dose)} · As needed</span>
             ${prnCount > 0 ? `<div style="font-size:1.05rem;color:var(--sage-dark);margin-top:2px;">Given ${prnCount}× today</div>` : ''}
           </div>
           <button class="btn btn-outline btn-sm" onclick="logPRNDose(${m.id}, this)" style="white-space:nowrap;">+ Log dose</button>
@@ -3730,8 +3739,8 @@ function renderDashboard() {
       return `
       <li>
         <div>
-          <span style="font-weight:700;">${m.name}</span>
-          <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose}${label ? ' · ' + label : ' · ' + m.frequency}</span>
+          <span style="font-weight:700;">${esc(m.name)}</span>
+          <span style="color:var(--text-muted);font-size:1rem;"> ${esc(m.dose)}${label ? ' · ' + label : ' · ' + m.frequency}</span>
         </div>
         <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, ${doseIdx}, this)">${isDone ? '✓' : ''}</div>
       </li>`;
@@ -3770,7 +3779,7 @@ function renderDashboard() {
           <div class="mon">${d.toLocaleDateString('en-US',{month:'short'})}</div>
         </div>
         <div class="appt-info" style="flex:1;">
-          <h4>${a.title} <span class="badge badge-sage">${a.category}</span></h4>
+          <h4>${esc(a.title)} <span class="badge badge-sage">${a.category}</span></h4>
           <p>${a.doctor ? a.doctor + ' · ' : ''}${a.time ? formatTime(a.time) : ''}</p>
         </div>
       </div>`;
@@ -3876,7 +3885,7 @@ function renderMedicationPrintTable() {
     const freqTimes = [m.frequency, m.times].filter(Boolean).join(' · ');
     const nameExtra = [m.food && m.food !== 'No preference' ? m.food : '', m.notes].filter(Boolean).join(' · ');
     return `<tr>
-      <td><strong>${m.name}</strong>${nameExtra ? `<br><span style="font-size:8pt;color:#555;font-style:italic;">${nameExtra}</span>` : ''}</td>
+      <td><strong>${esc(m.name)}</strong>${nameExtra ? `<br><span style="font-size:8pt;color:#555;font-style:italic;">${esc(nameExtra)}</span>` : ''}</td>
       <td>${m.dose || '—'}</td>
       <td>${freqTimes || '—'}</td>
       <td>${m.doctor || '—'}</td>
@@ -3914,14 +3923,14 @@ function renderCareTeamPrintGrid() {
   grid.innerHTML = contacts.map(c => `
     <div class="ct-print-card">
       <div class="ct-print-card-header">
-        <h4>${c.name}</h4>
-        ${c.role ? `<div class="ct-role">${c.role}</div>` : ''}
+        <h4>${esc(c.name)}</h4>
+        ${c.role ? `<div class="ct-role">${esc(c.role)}</div>` : ''}
       </div>
       <div class="ct-print-card-body">
-        ${c.phone  ? `<div class="ct-detail"><span class="ct-detail-icon">📞</span><span>${c.phone}</span></div>` : ''}
-        ${c.email  ? `<div class="ct-detail"><span class="ct-detail-icon">✉️</span><span>${c.email}</span></div>` : ''}
+        ${c.phone  ? `<div class="ct-detail"><span class="ct-detail-icon">📞</span><span>${esc(c.phone)}</span></div>` : ''}
+        ${c.email  ? `<div class="ct-detail"><span class="ct-detail-icon">✉️</span><span>${esc(c.email)}</span></div>` : ''}
         ${c.clinic ? `<div class="ct-detail"><span class="ct-detail-icon">🏥</span><span>${c.clinic}</span></div>` : ''}
-        ${c.notes  ? `<div class="ct-notes">${c.notes}</div>` : ''}
+        ${c.notes  ? `<div class="ct-notes">${esc(c.notes)}</div>` : ''}
       </div>
     </div>`).join('');
 }
@@ -4424,9 +4433,9 @@ function renderMedSearch(query) {
   }
   el.innerHTML = matches.map(m => `
     <div onclick="goToMedication(${m.id})" style="padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(122,158,135,0.1)'" onmouseout="this.style.background=''">
-      <div style="font-weight:700;font-size:1rem;">${m.name} <span style="color:var(--text-muted);font-weight:400;">${m.dose || ''}</span> <span style="font-size:0.8rem;color:var(--sage-dark);float:right;">View →</span></div>
+      <div style="font-weight:700;font-size:1rem;">${esc(m.name)} <span style="color:var(--text-muted);font-weight:400;">${m.dose || ''}</span> <span style="font-size:0.8rem;color:var(--sage-dark);float:right;">View →</span></div>
       <div style="font-size:0.9rem;color:var(--text-muted);">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}${m.food ? ' · ' + m.food : ''}</div>
-      ${m.notes ? `<div style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">${m.notes}</div>` : ''}
+      ${m.notes ? `<div style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">${esc(m.notes)}</div>` : ''}
       ${m.pills != null ? `<div style="font-size:0.85rem;color:var(--sage-dark);">💊 ${m.pills} pills remaining</div>` : ''}
     </div>
   `).join('');
@@ -4449,8 +4458,8 @@ function prepareVisitPrep(apptId) {
   const apptDate = new Date(a.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const medRows = meds.length ? meds.map(m =>
-    `<tr><td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-weight:700;font-size:9.5pt;">${m.name}</td>
-     <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${m.dose}</td>
+    `<tr><td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-weight:700;font-size:9.5pt;">${esc(m.name)}</td>
+     <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${esc(m.dose)}</td>
      <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}</td>
      <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${m.food || ''}</td></tr>`
   ).join('') : '<tr><td colspan="4" style="padding:6pt;color:#666;font-style:italic;font-size:9.5pt;">No medications recorded.</td></tr>';
@@ -4482,16 +4491,16 @@ function prepareVisitPrep(apptId) {
 
       <!-- Appointment summary bar -->
       <div style="display:flex;align-items:baseline;gap:16pt;padding:8pt 12pt;background:#f0f7f3;border-left:4pt solid #4e7560;margin-bottom:12pt;flex-wrap:wrap;">
-        <span style="font-size:13pt;font-weight:700;color:#4e7560;">${a.title}</span>
+        <span style="font-size:13pt;font-weight:700;color:#4e7560;">${esc(a.title)}</span>
         <span style="font-size:10pt;color:#333;">${apptDate}${a.time ? ' · ' + formatTime(a.time) : ''}</span>
-        ${a.doctor ? `<span style="font-size:10pt;color:#555;">${a.doctor}</span>` : ''}
-        ${a.address ? `<span style="font-size:10pt;color:#555;">📍 ${a.address}</span>` : ''}
+        ${a.doctor ? `<span style="font-size:10pt;color:#555;">${esc(a.doctor)}</span>` : ''}
+        ${a.address ? `<span style="font-size:10pt;color:#555;">📍 ${esc(a.address)}</span>` : ''}
         ${a.category ? `<span style="font-size:9.5pt;color:#777;">${a.category}</span>` : ''}
       </div>
 
       ${a.notes ? `<div style="margin-bottom:10pt;">
         <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">📋 Prep Notes</div>
-        <div style="font-size:10.5pt;">${a.notes}</div>
+        <div style="font-size:10.5pt;">${esc(a.notes)}</div>
       </div>` : ''}
 
       <!-- Two-column: Meds left, Symptoms right -->

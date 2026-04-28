@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CareCompanion — Your Personal Caregiving Assistant</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%237a9e87'/%3E%3Cpath d='M50 75 C50 75 25 58 25 40 C25 30 32 23 40 23 C44 23 47 25 50 28 C53 25 56 23 60 23 C68 23 75 30 75 40 C75 58 50 75 50 75Z' fill='white'/%3E%3Cellipse cx='50' cy='46' rx='4' ry='10' fill='%237a9e87' transform='rotate(-20 50 46)'/%3E%3Cpath d='M46 56 Q50 42 58 36' stroke='%237a9e87' stroke-width='1.5' fill='none'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#7a9e87">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="CareCompanion">
@@ -168,9 +169,6 @@
   .btn-primary, .btn-rose, .btn-gold, .btn-danger { color: white !important; }
   .btn-primary *, .btn-rose *, .btn-gold *, .btn-danger * { color: white !important; }
 
-  .chat-msg.user .chat-bubble, .chat-msg.user .chat-bubble * { color: white !important; }
-  .chat-avatar.ai { color: white !important; }
-  .chat-avatar.user { color: var(--rose-dark) !important; }
 
   .dashboard-hero, .dashboard-hero * { color: white !important; }
   .dashboard-hero p { color: rgba(255,255,255,0.85) !important; }
@@ -306,6 +304,7 @@
   #page-medications { padding-top: 16px; }
   #page-medications .section-intro { display: none; }
   @media screen { #medications-print-table-wrap { display: none; } }
+  #page-visit-prep { display: none; }
   #page-medications .card { padding: 16px 22px; margin-bottom: 16px; }
   #page-medications .card-title { margin-bottom: 8px; font-size: 1.1rem; }
   #page-medications .form-row { margin-bottom: 8px; }
@@ -557,8 +556,9 @@
   }
   .appt-date-badge .day { font-size: 1.3rem; font-weight: 700; line-height: 1; }
   .appt-date-badge .mon { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .appt-info { min-width: 0; }
   .appt-info h4 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-  .appt-info p { font-size: 1.05rem; color: var(--text-muted); }
+  .appt-info p { font-size: 1.05rem; color: var(--text-muted); word-break: break-word; }
 
   /* ── STRESS CHECK ── */
   .stress-scale {
@@ -643,8 +643,8 @@
   .hamburger.open span:nth-child(2) { opacity: 0; }
   .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-  /* ── TABLET — icon-only sidebar (769–1024px) ── */
-  @media (max-width: 1024px) and (min-width: 769px) {
+  /* ── TABLET PORTRAIT — icon-only sidebar (769–1024px, portrait only) ── */
+  @media (max-width: 1024px) and (min-width: 769px) and (orientation: portrait) {
     .sidebar {
       width: 64px;
       overflow: visible;
@@ -662,6 +662,31 @@
     .top-bar { padding: 14px 24px; }
     .page { padding: 28px 24px; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* ── TABLET LANDSCAPE — compact labeled sidebar (landscape on tablets) ── */
+  @media (orientation: landscape) and (max-height: 820px) and (min-width: 769px) {
+    .sidebar { width: 200px; overflow-y: auto; }
+    .sidebar-brand { padding: 16px 14px 12px; }
+    .sidebar-brand h1 { font-size: 1.2rem; }
+    .sidebar-brand p { font-size: 0.8rem; }
+    .care-recipient-card { margin: 8px 10px; padding: 8px 10px; }
+    .care-recipient-card .label { font-size: 0.8rem; }
+    .care-recipient-card .name { font-size: 0.9rem; }
+    .nav-item { padding: 10px 14px; font-size: 0.9rem; gap: 10px; }
+    .nav-item .icon { font-size: 0.95rem; }
+    .nav-section-label { font-size: 0.72rem; padding: 6px 14px 2px; letter-spacing: 0.5px; }
+    .sidebar-footer { padding: 10px 14px; font-size: 0.8rem; }
+    .main-content { margin-left: 200px; }
+    .top-bar { padding: 10px 18px; }
+    .page { padding: 16px 18px; }
+    /* Stack all grids to single column — content area too narrow for multi-col */
+    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+    .form-grid-2, .form-grid-3 { grid-template-columns: 1fr 1fr !important; }
+    .dashboard-hero { padding: 18px 18px; }
+    .dashboard-hero h2 { font-size: 1.3rem; }
+    .stat-card .stat-value { font-size: 1.6rem; }
+    .card { padding: 14px 14px; }
   }
 
   /* ── MOBILE — slide-out sidebar (≤768px) ── */
@@ -687,7 +712,6 @@
     .dashboard-hero { padding: 22px 20px; }
     .dashboard-hero h2 { font-size: 1.4rem; }
     .stat-card .stat-value { font-size: 1.6rem; }
-    .chat-bubble { max-width: 90%; }
     .emergency-preview { padding: 16px; }
     .card { padding: 18px 16px; }
   }
@@ -704,7 +728,9 @@
     .stat-card { padding: 14px 12px !important; }
     .stat-card .stat-value { font-size: 1.4rem !important; }
     .appt-item { flex-wrap: wrap; gap: 8px; }
-    .appt-date-badge { min-width: 44px; }
+    .appt-item .appt-info { flex: 1 1 0; min-width: 0; width: calc(100% - 60px); }
+    .appt-item .appt-actions { flex-direction: row !important; flex-wrap: wrap; width: 100%; justify-content: flex-end; order: 3; }
+    .appt-date-badge { min-width: 44px; flex-shrink: 0; }
     #chart-summaries { flex-direction: column; }
     .med-card { flex-wrap: wrap; }
     .getting-started { padding: 18px 16px; }
@@ -809,30 +835,38 @@
     background: var(--cream);
     border-radius: 10px; padding: 16px;
     margin-top: 16px; position: relative;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
   }
   .chart-bars {
     display: flex; align-items: flex-end;
-    gap: 6px; height: 120px;
+    gap: 4px; height: 140px;
     border-bottom: 2px solid var(--border);
-    padding-bottom: 4px;
+    width: 100%;
+    padding-top: 24px; /* room for values above tallest bar */
+    box-sizing: border-box;
   }
   .chart-bar-wrap {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; gap: 4px; height: 100%;
-    justify-content: flex-end;
+    flex: 1; min-width: 18px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end;
+    height: 100%; position: relative;
   }
   .chart-bar {
     width: 100%; border-radius: 4px 4px 0 0;
-    min-height: 4px; transition: height 0.4s ease;
-  }
-  .chart-label {
-    font-size: 1rem; color: var(--text-muted);
-    text-align: center; margin-top: 6px;
-    font-weight: 700; white-space: nowrap;
+    min-height: 3px;
   }
   .chart-value {
-    font-size: 1rem; font-weight: 700;
-    color: var(--text);
+    font-size: 1.2rem; font-weight: 700; line-height: 1;
+    margin-bottom: 2px; text-align: center;
+  }
+  .chart-labels {
+    display: flex; gap: 4px; width: 100%; margin-top: 6px;
+  }
+  .chart-label {
+    flex: 1; min-width: 18px;
+    font-size: 0.65rem; color: var(--text-muted);
+    text-align: center; font-weight: 700;
+    line-height: 1.3; overflow: hidden;
   }
   .chart-legend {
     display: flex; gap: 20px; margin-top: 14px;
@@ -899,6 +933,12 @@
     body { background: white !important; font-family: Georgia, serif; font-size: 11pt; color: #1a1a1a !important; line-height: 1.6; }
     .page { display: none !important; }
     .page.active { display: block !important; padding: 0 !important; }
+    /* Print headers: always hidden unless body has matching data-print attribute */
+    #med-print-header, #ct-print-header, #handoff-print-header, #ec-print-header { display: none !important; }
+    body[data-print="med"] #med-print-header { display: flex !important; }
+    body[data-print="ct"] #ct-print-header { display: flex !important; }
+    body[data-print="handoff"] #handoff-print-header { display: flex !important; }
+    body[data-print="ec"] #ec-print-header { display: flex !important; }
     .section-intro { display: none !important; }
     /* Keep cards visible but clean */
     .card { box-shadow: none !important; border: 1pt solid #ddd !important; background: white !important; margin-bottom: 12pt !important; overflow: visible !important; max-width: none !important; }
@@ -906,9 +946,8 @@
     .main-content { overflow: visible !important; }
     body { overflow: visible !important; }
 
-    /* ── Shared print header ── */
+    /* ── Shared print header — layout only, visibility controlled by data-print ── */
     .print-doc-header {
-      display: flex !important;
       justify-content: space-between;
       align-items: flex-end;
       border-bottom: 2.5pt solid #2d5a3d;
@@ -925,9 +964,10 @@
 
     /* ── Medications: table ── */
     #page-medications { padding: 0 !important; }
+    #page-medications input[type="text"] { display: none !important; }
     #med-search { display: none !important; }
     #medications-list { display: none !important; }
-    #medications-print-table-wrap { display: block !important; overflow: visible !important; }
+    #medications-print-table-wrap { display: block !important; overflow: visible !important; padding: 0 36pt; }
     .medications-print-table { width: 100%; border-collapse: collapse; margin-top: 6pt; }
     .medications-print-table thead { display: table-header-group; }
     .medications-print-table th {
@@ -1003,23 +1043,61 @@
     /* ── Emergency card ── */
     #page-emergency.active { padding: 0 !important; }
     #page-emergency.active .card { border: none !important; padding: 0 !important; margin: 0 !important; }
-    #page-emergency.active .emergency-preview {
-      border: 2pt solid #2d5a3d !important; border-radius: 4pt !important;
-      padding: 20pt !important; max-width: 100% !important;
-      page-break-inside: avoid; background: white !important;
-    }
-    #page-emergency.active .emergency-preview h3 {
-      font-family: Georgia, serif; font-size: 15pt !important; color: #2d5a3d;
-      border-bottom: 1.5pt solid #2d5a3d; padding-bottom: 8pt; margin-bottom: 14pt;
-    }
-    .emergency-row { font-size: 10.5pt !important; margin-bottom: 8pt !important; display: flex !important; }
-    .emergency-row strong { min-width: 140pt !important; color: #2d5a3d !important; display: inline-block; }
     #page-emergency.active .grid-2 { display: block !important; }
     #page-emergency.active p[style*="font-size:0.8rem"] { display: none !important; }
 
-    /* ── Doctor Visit Prep ── */
-    #page-visit-prep { display: block !important; }
-    #page-visit-prep .print-doc-header { display: flex !important; }
+    /* Card container — centered, card-like */
+    #page-emergency.active .emergency-preview {
+      max-width: 480pt !important; margin: 0 auto !important;
+      border: 1.5pt solid #2d5a3d !important; border-radius: 8pt !important;
+      overflow: hidden !important; page-break-inside: avoid;
+      background: white !important; box-shadow: none !important;
+      padding: 0 !important;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
+    /* Card header bar */
+    #page-emergency.active .emergency-preview h3 {
+      background: #2d5a3d !important; color: white !important;
+      font-family: Georgia, serif; font-size: 13pt !important;
+      margin: 0 !important; padding: 10pt 16pt !important;
+      border-bottom: none !important; letter-spacing: 0.03em;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
+    /* Card body padding */
+    #ec-preview-content { padding: 14pt 18pt 12pt !important; display: block !important; }
+
+    /* Row layout */
+    .emergency-row { font-size: 10pt !important; margin-bottom: 6pt !important; display: flex !important; align-items: baseline !important; }
+    .emergency-row strong { min-width: 110pt !important; color: #2d5a3d !important; font-size: 9pt !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; display: inline-block; }
+
+    /* Allergy row — prominent red */
+    .ec-allergy-row { background: #fff0f0 !important; border: 1pt solid #c0392b !important; border-radius: 4pt !important;
+      padding: 7pt 12pt !important; margin: 8pt 0 !important; display: flex !important; align-items: baseline !important;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .ec-allergy-row strong { color: #c0392b !important; font-size: 9pt !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; min-width: 80pt !important; }
+    .ec-allergy-row span { color: #8b0000 !important; font-weight: 700 !important; font-size: 10.5pt !important; }
+
+    /* Section headers inside card */
+    .ec-section-head { font-size: 8pt !important; font-weight: 700 !important; text-transform: uppercase !important;
+      letter-spacing: 0.07em !important; color: #2d5a3d !important; border-bottom: 0.75pt solid #c8d8c8 !important;
+      padding-bottom: 3pt !important; margin: 10pt 0 6pt !important; }
+
+    /* Medication list inside card */
+    .ec-med-row { font-size: 9pt !important; color: #1a1a1a !important; padding: 1.5pt 0 !important; line-height: 1.5; }
+
+    /* Footer bar */
+    .ec-footer { background: #f5f9f6 !important; border-top: 0.75pt solid #c8d8c8 !important;
+      padding: 6pt 16pt !important; font-size: 8pt !important; color: #666 !important;
+      text-align: center !important; margin: 0 !important;
+      -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    /* ── Doctor Visit Prep — hidden unless data-print="visit" ── */
+    #page-visit-prep { display: none !important; }
+    body[data-print="visit"] .app-wrapper { display: block !important; }
+    body[data-print="visit"] .main-content { display: none !important; }
+    body[data-print="visit"] .page.active { display: none !important; }
+    body[data-print="visit"] #page-visit-prep { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    body[data-print="visit"] #page-visit-prep .print-doc-header { display: flex !important; }
   }
 
   /* ── TOAST NOTIFICATIONS ── */
@@ -1070,9 +1148,9 @@
   <div class="disclaimer-box">
     <h2>Welcome to CareCompanion</h2>
     <p>Before you begin, please read and acknowledge the following important notice.</p>
-    <p><strong>Not a Medical Device.</strong> CareCompanion is a personal organization and journaling tool. It does not provide medical advice, diagnosis, or treatment. All AI-generated responses are informational only.</p>
+    <p><strong>Not a Medical Device.</strong> CareCompanion is a personal organization and journaling tool. It does not provide medical advice, diagnosis, or treatment.</p>
     <p><strong>Always consult a qualified healthcare provider</strong> before making any medical decisions. Never disregard professional medical advice based on anything in this app.</p>
-    <p><strong>Privacy.</strong> All data is stored locally on your device. If you use AI features, health information you type will be sent to Anthropic's servers to generate responses. Avoid entering full legal names or identifying information in AI chat.</p>
+    <p><strong>Privacy.</strong> All data is stored locally on your device and never leaves it.</p>
     <label class="disclaimer-checkbox">
       <input type="checkbox" id="disclaimer-check" onchange="
         var btn = document.getElementById('disclaimer-accept');
@@ -1328,6 +1406,24 @@
         </div>
       </div>
 
+      <!-- MEMORY + WELLBEING SNIPPETS -->
+      <div class="grid-2 no-print">
+        <div class="card" id="dash-memory-card">
+          <div class="card-title"><span class="icon">💛</span> Latest Memory</div>
+          <div id="dash-memory-snippet">
+            <div class="empty-state" style="padding:16px 0;"><div class="empty-icon">💛</div><p>No memories yet.</p></div>
+          </div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="navigate('memory', document.querySelector('[onclick*=memory]'))">Memory Box →</button>
+        </div>
+        <div class="card" id="dash-wellbeing-card">
+          <div class="card-title"><span class="icon">🌿</span> My Wellbeing</div>
+          <div id="dash-wellbeing-snippet">
+            <div class="empty-state" style="padding:16px 0;"><div class="empty-icon">🌿</div><p>No check-ins yet.</p></div>
+          </div>
+          <button class="btn btn-outline btn-sm mt-8" onclick="navigate('stress', document.querySelector('[onclick*=stress]'))">Log wellbeing →</button>
+        </div>
+      </div>
+
       <!-- GOOD DAYS STRIP -->
       <div class="good-days-strip" id="good-days-strip" style="display:none;">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
@@ -1347,23 +1443,21 @@
         </div>
         <div id="charts-content" style="display:none;">
           <div id="chart-summaries" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;"></div>
-          <div class="grid-2">
-            <div>
-              <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Mood Over Time</div>
-              <div class="chart-container">
-                <div class="chart-bars" id="chart-mood"></div>
-                <div class="chart-legend">
-                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--sage);"></div>Good/Okay</div>
-                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--gold);"></div>Tired/Anxious</div>
-                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--rose);"></div>Low/Agitated</div>
-                </div>
+          <div>
+            <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Mood Over Time</div>
+            <div class="chart-container">
+              <div class="chart-bars" id="chart-mood"></div>
+              <div class="chart-legend">
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--sage);"></div>Good/Okay</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--gold);"></div>Tired/Anxious</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--rose);"></div>Low/Agitated</div>
               </div>
             </div>
-            <div>
-              <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Pain Level (0–10)</div>
-              <div class="chart-container">
-                <div class="chart-bars" id="chart-pain"></div>
-              </div>
+          </div>
+          <div style="margin-top:20px;">
+            <div style="font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--brown);">Pain Level (0–10)</div>
+            <div class="chart-container">
+              <div class="chart-bars" id="chart-pain"></div>
             </div>
           </div>
           <div style="margin-top:20px;">
@@ -1402,7 +1496,7 @@
               <option>Twice daily</option>
               <option>Three times daily</option>
               <option>Every 8 hours</option>
-              <option>As needed</option>
+              <option>As needed (PRN)</option>
               <option>Weekly</option>
             </select>
           </div>
@@ -1429,7 +1523,7 @@
           <div><label style="visibility:hidden;">spacer</label><div style="padding-top:8px;font-size:1rem;color:var(--text-muted);" id="med-days-left"></div></div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="addMedication()">➕ Add Medication</button>
+          <button class="btn btn-primary" id="med-save-btn" onclick="addMedication()">➕ Add Medication</button>
           <button class="btn btn-outline" onclick="toggleMedForm(false)">Cancel</button>
         </div>
       </div>
@@ -1438,9 +1532,9 @@
         <input type="text" id="med-search" placeholder="🔍 Search medications…" oninput="renderMedications()"
           style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:1.05rem;background:var(--warm-white);">
       </div>
-      <div id="medications-list"></div>
+      <div id="medications-list" class="no-print"></div>
       <div id="medications-print-table-wrap"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="printMedicationList()">🖨️ Print Medication List</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="if(!load(KEYS.medications).length){alert('No medications to print.');return;}document.body.dataset.print='med';window.print();">🖨️ Print Medication List</button>
     </div>
 
     <!-- ═══════════════════════════════════ SYMPTOMS ═══ -->
@@ -1500,7 +1594,7 @@
           <label>Questions for Doctor</label>
           <textarea id="log-questions" placeholder="Things to remember to ask at the next appointment…" style="min-height:55px;"></textarea>
         </div>
-        <button class="btn btn-primary" onclick="addLogEntry()">💾 Save Entry</button>
+        <button class="btn btn-primary" id="log-save-btn" onclick="addLogEntry()">💾 Save Entry</button>
       </div>
 
       <div class="card">
@@ -1585,25 +1679,13 @@
             <div style="font-size:0.95rem;color:var(--text-muted);margin-top:6px;">Max 52 occurrences. Each instance can be edited or deleted individually.</div>
           </div>
         </div>
-        <button class="btn btn-primary" onclick="addAppointment()">➕ Add Appointment</button>
+        <button class="btn btn-primary" id="appt-save-btn" onclick="addAppointment()">➕ Add Appointment</button>
       </div>
 
       <div class="card">
         <div class="card-title"><span class="icon">📅</span> All Appointments</div>
         <div id="appointments-list"></div>
       </div>
-    </div>
-
-    <!-- ═══════════════════════════════════ DOCTOR VISIT PREP (print-only page) ═══ -->
-    <div id="page-visit-prep" style="display:none;">
-      <div class="print-doc-header" id="visit-prep-print-header" style="display:flex;">
-        <div>
-          <div class="prt-title">Doctor Visit Prep</div>
-          <div class="prt-sub" id="visit-prep-patient"></div>
-        </div>
-        <div class="prt-right" id="visit-prep-date"></div>
-      </div>
-      <div id="visit-prep-content"></div>
     </div>
 
     <!-- ═══════════════════════════════════ CARE TEAM ═══ -->
@@ -1636,12 +1718,12 @@
           <label>Notes</label>
           <input type="text" id="ct-notes" placeholder="e.g. Prefers calls in morning, referral needed…">
         </div>
-        <button class="btn btn-primary" onclick="addContact()">➕ Add Contact</button>
+        <button class="btn btn-primary" id="ct-save-btn" onclick="addContact()">➕ Add Contact</button>
       </div>
 
       <div id="careteam-list"></div>
       <div id="ct-print-grid" style="display:none;"></div>
-      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();preparePrintHeaders();window.print();">🖨️ Print Care Team Directory</button>
+      <button class="btn btn-outline no-print" onclick="renderCareTeamPrintGrid();document.body.dataset.print='ct';window.print();">🖨️ Print Care Team Directory</button>
     </div>
 
     <!-- ═══════════════════════════════════ HANDOFF NOTES ═══ -->
@@ -1697,11 +1779,11 @@
           <label>General Notes</label>
           <textarea id="ho-notes" placeholder="Anything else the next caregiver needs to know…" style="min-height:70px;"></textarea>
         </div>
-        <button class="btn btn-primary" onclick="addHandoff()">💾 Save Handoff Note</button>
+        <button class="btn btn-primary" id="ho-save-btn" onclick="addHandoff()">💾 Save Handoff Note</button>
       </div>
 
       <div id="handoff-list"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="preparePrintHeaders();window.print();">🖨️ Print Handoff Notes</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="document.body.dataset.print='handoff';window.print();">🖨️ Print Handoff Notes</button>
     </div>
 
     <!-- ═══════════════════════════════════ MEMORY BOX ═══ -->
@@ -1763,7 +1845,7 @@
           <label>One thing I'm grateful for today</label>
           <input type="text" id="stress-gratitude" placeholder="Even small things count…">
         </div>
-        <button class="btn btn-primary" onclick="addStressEntry()">💾 Save Check-In</button>
+        <button class="btn btn-primary" id="stress-save-btn" onclick="addStressEntry()">💾 Save Check-In</button>
       </div>
 
       <div class="card" id="burnout-alert" style="display:none;background:rgba(201,132,122,0.08);border-color:var(--rose-light);">
@@ -1832,7 +1914,7 @@
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button id="ec-save-btn" class="btn btn-primary" onclick="saveEmergencyFields()">🔄 Save & Update Card</button>
-            <button class="btn btn-outline" onclick="loadEmergencyCard()">↺ Re-import from Profile</button>
+            <button class="btn btn-outline" onclick="reimportFromProfile()">↺ Re-import from Profile</button>
           </div>
         </div>
 
@@ -1845,7 +1927,7 @@
             </div>
           </div>
           <div class="flex gap-8 mt-16 no-print">
-            <button class="btn btn-rose" onclick="preparePrintHeaders();window.print();">🖨️ Print Card</button>
+            <button class="btn btn-rose" onclick="document.body.dataset.print='ec';window.print();">🖨️ Print Card</button>
           </div>
         </div>
       </div>
@@ -1894,6 +1976,18 @@
     </div>
 
   </div><!-- end main-content -->
+
+  <!-- ═══ DOCTOR VISIT PREP — print-only, outside all .page divs ═══ -->
+  <div id="page-visit-prep">
+    <div class="print-doc-header" id="visit-prep-print-header" style="display:none;">
+      <div>
+        <div class="prt-title">Doctor Visit Prep</div>
+        <div class="prt-sub" id="visit-prep-patient"></div>
+      </div>
+      <div class="prt-right" id="visit-prep-date"></div>
+    </div>
+    <div id="visit-prep-content"></div>
+  </div>
 </div><!-- end app-wrapper -->
 
 <!-- ONBOARDING TOOLTIP OVERLAY -->
@@ -1958,6 +2052,11 @@ function load(key, fallback=[]) {
   try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; }
   catch { return fallback; }
 }
+// Sanitize user-entered text before injecting into innerHTML — prevents XSS
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 // ════════════════════════════════════════════════
 //  INIT
@@ -1965,7 +2064,6 @@ function load(key, fallback=[]) {
 let selectedMood = '';
 let selectedMemMood = '';
 let selectedStress = null;
-let currentAiPanel = 'chat';
 let logShowAll = false;
 let editingMedId = null;
 let editingLogId = null;
@@ -2005,25 +2103,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setGreeting();
   renderAll();
+  // Pre-populate all print headers at startup so buttons need zero prep at tap time
+  preparePrintHeaders(null);
 
   // Re-render dashboard after first paint — ensures stat cards populate for returning users
   requestAnimationFrame(() => requestAnimationFrame(() => renderDashboard()));
 
-  // Populate print tables before any print (Ctrl+P or browser menu)
-  window.addEventListener('beforeprint', () => {
-    preparePrintHeaders();
-    printMedicationList();
-    renderCareTeamPrintGrid();
-  });
+  // Pre-render all print content at startup so no work is needed at tap time
+  renderMedicationPrintTable();
+  renderCareTeamPrintGrid();
 
   // Re-render dashboard when app is brought back into focus (PWA resume from taskbar/desktop)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') renderDashboard();
   });
 
-  // Start tour on reload if disclaimer AND setup are done but tour hasn't run yet
+  // Start tour only if brand new user — if they have any real data, mark tour done and skip
   if (load(KEYS.disclaimer, false) && profile && !localStorage.getItem('cc_tour_done')) {
-    setTimeout(startTooltips, 600);
+    const hasData = load(KEYS.medications).length > 0 || load(KEYS.logs).length > 0 ||
+                    load(KEYS.appointments).length > 0 || load(KEYS.careteam).length > 0;
+    if (hasData) {
+      localStorage.setItem('cc_tour_done', 'true'); // Returning user — suppress tour
+    } else {
+      setTimeout(startTooltips, 600); // Genuinely new user
+    }
   }
 
   // Swipe left to close sidebar on mobile
@@ -2100,6 +2203,7 @@ function saveSetup() {
   };
   save(KEYS.profile, profile);
   updateProfileDisplay(profile);
+  preparePrintHeaders(null);
   // Sync emergency card name/dob/condition if not manually saved yet
   const ec = load(KEYS.emergency, {});
   if (ec._saved !== true) {
@@ -2172,7 +2276,7 @@ function navigate(page, el) {
   if (page === 'handoff')       renderHandoff();
   if (page === 'symptoms')      renderSymptomLog();
   if (page === 'medications')   { clearMedForm(); renderMedications(); }
-  if (page === 'memories')      renderMemories();
+  if (page === 'memory')        renderMemories();
   if (page === 'stress')        renderStress();
   if (page === 'export')        renderDataSummary();
   if (page === 'emergency')     loadEmergencyCard();
@@ -2259,7 +2363,7 @@ function clearMedForm() {
   const freq = document.getElementById('med-freq'); if (freq) freq.selectedIndex = 0;
   const food = document.getElementById('med-food'); if (food) food.selectedIndex = 0;
   const daysLeft = document.getElementById('med-days-left'); if (daysLeft) daysLeft.textContent = '';
-  const btn = document.querySelector('#page-medications .btn-primary');
+  const btn = document.getElementById('med-save-btn');
   if (btn) btn.textContent = '➕ Add Medication';
   updateMedTimeInputs();
 }
@@ -2267,21 +2371,27 @@ function clearMedForm() {
 function addMedication() {
   const name = document.getElementById('med-name').value.trim();
   if (!name) { alert('Please enter a medication name.'); return; }
+  const freq = document.getElementById('med-freq').value;
+  const isPRN = freq === 'As needed (PRN)';
   const data = {
     name, dose: document.getElementById('med-dose').value,
-    frequency: document.getElementById('med-freq').value,
-    times: getMedTimesValue(),
+    frequency: freq,
+    times: isPRN ? '' : getMedTimesValue(),
     food: document.getElementById('med-food').value,
     notes: document.getElementById('med-notes').value,
     doctor: document.getElementById('med-doctor').value,
     refill: document.getElementById('med-refill').value,
     pills: document.getElementById('med-pills').value ? parseInt(document.getElementById('med-pills').value) : null,
   };
+  if (data.pills != null) data.pillsMax = data.pills;
   let meds = load(KEYS.medications);
   if (editingMedId) {
+    // Preserve pillsMax from existing record if pills field not changed
+    const existing = meds.find(m => m.id === editingMedId);
+    if (existing && data.pills != null) data.pillsMax = Math.max(data.pills, existing.pillsMax || data.pills);
     meds = meds.map(m => m.id === editingMedId ? { ...m, ...data } : m);
     editingMedId = null;
-    document.querySelector('#page-medications .btn-primary').textContent = '➕ Add Medication';
+    document.getElementById('med-save-btn').textContent = '➕ Add Medication';
   } else {
     meds.push({ id: Date.now(), ...data });
   }
@@ -2292,6 +2402,7 @@ function addMedication() {
   document.getElementById('med-food').selectedIndex = 0;
   updateMedTimeInputs();
   renderMedications();
+  renderMedicationPrintTable();
   renderDashboard();
   showToast(editingMedId === null ? '💊 Medication saved' : '💊 Medication updated');
   editingMedId = null;
@@ -2346,7 +2457,7 @@ function editMedication(id) {
   const toggleBtn = document.getElementById('med-form-toggle');
   if (card) card.style.display = 'block';
   if (toggleBtn) toggleBtn.textContent = '✕ Cancel';
-  document.querySelector('#page-medications .btn-primary').textContent = '💾 Update Medication';
+  document.getElementById('med-save-btn').textContent = '💾 Update Medication';
   document.getElementById('med-name').focus();
   document.getElementById('med-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -2354,8 +2465,9 @@ function editMedication(id) {
 function deleteMedication(id) {
   if (!confirm('Remove this medication?')) return;
   save(KEYS.medications, load(KEYS.medications).filter(m => m.id !== id));
-  if (editingMedId === id) { editingMedId = null; document.querySelector('#page-medications .btn-primary').textContent = '➕ Add Medication'; }
+  if (editingMedId === id) { editingMedId = null; document.getElementById('med-save-btn').textContent = '➕ Add Medication'; }
   renderMedications();
+  renderMedicationPrintTable();
   renderDashboard();
 }
 
@@ -2364,12 +2476,12 @@ function renderMedications() {
   const el = document.getElementById('medications-list');
   const searchEl = document.getElementById('med-search');
   const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
-  const meds = query ? allMeds.filter(m =>
+  const meds = (query ? allMeds.filter(m =>
     (m.name || '').toLowerCase().includes(query) ||
     (m.dose || '').toLowerCase().includes(query) ||
     (m.frequency || '').toLowerCase().includes(query) ||
     (m.notes || '').toLowerCase().includes(query)
-  ) : allMeds;
+  ) : allMeds).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   if (!allMeds.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">💊</div><p>No medications added yet.<br>Add the first one above.</p></div>';
     return;
@@ -2379,11 +2491,11 @@ function renderMedications() {
     return;
   }
   el.innerHTML = meds.map(m => `
-    <div class="med-card">
+    <div class="med-card" id="med-card-${m.id}">
       <div class="med-info" style="flex:1;">
-        <h4>${m.name} <span class="badge badge-sage">${m.dose || ''}</span></h4>
-        <p>${m.frequency}${m.food ? ' · ' + m.food : ''}</p>
-        ${m.notes ? `<p style="margin-top:4px;color:var(--text);">${m.notes}</p>` : ''}
+        <h4>${esc(m.name)} <span class="badge badge-sage">${m.dose || ''}</span></h4>
+        <p>${esc(m.frequency)}${m.food ? ' · ' + m.food : ''}</p>
+        ${m.notes ? `<p style="margin-top:4px;color:var(--text);">${esc(m.notes)}</p>` : ''}
         <div class="med-times">
           ${m.times ? m.times.split(',').map(t => `<span class="med-time-pill">⏰ ${t.trim()}</span>`).join('') : ''}
           ${m.doctor ? `<span class="med-time-pill">👩‍⚕️ ${m.doctor}</span>` : ''}
@@ -2391,9 +2503,9 @@ function renderMedications() {
           ${m.pills != null ? (() => { const d = Math.floor(m.pills / freqToDoseCount(m.frequency)); const c = d <= 3 ? 'var(--rose-dark)' : d <= 7 ? '#7a5e2a' : 'var(--sage-dark)'; return `<span class="med-time-pill" style="color:${c};font-weight:600;">💊 ${m.pills} pills (~${d}d supply)</span>`; })() : ''}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <button class="btn btn-ghost btn-sm" onclick="editMedication(${m.id})" aria-label="Edit ${m.name}">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteMedication(${m.id})" aria-label="Delete ${m.name}">✕</button>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+        <button class="btn btn-ghost btn-sm" onclick="editMedication(${m.id})" aria-label="Edit ${esc(m.name)}">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteMedication(${m.id})" aria-label="Delete ${esc(m.name)}">✕</button>
       </div>
     </div>
   `).join('');
@@ -2424,7 +2536,7 @@ function addLogEntry() {
   if (editingLogId) {
     logs = logs.map(l => l.id === editingLogId ? { ...l, ...data } : l);
     editingLogId = null;
-    document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Save Entry';
+    document.getElementById('log-save-btn').textContent = '💾 Save Entry';
   } else {
     logs.unshift({ id: Date.now(), ...data });
   }
@@ -2453,7 +2565,7 @@ function editLog(id) {
   document.getElementById('log-pain').value = l.pain || '';
   document.getElementById('log-symptoms').value = l.symptoms || '';
   document.getElementById('log-questions').value = l.questions || '';
-  document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Update Entry';
+  document.getElementById('log-save-btn').textContent = '💾 Update Entry';
   document.getElementById('log-date').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -2491,8 +2603,8 @@ function renderSymptomLog() {
         ${l.appetite ? `<span class="badge badge-muted">Appetite: ${l.appetite}</span>` : ''}
         ${l.pain ? `<span class="badge badge-rose">Pain: ${l.pain}/10</span>` : ''}
       </div>
-      ${l.symptoms ? `<div class="log-text">${l.symptoms}</div>` : ''}
-      ${l.questions ? `<div style="margin-top:8px;font-size:1.05rem;color:var(--sage-dark);">❓ <em>${l.questions}</em></div>` : ''}
+      ${l.symptoms ? `<div class="log-text">${esc(l.symptoms)}</div>` : ''}
+      ${l.questions ? `<div style="margin-top:8px;font-size:1.05rem;color:var(--sage-dark);">❓ <em>${esc(l.questions)}</em></div>` : ''}
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="btn btn-ghost btn-sm" onclick="editLog(${l.id})">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteLog(${l.id})">✕ Remove</button>
@@ -2517,9 +2629,11 @@ function renderSymptomLog() {
 }
 
 function deleteLog(id) {
-  if (editingLogId === id) { editingLogId = null; document.querySelector('#page-symptoms .btn-primary').textContent = '💾 Save Entry'; }
+  if (!confirm('Remove this log entry?')) return;
+  if (editingLogId === id) { editingLogId = null; document.getElementById('log-save-btn').textContent = '💾 Save Entry'; }
   save(KEYS.logs, load(KEYS.logs).filter(l => l.id !== id));
   renderSymptomLog();
+  renderDashboard();
 }
 
 // ════════════════════════════════════════════════
@@ -2561,14 +2675,45 @@ function addAppointment() {
   };
   let appts = load(KEYS.appointments);
   if (editingApptId) {
+    const editing = appts.find(a => a.id === editingApptId);
+    if (editing && editing.recurringGroupId) {
+      const future = appts.filter(a => a.recurringGroupId === editing.recurringGroupId && a.date >= editing.date);
+      if (future.length > 1) {
+        const updateAll = confirm(`This is a repeating appointment.\n\nOK = Update this and all ${future.length} future occurrences\nCancel = Update just this one`);
+        if (updateAll) {
+          // Update all future — preserve visitNotes per-appointment, update everything else
+          const { visitNotes, ...sharedData } = data;
+          appts = appts.map(a =>
+            (a.recurringGroupId === editing.recurringGroupId && a.date >= editing.date)
+              ? { ...a, ...sharedData }
+              : a
+          );
+          showToast(`📅 ${future.length} appointments updated`);
+        } else {
+          // Just this one — full update including visitNotes
+          appts = appts.map(a => a.id === editingApptId ? { ...a, ...data } : a);
+          showToast('📅 Appointment updated');
+        }
+        editingApptId = null;
+        document.getElementById('appt-save-btn').textContent = '➕ Add Appointment';
+        document.getElementById('appt-recurring-row').style.display = 'block';
+        save(KEYS.appointments, sortAppointments(appts));
+        ['appt-title','appt-doctor','appt-address','appt-notes','appt-time','appt-date','appt-visit-notes','appt-recur-end'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('appt-visit-notes-row').style.display = 'none';
+        document.getElementById('appt-recurring').checked = false;
+        document.getElementById('appt-recurring-fields').style.display = 'none';
+        renderAppointments(); renderDashboard(); return;
+      }
+    }
     appts = appts.map(a => a.id === editingApptId ? { ...a, ...data } : a);
     editingApptId = null;
-    document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment';
+    document.getElementById('appt-save-btn').textContent = '➕ Add Appointment';
   } else {
     const isRecurring = document.getElementById('appt-recurring').checked;
     const recurEnd = document.getElementById('appt-recur-end').value;
     const recurFreq = document.getElementById('appt-recur-freq').value;
-    if (isRecurring && recurEnd && recurEnd > date) {
+    if (isRecurring && !recurEnd) { alert('Please set a "Repeat until" date.'); return; }
+    if (isRecurring && recurEnd && recurEnd >= date) {
       const groupId = Date.now();
       const dates = generateRecurringDates(date, recurFreq, recurEnd);
       dates.forEach((d, i) => {
@@ -2609,12 +2754,12 @@ function editAppointment(id) {
   document.getElementById('appt-recurring').checked = false;
   document.getElementById('appt-recurring-fields').style.display = 'none';
   document.getElementById('appt-recurring-row').style.display = 'none';
-  document.querySelector('#page-appointments .btn-primary').textContent = '💾 Update Appointment';
+  document.getElementById('appt-save-btn').textContent = '💾 Update Appointment';
   document.getElementById('appt-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function navigateToAppointment(id) {
-  navigate('appointments', document.querySelectorAll('.nav-item')[3]);
+  navigate('appointments', document.querySelectorAll('.nav-item')[2]);
   setTimeout(() => {
     const card = document.getElementById('appt-card-' + id);
     if (card) {
@@ -2662,16 +2807,17 @@ function deleteAppointment(id) {
   if (target && target.recurringGroupId) {
     const future = appts.filter(a => a.recurringGroupId === target.recurringGroupId && a.date >= target.date);
     if (future.length > 1) {
-      const choice = confirm(`This is a repeating appointment.\n\nOK = Delete this and all ${future.length} future occurrences\nCancel = Delete just this one`);
+      const choice = confirm(`This is a repeating appointment.\n\nOK = Remove this and all ${future.length} future occurrences\nCancel = Remove just this one`);
       if (choice) {
         save(KEYS.appointments, appts.filter(a => !(a.recurringGroupId === target.recurringGroupId && a.date >= target.date)));
         showToast(`🗑️ ${future.length} appointments removed`, 'info');
-        if (editingApptId === id) { editingApptId = null; document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
+        if (editingApptId === id) { editingApptId = null; document.getElementById('appt-save-btn').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
         renderAppointments(); renderDashboard(); return;
       }
     }
   }
-  if (editingApptId === id) { editingApptId = null; document.querySelector('#page-appointments .btn-primary').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
+  if (!confirm(`Remove this appointment?`)) return;
+  if (editingApptId === id) { editingApptId = null; document.getElementById('appt-save-btn').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
   save(KEYS.appointments, appts.filter(a => a.id !== id));
   renderAppointments();
   renderDashboard();
@@ -2701,22 +2847,25 @@ function renderAppointments() {
         <div class="day" style="color:${badgeTextColor};">${d.getDate()}</div>
         <div class="mon" style="color:${badgeTextColor};">${d.toLocaleDateString('en-US',{month:'short'})}</div>
       </div>
-      <div class="appt-info" style="flex:1;">
-        <h4>${a.title}
+      <div class="appt-info" style="flex:1;min-width:0;">
+        <h4 style="margin-bottom:4px;">${esc(a.title)}</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
           <span class="badge badge-sage">${a.category}</span>
           ${a.recurringGroupId ? `<span class="badge" style="background:var(--gold-light);color:var(--brown);">🔁 Repeating</span>` : ''}
-          ${attended ? `<span class="badge" style="background:var(--sage);color:white;">✓ Attended</span> <button class="btn btn-ghost btn-sm" style="font-size:0.85rem;padding:2px 8px;color:var(--text-muted);" onclick="unmarkAttended(${a.id})" title="Undo attended">↩ Undo</button>` : isPast ? '<span class="badge badge-muted">Past</span>' : ''}
-        </h4>
-        <p>${a.doctor ? a.doctor + ' · ' : ''}${a.time ? formatTime(a.time) : ''}</p>
-        ${a.address ? `<p style="margin-top:3px;font-size:1rem;color:var(--text-muted);">📍 ${a.address}</p>` : ''}
-        ${a.notes ? `<p style="margin-top:4px;font-size:1rem;color:var(--text-muted);">${a.notes}</p>` : ''}
-        ${a.visitNotes ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(122,158,135,0.1);border-left:3px solid var(--sage);border-radius:0 8px 8px 0;"><div style="font-size:1.05rem;font-weight:700;color:var(--sage-dark);margin-bottom:3px;">📋 Visit Notes</div><div style="font-size:1rem;color:var(--text);">${a.visitNotes}</div></div>` : (isPast || attended) ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:1.05rem;" onclick="editAppointment(${a.id})">📋 Add visit notes</button>` : ''}
+          ${attended ? `<span class="badge" style="background:var(--sage);color:white;">✓ Attended</span>` : isPast ? '<span class="badge badge-muted">Past</span>' : ''}
+          ${attended ? `<button class="btn btn-ghost btn-sm" style="font-size:0.85rem;padding:2px 8px;color:var(--text-muted);" onclick="unmarkAttended(${a.id})" title="Undo attended">↩ Undo</button>` : ''}
+        </div>
+        ${a.doctor ? `<p style="margin-bottom:2px;display:flex;gap:4px;align-items:flex-start;"><span style="flex-shrink:0;">👨‍⚕️</span><span style="flex:1;min-width:0;word-break:break-word;overflow-wrap:anywhere;">${esc(a.doctor)}</span></p>` : ''}
+        ${a.time ? `<p style="margin-bottom:2px;display:flex;gap:4px;align-items:flex-start;"><span style="flex-shrink:0;">🕐</span><span>${formatTime(a.time)}</span></p>` : ''}
+        ${a.address ? `<p style="margin-bottom:2px;display:flex;gap:4px;align-items:flex-start;"><span style="flex-shrink:0;">📍</span><span style="flex:1;min-width:0;word-break:break-word;overflow-wrap:anywhere;">${esc(a.address)}</span></p>` : ''}
+        ${a.notes ? `<p style="margin-top:4px;font-size:1rem;color:var(--text-muted);">${esc(a.notes)}</p>` : ''}
+        ${a.visitNotes ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(122,158,135,0.1);border-left:3px solid var(--sage);border-radius:0 8px 8px 0;"><div style="font-size:1.05rem;font-weight:700;color:var(--sage-dark);margin-bottom:3px;">📋 Visit Notes</div><div style="font-size:1rem;color:var(--text);">${esc(a.visitNotes)}</div></div>` : (isPast || attended) ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:1.05rem;" onclick="editAppointment(${a.id})">📋 Add visit notes</button>` : ''}
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+      <div class="appt-actions" style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">
         ${!isPast && !attended ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="markAttended(${a.id})">✓ Attended</button>` : ''}
-        ${!isPast ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="printVisitPrep(${a.id})" title="Print visit prep sheet">🖨️ Prep</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="editAppointment(${a.id})" aria-label="Edit ${a.title}">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteAppointment(${a.id})" aria-label="Delete ${a.title}">✕</button>
+        ${!isPast ? `<button class="btn btn-ghost btn-sm" style="white-space:nowrap;font-size:1.05rem;" onclick="if(prepareVisitPrep(${a.id})){document.body.dataset.print='visit';window.print();}" title="Print visit prep sheet">🖨️ Prep</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="editAppointment(${a.id})" aria-label="Edit ${esc(a.title)}">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteAppointment(${a.id})" aria-label="Delete ${esc(a.title)}">✕</button>
       </div>
     </div>`;
   };
@@ -2755,13 +2904,14 @@ function addContact() {
   if (editingContactId) {
     team = team.map(c => c.id === editingContactId ? { ...c, ...data } : c);
     editingContactId = null;
-    document.querySelector('#page-careteam .btn-primary').textContent = '➕ Add Contact';
+    document.getElementById('ct-save-btn').textContent = '➕ Add Contact';
   } else {
     team.push({ id: Date.now(), ...data });
   }
   save(KEYS.careteam, team);
   ['ct-name','ct-role','ct-phone','ct-fax','ct-email','ct-facility','ct-notes'].forEach(id => document.getElementById(id).value = '');
   renderCareTeam();
+  renderCareTeamPrintGrid();
   showToast('👥 Contact saved');
 }
 
@@ -2776,14 +2926,16 @@ function editContact(id) {
   document.getElementById('ct-email').value = c.email || '';
   document.getElementById('ct-facility').value = c.facility || '';
   document.getElementById('ct-notes').value = c.notes || '';
-  document.querySelector('#page-careteam .btn-primary').textContent = '💾 Update Contact';
+  document.getElementById('ct-save-btn').textContent = '💾 Update Contact';
   document.getElementById('ct-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function deleteContact(id) {
-  if (editingContactId === id) { editingContactId = null; document.querySelector('#page-careteam .btn-primary').textContent = '➕ Add Contact'; }
+  if (!confirm('Remove this contact?')) return;
+  if (editingContactId === id) { editingContactId = null; document.getElementById('ct-save-btn').textContent = '➕ Add Contact'; }
   save(KEYS.careteam, load(KEYS.careteam).filter(c => c.id !== id));
   renderCareTeam();
+  renderCareTeamPrintGrid();
 }
 
 function renderCareTeam() {
@@ -2797,16 +2949,16 @@ function renderCareTeam() {
     <div class="contact-card">
       <div class="contact-avatar">${c.name[0]}</div>
       <div class="contact-info">
-        <h4>${c.name}</h4>
+        <h4>${esc(c.name)}</h4>
         <p>${c.role || ''}${c.facility ? ' · ' + c.facility : ''}</p>
-        ${c.phone ? `<div class="contact-phone">📞 ${c.phone}</div>` : ''}
-        ${c.email ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">✉️ <a href="mailto:${c.email}" style="color:var(--sage-dark);">${c.email}</a></p>` : ''}
-        ${c.fax ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">Fax: ${c.fax}</p>` : ''}
-        ${c.notes ? `<p style="font-size:1.05rem;margin-top:4px;">${c.notes}</p>` : ''}
+        ${c.phone ? `<div class="contact-phone">📞 ${esc(c.phone)}</div>` : ''}
+        ${c.email ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">✉️ <a href="mailto:${esc(c.email)}" style="color:var(--sage-dark);">${esc(c.email)}</a></p>` : ''}
+        ${c.fax ? `<p style="font-size:1.05rem;color:var(--text-muted);margin-top:2px;">Fax: ${esc(c.fax)}</p>` : ''}
+        ${c.notes ? `<p style="font-size:1.05rem;margin-top:4px;">${esc(c.notes)}</p>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <button class="btn btn-ghost btn-sm no-print" onclick="editContact(${c.id})" aria-label="Edit ${c.name}">✏️</button>
-        <button class="btn btn-ghost btn-sm no-print" onclick="deleteContact(${c.id})" aria-label="Delete ${c.name}">✕</button>
+        <button class="btn btn-ghost btn-sm no-print" onclick="editContact(${c.id})" aria-label="Edit ${esc(c.name)}">✏️</button>
+        <button class="btn btn-ghost btn-sm no-print" onclick="deleteContact(${c.id})" aria-label="Delete ${esc(c.name)}">✕</button>
       </div>
     </div>
   `).join('');
@@ -2833,13 +2985,14 @@ function addHandoff() {
   if (editingHandoffId) {
     handoffs = handoffs.map(h => h.id === editingHandoffId ? { ...h, ...data, updatedAt: now } : h);
     editingHandoffId = null;
-    document.querySelector('#page-handoff .btn-primary').textContent = '💾 Save Handoff Note';
+    document.getElementById('ho-save-btn').textContent = '💾 Save Handoff Note';
   } else {
     handoffs.unshift({ id: Date.now(), ...data, createdAt: now, updatedAt: now });
   }
   save(KEYS.handoff, handoffs);
   ['ho-meds','ho-meals','ho-mood','ho-watch','ho-notes','ho-caregiver'].forEach(id => document.getElementById(id).value = '');
   renderHandoff();
+  renderDashboard();
   showToast('📝 Handoff note saved');
 }
 
@@ -2855,18 +3008,20 @@ function editHandoff(id) {
   document.getElementById('ho-mood').value = h.mood || '';
   document.getElementById('ho-watch').value = h.watch || '';
   document.getElementById('ho-notes').value = h.notes || '';
-  document.querySelector('#page-handoff .btn-primary').textContent = '💾 Update Handoff Note';
+  document.getElementById('ho-save-btn').textContent = '💾 Update Handoff Note';
   document.getElementById('ho-date').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function deleteHandoff(id) {
-  if (editingHandoffId === id) { editingHandoffId = null; document.querySelector('#page-handoff .btn-primary').textContent = '💾 Save Handoff Note'; }
+  if (!confirm('Remove this handoff note?')) return;
+  if (editingHandoffId === id) { editingHandoffId = null; document.getElementById('ho-save-btn').textContent = '💾 Save Handoff Note'; }
   save(KEYS.handoff, load(KEYS.handoff).filter(h => h.id !== id));
   renderHandoff();
+  renderDashboard();
 }
 
 function renderHandoff() {
-  const notes = load(KEYS.handoff);
+  const notes = load(KEYS.handoff).sort((a, b) => b.date.localeCompare(a.date));
   const el = document.getElementById('handoff-list');
   if (!notes.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔄</div><p>No handoff notes yet.</p></div>';
@@ -2877,7 +3032,7 @@ function renderHandoff() {
       <div class="handoff-header">
         <div>
           <h4>${formatDate(n.date)} — ${n.shift}</h4>
-          ${n.caregiver ? `<p style="font-size:1.05rem;color:var(--text-muted);">By: ${n.caregiver}</p>` : ''}
+          ${n.caregiver ? `<p style="font-size:1.05rem;color:var(--text-muted);">By: ${esc(n.caregiver)}</p>` : ''}
           ${n.updatedAt ? `<p style="font-size:1rem;color:var(--text-muted);margin-top:2px;">✏️ ${n.updatedAt !== n.createdAt ? 'Edited' : 'Saved'} ${new Date(n.updatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ${new Date(n.updatedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</p>` : ''}
         </div>
         <div style="display:flex;gap:6px;">
@@ -2885,11 +3040,11 @@ function renderHandoff() {
           <button class="btn btn-ghost btn-sm" onclick="deleteHandoff(${n.id})" aria-label="Delete handoff note">✕</button>
         </div>
       </div>
-      ${n.meds ? `<p class="text-sm"><strong>Medications:</strong> ${n.meds}</p>` : ''}
-      ${n.meals ? `<p class="text-sm" style="margin-top:6px;"><strong>Meals/Fluids:</strong> ${n.meals}</p>` : ''}
-      ${n.mood ? `<p class="text-sm" style="margin-top:6px;"><strong>Mood:</strong> ${n.mood}</p>` : ''}
-      ${n.watch ? `<p class="text-sm" style="margin-top:6px;color:var(--rose-dark);"><strong>⚠️ Watch for:</strong> ${n.watch}</p>` : ''}
-      ${n.notes ? `<p class="text-sm" style="margin-top:6px;"><strong>Notes:</strong> ${n.notes}</p>` : ''}
+      ${n.meds ? `<p class="text-sm"><strong>Medications:</strong> ${esc(n.meds)}</p>` : ''}
+      ${n.meals ? `<p class="text-sm" style="margin-top:6px;"><strong>Meals/Fluids:</strong> ${esc(n.meals)}</p>` : ''}
+      ${n.mood ? `<p class="text-sm" style="margin-top:6px;"><strong>Mood:</strong> ${esc(n.mood)}</p>` : ''}
+      ${n.watch ? `<p class="text-sm" style="margin-top:6px;color:var(--rose-dark);"><strong>⚠️ Watch for:</strong> ${esc(n.watch)}</p>` : ''}
+      ${n.notes ? `<p class="text-sm" style="margin-top:6px;"><strong>Notes:</strong> ${esc(n.notes)}</p>` : ''}
     </div>
   `).join('');
 }
@@ -2925,6 +3080,7 @@ function addMemory() {
   selectedMemMood = '';
   document.querySelectorAll('#mem-mood-selector .mood-btn').forEach(b => b.classList.remove('selected'));
   renderMemories();
+  renderDashboard();
   showToast('💛 Memory saved');
 }
 
@@ -2941,9 +3097,11 @@ function editMemory(id) {
 }
 
 function deleteMemory(id) {
+  if (!confirm('Remove this memory?')) return;
   if (editingMemoryId === id) { editingMemoryId = null; document.querySelector('#page-memory .btn-gold').textContent = '💛 Save Memory'; }
   save(KEYS.memories, load(KEYS.memories).filter(m => m.id !== id));
   renderMemories();
+  renderDashboard();
 }
 
 function renderMemories() {
@@ -2992,7 +3150,7 @@ function addStressEntry() {
   if (editingStressId) {
     entries = entries.map(e => e.id === editingStressId ? { ...e, ...data } : e);
     editingStressId = null;
-    document.querySelector('#page-stress .btn-primary').textContent = '💾 Save Check-In';
+    document.getElementById('stress-save-btn').textContent = '💾 Save Check-In';
   } else {
     entries.unshift({ id: Date.now(), ...data });
   }
@@ -3002,6 +3160,7 @@ function addStressEntry() {
   document.getElementById('stress-notes').value = '';
   document.getElementById('stress-gratitude').value = '';
   renderStress();
+  renderDashboard();
   showToast('🌿 Wellbeing check-in saved');
 }
 
@@ -3012,12 +3171,12 @@ function editStress(id) {
   selectStress(e.score);
   document.getElementById('stress-notes').value = e.notes || '';
   document.getElementById('stress-gratitude').value = e.gratitude || '';
-  document.querySelector('#page-stress .btn-primary').textContent = '💾 Update Check-In';
+  document.getElementById('stress-save-btn').textContent = '💾 Update Check-In';
   document.querySelector('.stress-btn').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function renderStress() {
-  const entries = load(KEYS.stress);
+  const entries = load(KEYS.stress).sort((a, b) => b.date.localeCompare(a.date));
   const el = document.getElementById('stress-log-list');
 
   // Check for burnout
@@ -3034,8 +3193,8 @@ function renderStress() {
   el.innerHTML = entries.map(e => `
     <div class="log-entry" style="border-left-color:${e.score <= 3 ? 'var(--rose)' : e.score <= 6 ? 'var(--gold)' : 'var(--sage)'}">
       <div class="log-date">${formatDate(e.date)} · Wellbeing: <strong>${e.score}/10</strong></div>
-      ${e.notes ? `<div class="log-text">${e.notes}</div>` : ''}
-      ${e.gratitude ? `<div style="margin-top:6px;font-size:1rem;color:var(--sage-dark);">🙏 ${e.gratitude}</div>` : ''}
+      ${e.notes ? `<div class="log-text">${esc(e.notes)}</div>` : ''}
+      ${e.gratitude ? `<div style="margin-top:6px;font-size:1rem;color:var(--sage-dark);">🙏 ${esc(e.gratitude)}</div>` : ''}
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="btn btn-ghost btn-sm" onclick="editStress(${e.id})">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="deleteStress(${e.id})">✕ Remove</button>
@@ -3045,14 +3204,27 @@ function renderStress() {
 }
 
 function deleteStress(id) {
-  if (editingStressId === id) { editingStressId = null; document.querySelector('#page-stress .btn-primary').textContent = '💾 Save Check-In'; }
+  if (!confirm('Remove this check-in?')) return;
+  if (editingStressId === id) { editingStressId = null; document.getElementById('stress-save-btn').textContent = '💾 Save Check-In'; }
   save(KEYS.stress, load(KEYS.stress).filter(e => e.id !== id));
   renderStress();
+  renderDashboard();
 }
 
 // ════════════════════════════════════════════════
 //  EMERGENCY CARD
 // ════════════════════════════════════════════════
+function reimportFromProfile() {
+  const profile = load(KEYS.profile, {});
+  const nameEl = document.getElementById('ec-name');
+  const dobEl  = document.getElementById('ec-dob');
+  const condEl = document.getElementById('ec-conditions');
+  if (nameEl) nameEl.value = profile.name || '';
+  if (dobEl)  dobEl.value  = profile.dob  || '';
+  if (condEl) condEl.value = profile.condition || '';
+  renderEmergencyCard();
+}
+
 function loadEmergencyCard() {
   const profile   = load(KEYS.profile, {});
   const meds      = load(KEYS.medications);
@@ -3178,28 +3350,34 @@ function updateEmergencyCard() {
   const insurance  = document.getElementById('ec-insurance').value;
   const notes      = document.getElementById('ec-notes').value;
 
-  const medList = meds.length
-    ? meds.map(m => `${m.name} ${m.dose} — ${m.frequency}${m.food ? ' (' + m.food + ')' : ''}`).join('<br>')
-    : 'None recorded';
+  const medRows = meds.length
+    ? meds.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(m =>
+        `<div class="ec-med-row">• <strong>${esc(m.name)}</strong> ${esc(m.dose)} — ${esc(m.frequency)}${m.food ? ' ('+m.food+')' : ''}</div>`
+      ).join('')
+    : '<div class="ec-med-row">None recorded</div>';
 
   document.getElementById('ec-preview-content').innerHTML = `
     <div class="emergency-row"><strong>Name:</strong><span>${name}</span></div>
-    ${dob    ? `<div class="emergency-row"><strong>Date of Birth:</strong><span>${formatDate(dob)}</span></div>` : ''}
-    ${blood  ? `<div class="emergency-row"><strong>Blood Type:</strong><span>${blood}</span></div>` : ''}
-    <hr class="divider">
-    <div class="emergency-row" style="align-items:flex-start;"><strong>Conditions:</strong><span>${conditions || '—'}</span></div>
-    <div class="emergency-row" style="align-items:flex-start;"><strong>Allergies:</strong><span style="color:var(--rose-dark);font-weight:700;">${allergies || 'None known'}</span></div>
-    <hr class="divider">
-    <div style="font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:8px;">Current Medications</div>
-    <div style="font-size:1.05rem;line-height:1.9;">${medList}</div>
-    <hr class="divider">
-    ${c1 ? `<div class="emergency-row"><strong>Emergency Contact 1:</strong><span>${c1}</span></div>` : ''}
-    ${c2 ? `<div class="emergency-row"><strong>Emergency Contact 2:</strong><span>${c2}</span></div>` : ''}
-    ${doctor    ? `<div class="emergency-row"><strong>Primary Doctor:</strong><span>${doctor}</span></div>` : ''}
+    ${dob   ? `<div class="emergency-row"><strong>DOB:</strong><span>${formatDate(dob)}</span></div>` : ''}
+    ${blood ? `<div class="emergency-row"><strong>Blood Type:</strong><span style="font-weight:700;">${blood}</span></div>` : ''}
+
+    ${conditions ? `<div class="ec-section-head">Medical Conditions</div>
+    <div style="font-size:1rem;line-height:1.6;margin-bottom:6px;">${conditions}</div>` : ''}
+
+    <div class="ec-section-head">Allergies</div>
+    <div class="ec-allergy-row"><strong>⚠ ALLERGIES:</strong><span>${allergies || 'None known'}</span></div>
+
+    <div class="ec-section-head">Current Medications</div>
+    ${medRows}
+
+    <div class="ec-section-head">Emergency Contacts</div>
+    ${c1 ? `<div class="emergency-row"><strong>Contact 1:</strong><span>${c1}</span></div>` : ''}
+    ${c2 ? `<div class="emergency-row"><strong>Contact 2:</strong><span>${c2}</span></div>` : ''}
+    ${doctor    ? `<div class="emergency-row"><strong>Doctor:</strong><span>${doctor}</span></div>` : ''}
     ${insurance ? `<div class="emergency-row"><strong>Health Card:</strong><span>${insurance}</span></div>` : ''}
-    ${notes     ? `<hr class="divider"><div class="emergency-row" style="align-items:flex-start;"><strong>Notes:</strong><span>${notes}</span></div>` : ''}
-    <hr class="divider">
-    <div style="font-size:1.05rem;color:var(--text-muted);text-align:center;">Last updated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+    ${notes     ? `<div class="ec-section-head">Notes</div><div style="font-size:1rem;line-height:1.6;">${notes}</div>` : ''}
+
+    <div class="ec-footer">Last updated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
   `;
 }
 
@@ -3263,7 +3441,8 @@ function toggleMedCheck(medId, doseIdx, el) {
   const allMeds = load(KEYS.medications);
   const medToUpdate = allMeds.find(m => m.id === medId);
   if (medToUpdate && medToUpdate.pills != null) {
-    medToUpdate.pills = Math.max(0, medToUpdate.pills + (isDone ? -1 : 1));
+    const cap = medToUpdate.pillsMax != null ? medToUpdate.pillsMax : medToUpdate.pills;
+    medToUpdate.pills = Math.min(cap, Math.max(0, medToUpdate.pills + (isDone ? -1 : 1)));
     save(KEYS.medications, allMeds);
     // Update pill display on med card if visible
     renderMedications();
@@ -3362,6 +3541,26 @@ function renderGettingStarted() {
 // ════════════════════════════════════════════════
 //  REFILL ALERTS
 // ════════════════════════════════════════════════
+function goToMedication(medId) {
+  // Clear dashboard search if open
+  const si = document.getElementById('dash-med-search');
+  const sr = document.getElementById('dash-med-results');
+  if (si) si.value = '';
+  if (sr) sr.innerHTML = '';
+  // Navigate to medications tab, then scroll to and highlight the specific card
+  navigate('medications', document.querySelector('[onclick*=medications]'));
+  setTimeout(() => {
+    const card = document.getElementById('med-card-' + medId);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.style.transition = 'box-shadow 0.4s, outline 0.4s';
+    card.style.outline = '3px solid var(--primary)';
+    card.style.boxShadow = '0 0 0 8px rgba(122,158,135,0.25)';
+    setTimeout(() => { card.style.outline = ''; card.style.boxShadow = ''; }, 2200);
+  }, 120);
+}
+
+
 function renderRefillAlerts() {
   const el = document.getElementById('refill-alerts');
   if (!el) return;
@@ -3375,13 +3574,13 @@ function renderRefillAlerts() {
   const soon = [];
 
   meds.forEach(m => {
-    if (m.frequency === 'As needed') return;
+    if ((m.frequency || '').toLowerCase().includes('as needed')) return;
     const dailyDoses = freqToDoseCount(m.frequency);
     const daysLeft = m.pills != null ? Math.floor(m.pills / dailyDoses) : null;
 
     // Pills-based: running low
     if (daysLeft != null && daysLeft <= 7) {
-      const entry = { name: m.name, refill: m.refill, daysLeft };
+      const entry = { id: m.id, name: m.name, refill: m.refill, daysLeft };
       if (daysLeft <= 0) overdue.push(entry);
       else soon.push(entry);
       return;
@@ -3390,9 +3589,9 @@ function renderRefillAlerts() {
     if (!m.refill) return;
     const refillDate = new Date(m.refill + 'T12:00:00');
     if (refillDate < today) {
-      overdue.push({ name: m.name, refill: m.refill, daysLeft: null });
+      overdue.push({ id: m.id, name: m.name, refill: m.refill, daysLeft: null });
     } else if (refillDate <= in7) {
-      soon.push({ name: m.name, refill: m.refill, daysLeft: null });
+      soon.push({ id: m.id, name: m.name, refill: m.refill, daysLeft: null });
     }
   });
 
@@ -3407,8 +3606,14 @@ function renderRefillAlerts() {
     html += `
       <div style="background:rgba(201,132,122,0.1);border:1.5px solid var(--rose-light);border-radius:12px;padding:16px 20px;margin-bottom:10px;">
         <div style="font-weight:700;color:var(--rose-dark);margin-bottom:8px;">🔴 Refill overdue</div>
-        ${overdue.map(m => `<div style="font-size:1rem;color:var(--text);padding:3px 0;">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? (m.daysLeft <= 0 ? 'out of pills' : m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left') : 'refill was due ' + formatDate(m.refill)}</div>`).join('')}
-        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="navigate('medications', document.querySelector('[onclick*=medications]'))">Go to Medications →</button>
+        ${overdue.map(m => `<div onclick="goToMedication(${m.id})" style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(201,132,122,0.15)'" onmouseout="this.style.background=''" >
+          <span>💊</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;">${esc(m.name)}</div>
+            <div style="font-size:0.85rem;color:var(--rose-dark);">${m.daysLeft != null ? (m.daysLeft <= 0 ? 'Out of pills' : m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left') : 'Refill was due ' + formatDate(m.refill)}</div>
+          </div>
+          <span style="flex-shrink:0;font-size:0.9rem;color:var(--rose-dark);">View →</span>
+        </div>`).join('')}
       </div>`;
   }
 
@@ -3416,8 +3621,14 @@ function renderRefillAlerts() {
     html += `
       <div style="background:rgba(196,164,107,0.1);border:1.5px solid var(--gold-light);border-radius:12px;padding:16px 20px;">
         <div style="font-weight:700;color:#7a5e2a;margin-bottom:8px;">🟡 Refill due soon</div>
-        ${soon.map(m => `<div style="font-size:1rem;color:var(--text);padding:3px 0;">💊 <strong>${m.name}</strong> — ${m.daysLeft != null ? m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left' : 'due ' + formatDate(m.refill)}</div>`).join('')}
-        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="navigate('medications', document.querySelector('[onclick*=medications]'))">Go to Medications →</button>
+        ${soon.map(m => `<div onclick="goToMedication(${m.id})" style="font-size:1rem;color:var(--text);padding:6px 8px;margin:2px -8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(196,164,107,0.15)'" onmouseout="this.style.background=''">
+          <span>💊</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;">${esc(m.name)}</div>
+            <div style="font-size:0.85rem;color:#7a5e2a;">${m.daysLeft != null ? m.daysLeft + ' day' + (m.daysLeft !== 1 ? 's' : '') + ' left' : 'Due ' + formatDate(m.refill)}</div>
+          </div>
+          <span style="flex-shrink:0;font-size:0.9rem;color:#7a5e2a;">View →</span>
+        </div>`).join('')}
       </div>`;
   }
 
@@ -3463,63 +3674,76 @@ function renderDashboard() {
     const moreText = laterCount > 0 ? `<div style="font-size:1.05rem;color:var(--text-muted);margin-top:6px;">${laterCount} more appointment${laterCount !== 1 ? 's' : ''} coming up</div>` : '';
     const apptCards = sameDay.map((a, i) => `
       ${i > 0 ? '<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;">' : ''}
-      <div style="font-size:1rem;font-weight:700;color:var(--brown);margin-top:${i === 0 ? '4' : '0'}px;">${a.title}</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--brown);margin-top:${i === 0 ? '4' : '0'}px;">${esc(a.title)}</div>
       <div style="font-size:1rem;color:var(--text-muted);margin-top:3px;">📅 ${dateStr}${a.time ? ' · ' + formatTime(a.time) : ''}</div>
     `).join('');
     document.getElementById('stat-appt-detail').innerHTML = apptCards + moreText;
   }
 
-  // Today's meds in dashboard
+  // Today's meds — flatten all individual doses, sort by actual dose time
   const medEl = document.getElementById('dashboard-meds');
   const todayChecks = getMedChecksForToday();
   if (!meds.length) {
     medEl.innerHTML = '<li style="color:var(--text-muted);font-size:1rem;padding:12px 0;">No medications added yet.</li>';
   } else {
-    let totalDoses = 0, doneDoses = 0;
-    medEl.innerHTML = meds.map(m => {
+    // Build flat list: one entry per dose (not per medication)
+    const doseItems = [];
+    meds.forEach(m => {
       const isPRN = (m.frequency || '').toLowerCase().includes('as needed');
+      if (isPRN) {
+        doseItems.push({ m, isPRN: true, label: 'As needed', doseIdx: 'prn', timeMin: -1 });
+        return;
+      }
+      const labels = getDoseLabels(m);
+      labels.forEach((label, i) => {
+        // Blank label = single-dose "Once daily" → sort to top with PRN
+        if (!label) {
+          doseItems.push({ m, isPRN: false, label, doseIdx: i, timeMin: -1 });
+          return;
+        }
+        // Parse the specific time for this labelled dose row
+        const raw = label.toLowerCase();
+        const match = raw.match(/(\d+):(\d+)\s*(am|pm)/);
+        let timeMin = 9999; // unlabelled fallback sorts last
+        if (match) {
+          let h = parseInt(match[1]);
+          const mn = parseInt(match[2]);
+          if (match[3] === 'pm' && h !== 12) h += 12;
+          if (match[3] === 'am' && h === 12) h = 0;
+          timeMin = h * 60 + mn;
+        }
+        doseItems.push({ m, isPRN: false, label, doseIdx: i, timeMin });
+      });
+    });
+    // Sort by time first, then alphabetically within each time group
+    doseItems.sort((a, b) => a.timeMin - b.timeMin || (a.m.name || '').localeCompare(b.m.name || ''));
+
+    let totalDoses = 0, doneDoses = 0;
+    medEl.innerHTML = doseItems.map(({ m, isPRN, label, doseIdx }) => {
       if (isPRN) {
         const prnCount = todayChecks[`${m.id}_prn`] || 0;
         return `
         <li>
           <div>
-            <span style="font-weight:700;">${m.name}</span>
-            <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose} · As needed</span>
+            <span style="font-weight:700;">${esc(m.name)}</span>
+            <span style="color:var(--text-muted);font-size:1rem;"> ${esc(m.dose)} · As needed</span>
             ${prnCount > 0 ? `<div style="font-size:1.05rem;color:var(--sage-dark);margin-top:2px;">Given ${prnCount}× today</div>` : ''}
           </div>
           <button class="btn btn-outline btn-sm" onclick="logPRNDose(${m.id}, this)" style="white-space:nowrap;">+ Log dose</button>
         </li>`;
       }
-      const labels = getDoseLabels(m);
-      const count = labels.length;
-      totalDoses += count;
-      if (count === 1) {
-        const key = `${m.id}_0`;
-        const isDone = todayChecks[key] === true;
-        if (isDone) doneDoses++;
-        return `
-        <li>
-          <div>
-            <span style="font-weight:700;">${m.name}</span>
-            <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose}${m.times ? ' · ' + m.times : ' · ' + m.frequency}</span>
-          </div>
-          <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, 0, this)">${isDone ? '✓' : ''}</div>
-        </li>`;
-      } else {
-        return labels.map((label, i) => {
-          const key = `${m.id}_${i}`;
-          const isDone = todayChecks[key] === true;
-          if (isDone) doneDoses++;
-          return `
-          <li>
-            <div>
-              <span style="font-weight:700;">${m.name}</span>
-              <span style="color:var(--text-muted);font-size:1rem;"> ${m.dose}${label ? ' · ' + label : ''}</span>
-            </div>
-            <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, ${i}, this)">${isDone ? '✓' : ''}</div>
-          </li>`;
-        }).join('');
-      }
+      totalDoses++;
+      const key = `${m.id}_${doseIdx}`;
+      const isDone = todayChecks[key] === true;
+      if (isDone) doneDoses++;
+      return `
+      <li>
+        <div>
+          <span style="font-weight:700;">${esc(m.name)}</span>
+          <span style="color:var(--text-muted);font-size:1rem;"> ${esc(m.dose)}${label ? ' · ' + label : ' · ' + m.frequency}</span>
+        </div>
+        <div class="med-check ${isDone ? 'done' : ''}" onclick="toggleMedCheck(${m.id}, ${doseIdx}, this)">${isDone ? '✓' : ''}</div>
+      </li>`;
     }).join('');
     document.getElementById('stat-meds').textContent = `${doneDoses}/${totalDoses}`;
     document.getElementById('stat-meds-sub').textContent = doneDoses === totalDoses && totalDoses > 0
@@ -3542,7 +3766,7 @@ function renderDashboard() {
 
   // Upcoming appts in dashboard
   const apptEl = document.getElementById('dashboard-appts');
-  const upcomingList = appts.filter(a => a.date >= today);
+  const upcomingList = appts.filter(a => a.date >= today && !a.attended).slice(0, 5);
   if (!upcomingList.length) {
     apptEl.innerHTML = '<div class="empty-state" style="padding:16px 0;"><p>No upcoming appointments.</p></div>';
   } else {
@@ -3555,12 +3779,52 @@ function renderDashboard() {
           <div class="mon">${d.toLocaleDateString('en-US',{month:'short'})}</div>
         </div>
         <div class="appt-info" style="flex:1;">
-          <h4>${a.title} <span class="badge badge-sage">${a.category}</span></h4>
+          <h4>${esc(a.title)} <span class="badge badge-sage">${a.category}</span></h4>
           <p>${a.doctor ? a.doctor + ' · ' : ''}${a.time ? formatTime(a.time) : ''}</p>
         </div>
       </div>`;
     }).join('');
   }
+  // Latest Memory snippet
+  const memSnippet = document.getElementById('dash-memory-snippet');
+  if (memSnippet) {
+    const memories = load(KEYS.memories);
+    if (!memories.length) {
+      memSnippet.innerHTML = '<div class="empty-state" style="padding:16px 0;"><div class="empty-icon">💛</div><p>No memories yet.</p></div>';
+    } else {
+      const latest = memories[0];
+      memSnippet.innerHTML = `
+        <div style="padding:10px 0;">
+          <div style="font-size:1rem;color:var(--text-muted);margin-bottom:4px;">${formatDate(latest.date)}</div>
+          <div style="font-size:1.05rem;line-height:1.5;">${(latest.text || '').substring(0, 160)}${(latest.text || '').length > 160 ? '…' : ''}</div>
+          ${memories.length > 1 ? `<div style="font-size:0.95rem;color:var(--text-muted);margin-top:8px;">${memories.length - 1} more memor${memories.length - 1 !== 1 ? 'ies' : 'y'} saved</div>` : ''}
+        </div>`;
+    }
+  }
+
+  // Latest Wellbeing snippet
+  const wellSnippet = document.getElementById('dash-wellbeing-snippet');
+  if (wellSnippet) {
+    const stressEntries = load(KEYS.stress);
+    if (!stressEntries.length) {
+      wellSnippet.innerHTML = '<div class="empty-state" style="padding:16px 0;"><div class="empty-icon">🌿</div><p>No check-ins yet.</p></div>';
+    } else {
+      const latest = stressEntries[0];
+      const scoreColor = latest.score <= 3 ? 'var(--rose-dark)' : latest.score <= 6 ? 'var(--gold)' : 'var(--sage-dark)';
+      const scoreLabel = latest.score <= 3 ? 'Tough day' : latest.score <= 6 ? 'Getting by' : 'Doing well';
+      wellSnippet.innerHTML = `
+        <div style="padding:10px 0;">
+          <div style="font-size:1rem;color:var(--text-muted);margin-bottom:6px;">${formatDate(latest.date)}</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <span style="font-size:1.8rem;font-weight:700;color:${scoreColor};">${latest.score}/10</span>
+            <span style="font-size:1rem;color:${scoreColor};font-weight:600;">${scoreLabel}</span>
+          </div>
+          ${latest.notes ? `<div style="font-size:1rem;color:var(--text-muted);">${latest.notes.substring(0, 120)}${latest.notes.length > 120 ? '…' : ''}</div>` : ''}
+          ${latest.gratitude ? `<div style="font-size:1rem;color:var(--sage-dark);margin-top:6px;">🙏 ${latest.gratitude.substring(0, 100)}</div>` : ''}
+        </div>`;
+    }
+  }
+
   renderCharts();
   renderGoodDays();
   renderGettingStarted();
@@ -3572,33 +3836,43 @@ function renderDashboard() {
 // ════════════════════════════════════════════════
 //  PRINT HELPERS
 // ════════════════════════════════════════════════
-function preparePrintHeaders() {
+// Called once at startup and after any profile change — keeps print headers always ready
+function preparePrintHeaders(headerId) {
   const profile = load(KEYS.profile, null);
   const patientName = profile ? profile.name : 'Patient';
   const today = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   const printDate = 'Printed: ' + today;
   const patientLine = 'Patient: ' + patientName;
-  const pairs = [
+  const allHeaders = [
     ['med-print-header','med-print-patient','med-print-date'],
     ['ct-print-header','ct-print-patient','ct-print-date'],
     ['handoff-print-header','handoff-print-patient','handoff-print-date'],
     ['ec-print-header','ec-print-patient','ec-print-date'],
   ];
-  pairs.forEach(([hdr, pat, dt]) => {
+  allHeaders.forEach(([hdr, pat, dt]) => {
     const h = document.getElementById(hdr);
     const p = document.getElementById(pat);
     const d = document.getElementById(dt);
-    if (h) h.style.display = 'flex';
-    if (p) p.textContent = patientLine;
-    if (d) d.textContent = printDate;
+    const show = !headerId || hdr === headerId;
+    if (h) h.style.display = show ? 'flex' : 'none';
+    if (show && p) p.textContent = patientLine;
+    if (show && d) d.textContent = printDate;
   });
 }
 
-function printMedicationList() {
-  const meds = load(KEYS.medications);
+// Single afterprint handler — cleans up data-print attribute and care team grid
+window.addEventListener('afterprint', function() {
+  delete document.body.dataset.print;
+  const grid = document.getElementById('ct-print-grid');
+  if (grid) grid.style.display = 'none';
+});
+
+// Renders medication print table — called at startup and after any medication change
+function renderMedicationPrintTable() {
+  const meds = load(KEYS.medications).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const wrap = document.getElementById('medications-print-table-wrap');
   if (!wrap) return;
-  if (!meds.length) { alert('No medications to print.'); return; }
+  if (!meds.length) { wrap.innerHTML = ''; return; }
 
   const rows = meds.map(m => {
     const dailyDoses = freqToDoseCount(m.frequency);
@@ -3611,7 +3885,7 @@ function printMedicationList() {
     const freqTimes = [m.frequency, m.times].filter(Boolean).join(' · ');
     const nameExtra = [m.food && m.food !== 'No preference' ? m.food : '', m.notes].filter(Boolean).join(' · ');
     return `<tr>
-      <td><strong>${m.name}</strong>${nameExtra ? `<br><span style="font-size:8pt;color:#555;font-style:italic;">${nameExtra}</span>` : ''}</td>
+      <td><strong>${esc(m.name)}</strong>${nameExtra ? `<br><span style="font-size:8pt;color:#555;font-style:italic;">${esc(nameExtra)}</span>` : ''}</td>
       <td>${m.dose || '—'}</td>
       <td>${freqTimes || '—'}</td>
       <td>${m.doctor || '—'}</td>
@@ -3637,15 +3911,6 @@ function printMedicationList() {
     <div class="med-print-footer">
       CareCompanion · This list is for personal reference only. Always verify medications with your pharmacist or physician before making changes.
     </div>`;
-
-  renderCareTeamPrintGrid();
-  preparePrintHeaders();
-  window.print();
-
-  setTimeout(() => {
-    const pairs = ['med-print-header','ct-print-header','handoff-print-header','ec-print-header'];
-    pairs.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-  }, 1000);
 }
 
 function renderCareTeamPrintGrid() {
@@ -3658,16 +3923,32 @@ function renderCareTeamPrintGrid() {
   grid.innerHTML = contacts.map(c => `
     <div class="ct-print-card">
       <div class="ct-print-card-header">
-        <h4>${c.name}</h4>
-        ${c.role ? `<div class="ct-role">${c.role}</div>` : ''}
+        <h4>${esc(c.name)}</h4>
+        ${c.role ? `<div class="ct-role">${esc(c.role)}</div>` : ''}
       </div>
       <div class="ct-print-card-body">
-        ${c.phone  ? `<div class="ct-detail"><span class="ct-detail-icon">📞</span><span>${c.phone}</span></div>` : ''}
-        ${c.email  ? `<div class="ct-detail"><span class="ct-detail-icon">✉️</span><span>${c.email}</span></div>` : ''}
+        ${c.phone  ? `<div class="ct-detail"><span class="ct-detail-icon">📞</span><span>${esc(c.phone)}</span></div>` : ''}
+        ${c.email  ? `<div class="ct-detail"><span class="ct-detail-icon">✉️</span><span>${esc(c.email)}</span></div>` : ''}
         ${c.clinic ? `<div class="ct-detail"><span class="ct-detail-icon">🏥</span><span>${c.clinic}</span></div>` : ''}
-        ${c.notes  ? `<div class="ct-notes">${c.notes}</div>` : ''}
+        ${c.notes  ? `<div class="ct-notes">${esc(c.notes)}</div>` : ''}
       </div>
     </div>`).join('');
+}
+
+function medTimeToMinutes(m) {
+  // PRN and no-specific-time meds sort to top (-1)
+  // Timed meds sort by their actual time in minutes
+  const isPRN = (m.frequency || '').toLowerCase().includes('as needed');
+  if (isPRN) return -1;
+  const raw = (m.times || '').split(',')[0].trim().toLowerCase();
+  const match = raw.match(/(\d+):(\d+)\s*(am|pm)/);
+  if (!match) return -1; // Once daily / no specific time → top
+  let h = parseInt(match[1]);
+  const min = parseInt(match[2]);
+  const ampm = match[3];
+  if (ampm === 'pm' && h !== 12) h += 12;
+  if (ampm === 'am' && h === 12) h = 0;
+  return h * 60 + min;
 }
 
 function formatDate(d) {
@@ -3690,7 +3971,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '1.1',
+    _version: '1.2',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
@@ -3736,9 +4017,10 @@ function importData(input) {
       }
 
       // Count what we found
+      const found = Object.values(KEYS).filter(k => data[k] !== undefined && data[k] !== null);
       if (found.length === 0) throw new Error('Backup file appears to be empty.');
 
-      if (!confirm(`Restore backup from ${new Date(data._exported).toLocaleDateString()}?\n\nThis will replace all current data. Your API key will be kept.\n\nFound: ${found.length} data sections.`)) return;
+      if (!confirm(`Restore backup from ${new Date(data._exported).toLocaleDateString()}?\n\nThis will replace all current data.\n\nFound: ${found.length} data sections.`)) return;
 
       // Restore each key directly to localStorage
       Object.values(KEYS).forEach(storageKey => {
@@ -3838,43 +4120,60 @@ function renderCharts() {
     days.push(d.toISOString().split('T')[0]);
   }
 
+  // Helper: render bars directly into el (which IS the chart-bars div), then append label row after it
+  function renderBarChart(el, barRows, labelDays) {
+    el.innerHTML = barRows.join('');
+    // Remove any existing label row and add fresh one after el
+    const existing = el.nextElementSibling;
+    if (existing && existing.classList.contains('chart-labels')) existing.remove();
+    const labelRow = document.createElement('div');
+    labelRow.className = 'chart-labels';
+    labelRow.innerHTML = labelDays.map((d, i) => {
+      const hide = labelDays.length > 10 && i % 2 !== 0 ? 'visibility:hidden;' : '';
+      const dt = new Date(d + 'T12:00:00');
+      const dow = dt.toLocaleDateString('en-US', { weekday: 'short' });
+      const day = dt.getDate();
+      return `<div class="chart-label" style="${hide}">${dow}<br>${day}</div>`;
+    }).join('');
+    el.after(labelRow);
+  }
+
   // Mood chart
   const moodEl = document.getElementById('chart-mood');
   if (moodEl) {
-    moodEl.innerHTML = days.map(day => {
+    const bars = days.map(day => {
       const entry = logs.find(l => l.date === day);
       const score = entry ? (MOOD_SCORE[entry.mood] || 3) : 0;
       const color = entry ? (MOOD_COLOR[entry.mood] || 'var(--border)') : 'var(--border)';
       const pct = (score / 5) * 100;
-      const label = day.slice(5); // MM-DD
       return `<div class="chart-bar-wrap">
         ${entry ? `<div class="chart-value">${entry.mood || '—'}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
         <div class="chart-bar" style="height:${pct}%;background:${color};width:100%;"></div>
-        <div class="chart-label">${label}</div>
       </div>`;
-    }).join('');
+    });
+    renderBarChart(moodEl, bars, days);
   }
 
   // Pain chart
   const painEl = document.getElementById('chart-pain');
   if (painEl) {
-    painEl.innerHTML = days.map(day => {
+    const bars = days.map(day => {
       const entry = logs.find(l => l.date === day);
-      const pain = entry && entry.pain ? parseInt(entry.pain) : 0;
+      const pain = entry && entry.pain ? parseFloat(entry.pain) : 0;
       const pct = (pain / 10) * 100;
       const color = pain >= 7 ? 'var(--rose)' : pain >= 4 ? 'var(--gold)' : 'var(--sage)';
       return `<div class="chart-bar-wrap">
         ${pain > 0 ? `<div class="chart-value">${pain}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
         <div class="chart-bar" style="height:${Math.max(pct,2)}%;background:${pain > 0 ? color : 'var(--border)'};width:100%;opacity:${pain > 0 ? 1 : 0.3};"></div>
-        <div class="chart-label">${day.slice(5)}</div>
       </div>`;
-    }).join('');
+    });
+    renderBarChart(painEl, bars, days);
   }
 
   // Stress chart
   const stressEl = document.getElementById('chart-stress');
   if (stressEl) {
-    stressEl.innerHTML = days.map(day => {
+    const bars = days.map(day => {
       const entry = stress.find(s => s.date === day);
       const score = entry ? entry.score : 0;
       const pct = (score / 10) * 100;
@@ -3882,9 +4181,9 @@ function renderCharts() {
       return `<div class="chart-bar-wrap">
         ${score > 0 ? `<div class="chart-value">${score}</div>` : '<div class="chart-value" style="opacity:0;">·</div>'}
         <div class="chart-bar" style="height:${Math.max(pct,2)}%;background:${score > 0 ? color : 'var(--border)'};width:100%;opacity:${score > 0 ? 1 : 0.3};"></div>
-        <div class="chart-label">${day.slice(5)}</div>
       </div>`;
-    }).join('');
+    });
+    renderBarChart(stressEl, bars, days);
   }
 
   // ── Summary callouts ──
@@ -3918,9 +4217,9 @@ function renderCharts() {
   let painSummary = '—';
   let painColor = 'var(--sage-dark)';
   let painBg = 'rgba(122,158,135,0.1)';
-  const painDays = loggedDays.filter(d => { const e = logs.find(l => l.date === d); return e && e.pain; });
+  const painDays = loggedDays.filter(d => { const e = logs.find(l => l.date === d); return e && e.pain !== '' && e.pain != null && !isNaN(parseFloat(e.pain)); });
   if (painDays.length) {
-    const avg = painDays.reduce((s,d) => { const e = logs.find(l => l.date === d); return s + parseInt(e.pain || 0); }, 0) / painDays.length;
+    const avg = painDays.reduce((s,d) => { const e = logs.find(l => l.date === d); return s + (parseFloat(e.pain) || 0); }, 0) / painDays.length;
     const avgRounded = avg.toFixed(1);
     painSummary = `Avg ${avgRounded}/10 over ${painDays.length} logged day${painDays.length !== 1 ? 's' : ''}`;
     if (avg <= 3) { painColor = 'var(--sage-dark)'; painBg = 'rgba(122,158,135,0.12)'; }
@@ -4047,7 +4346,7 @@ function renderMoodSnapshot() {
     const dayNum = d.getDate();
     if (!entry) {
       return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;">
-        <div style="height:40px;width:28px;background:#f0ebe4;border-radius:6px;"></div>
+        <div style="height:52px;width:40px;background:#f0ebe4;border-radius:8px;"></div>
         <div style="font-size:0.8rem;color:var(--text-muted);">${label}</div>
         <div style="font-size:0.75rem;color:var(--text-muted);">${dayNum}</div>
       </div>`;
@@ -4056,7 +4355,7 @@ function renderMoodSnapshot() {
     const color = moodColor[mood] || '#b09080';
     const tip = moodLabel[mood] || mood;
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;" title="${tip}: ${entry.symptoms ? entry.symptoms.substring(0,60) : 'No notes'}">
-      <div style="height:40px;width:28px;background:${color};border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">${mood}</div>
+      <div style="height:52px;width:40px;background:${color};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">${mood}</div>
       <div style="font-size:0.8rem;color:var(--text-muted);">${label}</div>
       <div style="font-size:0.75rem;color:var(--text-muted);">${dayNum}</div>
     </div>`;
@@ -4134,46 +4433,22 @@ function renderMedSearch(query) {
   }
   el.innerHTML = matches.map(m => `
     <div onclick="goToMedication(${m.id})" style="padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background 0.15s;" onmouseover="this.style.background='rgba(122,158,135,0.1)'" onmouseout="this.style.background=''">
-      <div style="font-weight:700;font-size:1rem;">${m.name} <span style="color:var(--text-muted);font-weight:400;">${m.dose || ''}</span> <span style="font-size:0.8rem;color:var(--sage-dark);float:right;">View →</span></div>
+      <div style="font-weight:700;font-size:1rem;">${esc(m.name)} <span style="color:var(--text-muted);font-weight:400;">${m.dose || ''}</span> <span style="font-size:0.8rem;color:var(--sage-dark);float:right;">View →</span></div>
       <div style="font-size:0.9rem;color:var(--text-muted);">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}${m.food ? ' · ' + m.food : ''}</div>
-      ${m.notes ? `<div style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">${m.notes}</div>` : ''}
+      ${m.notes ? `<div style="font-size:0.85rem;color:var(--text-muted);font-style:italic;">${esc(m.notes)}</div>` : ''}
       ${m.pills != null ? `<div style="font-size:0.85rem;color:var(--sage-dark);">💊 ${m.pills} pills remaining</div>` : ''}
     </div>
   `).join('');
 }
 
-function goToMedication(id) {
-  // Clear the dashboard search box and results
-  const searchInput = document.getElementById('dash-med-search');
-  const searchResults = document.getElementById('dash-med-results');
-  if (searchInput) searchInput.value = '';
-  if (searchResults) searchResults.innerHTML = '';
-  // Navigate to medications section
-  const navEl = document.querySelector('[onclick*="navigate(\'medications\'"]') || document.querySelectorAll('.nav-item')[1];
-  navigate('medications', navEl);
-  // After render, highlight the target med card
-  setTimeout(() => {
-    const cards = document.querySelectorAll('#medications-list .med-card');
-    const meds = load(KEYS.medications);
-    const idx = meds.findIndex(m => m.id === id);
-    if (idx >= 0 && cards[idx]) {
-      cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      cards[idx].style.transition = 'box-shadow 0.3s, background 0.3s';
-      cards[idx].style.boxShadow = '0 0 0 3px var(--sage)';
-      cards[idx].style.background = 'rgba(122,158,135,0.12)';
-      setTimeout(() => {
-        cards[idx].style.boxShadow = '';
-        cards[idx].style.background = '';
-      }, 2000);
-    }
-  }, 150);
-}
+// NOTE: goToMedication is defined above (line ~3504) — do not redefine here
 
 // ── Doctor Visit Prep Printer ──
-function printVisitPrep(apptId) {
+// window.print() is called inline on the button for Safari iOS compatibility
+function prepareVisitPrep(apptId) {
   const appts = load(KEYS.appointments);
   const a = appts.find(x => x.id === apptId);
-  if (!a) return;
+  if (!a) return false;
   const profile = load(KEYS.profile, null);
   const meds = load(KEYS.medications);
   const logs = load(KEYS.logs).sort((x, y) => y.date.localeCompare(x.date)).slice(0, 5);
@@ -4183,78 +4458,88 @@ function printVisitPrep(apptId) {
   const apptDate = new Date(a.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const medRows = meds.length ? meds.map(m =>
-    `<tr><td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;font-weight:700;">${m.name}</td>
-     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.dose}</td>
-     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}</td>
-     <td style="padding:7pt 10pt;border-bottom:1pt solid #e0d8ce;">${m.food || ''}</td></tr>`
-  ).join('') : '<tr><td colspan="4" style="padding:10pt;color:#666;font-style:italic;">No medications recorded.</td></tr>';
+    `<tr><td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-weight:700;font-size:9.5pt;">${esc(m.name)}</td>
+     <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${esc(m.dose)}</td>
+     <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${m.frequency || ''}${m.times ? ' · ' + m.times : ''}</td>
+     <td style="padding:4pt 6pt;border-bottom:1pt solid #e0d8ce;font-size:9.5pt;">${m.food || ''}</td></tr>`
+  ).join('') : '<tr><td colspan="4" style="padding:6pt;color:#666;font-style:italic;font-size:9.5pt;">No medications recorded.</td></tr>';
 
   const logItems = logs.length ? logs.map(l =>
-    `<div style="margin-bottom:10pt;padding-bottom:8pt;border-bottom:1pt solid #e0d8ce;">
-      <div style="font-weight:700;font-size:11pt;">${formatDate(l.date)} ${l.mood || ''}</div>
-      <div style="font-size:10pt;color:#444;">${l.symptoms || 'No notes.'}</div>
+    `<div style="margin-bottom:5pt;padding-bottom:4pt;border-bottom:1pt solid #e0d8ce;">
+      <div style="font-weight:700;font-size:9.5pt;">${formatDate(l.date)} ${l.mood || ''}</div>
+      <div style="font-size:9pt;color:#444;">${l.symptoms || 'No notes.'}</div>
      </div>`
-  ).join('') : '<p style="color:#666;font-style:italic;">No recent log entries.</p>';
+  ).join('') : '<p style="color:#666;font-style:italic;font-size:9.5pt;">No recent log entries.</p>';
 
   const prepPage = document.getElementById('page-visit-prep');
   document.getElementById('visit-prep-patient').textContent = 'Patient: ' + patientName;
   document.getElementById('visit-prep-date').textContent = 'Printed: ' + today;
+  // Collect questions from recent symptom logs
+  const questions = logs.map(l => (l.questions || '').trim()).filter(q => q.length > 0);
+
+  const questionsHtml = questions.length
+    ? questions.map(q => `<div style="font-size:10.5pt;padding:4pt 0 4pt 10pt;border-left:2.5pt solid #7a9e87;margin-bottom:6pt;">${q}</div>`).join('')
+    : '<div style="font-size:10pt;color:#888;font-style:italic;">No questions recorded in recent logs.</div>';
+
+  // Ruled lines for handwritten recommendations
+  const ruledLines = [1,2,3,4,5].map(() =>
+    `<div style="border-bottom:1pt solid #bbb;height:22pt;margin-bottom:2pt;"></div>`
+  ).join('');
+
   document.getElementById('visit-prep-content').innerHTML = `
-    <div style="padding:0 16pt;">
-      <div style="background:#f0f7f3;border:1pt solid #7a9e87;border-radius:8pt;padding:14pt 18pt;margin-bottom:18pt;">
-        <div style="font-size:16pt;font-weight:700;color:#4e7560;margin-bottom:6pt;">${a.title}</div>
-        <div style="font-size:11pt;color:#333;">${apptDate}${a.time ? ' · ' + formatTime(a.time) : ''}</div>
-        ${a.doctor ? `<div style="font-size:11pt;color:#333;">${a.doctor}</div>` : ''}
-        ${a.address ? `<div style="font-size:11pt;color:#333;">📍 ${a.address}</div>` : ''}
-        ${a.category ? `<div style="font-size:10pt;color:#666;margin-top:4pt;">${a.category}</div>` : ''}
+    <div style="padding:0 12pt;">
+
+      <!-- Appointment summary bar -->
+      <div style="display:flex;align-items:baseline;gap:16pt;padding:8pt 12pt;background:#f0f7f3;border-left:4pt solid #4e7560;margin-bottom:12pt;flex-wrap:wrap;">
+        <span style="font-size:13pt;font-weight:700;color:#4e7560;">${esc(a.title)}</span>
+        <span style="font-size:10pt;color:#333;">${apptDate}${a.time ? ' · ' + formatTime(a.time) : ''}</span>
+        ${a.doctor ? `<span style="font-size:10pt;color:#555;">${esc(a.doctor)}</span>` : ''}
+        ${a.address ? `<span style="font-size:10pt;color:#555;">📍 ${esc(a.address)}</span>` : ''}
+        ${a.category ? `<span style="font-size:9.5pt;color:#777;">${a.category}</span>` : ''}
       </div>
 
-      ${a.notes ? `<div style="margin-bottom:18pt;">
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📋 Prep Notes</div>
-        <div style="font-size:11pt;">${a.notes}</div>
+      ${a.notes ? `<div style="margin-bottom:10pt;">
+        <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">📋 Prep Notes</div>
+        <div style="font-size:10.5pt;">${esc(a.notes)}</div>
       </div>` : ''}
 
-      <div style="margin-bottom:18pt;">
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">💊 Current Medications</div>
-        <table style="width:100%;border-collapse:collapse;font-size:10pt;">
-          <thead><tr style="background:#e8f0ec;">
-            <th style="padding:7pt 10pt;text-align:left;">Medication</th>
-            <th style="padding:7pt 10pt;text-align:left;">Dose</th>
-            <th style="padding:7pt 10pt;text-align:left;">Schedule</th>
-            <th style="padding:7pt 10pt;text-align:left;">With Food</th>
-          </tr></thead>
-          <tbody>${medRows}</tbody>
-        </table>
-      </div>
-
-      <div style="margin-bottom:18pt;">
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📝 Recent Symptom Log</div>
-        ${logItems}
-      </div>
-
-      <div style="margin-bottom:18pt;">
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">❓ Questions to Ask</div>
-        <div style="border:1pt solid #c8b8a8;border-radius:6pt;padding:12pt;">
-          ${['', '', '', '', ''].map((_, i) => `<div style="border-bottom:${i < 4 ? '1pt solid #e0d8ce' : 'none'};padding:14pt 0;min-height:30pt;">&nbsp;</div>`).join('')}
+      <!-- Two-column: Meds left, Symptoms right -->
+      <div style="display:flex;gap:16pt;margin-bottom:10pt;align-items:flex-start;">
+        <div style="flex:1.4;min-width:0;">
+          <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">💊 Current Medications</div>
+          <table style="width:100%;border-collapse:collapse;font-size:9.5pt;">
+            <thead><tr style="background:#e8f0ec;">
+              <th style="padding:4pt 6pt;text-align:left;font-size:9pt;">Medication</th>
+              <th style="padding:4pt 6pt;text-align:left;font-size:9pt;">Dose</th>
+              <th style="padding:4pt 6pt;text-align:left;font-size:9pt;">Schedule</th>
+              <th style="padding:4pt 6pt;text-align:left;font-size:9pt;">Food</th>
+            </tr></thead>
+            <tbody>${medRows}</tbody>
+          </table>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">📝 Recent Symptoms</div>
+          ${logItems}
         </div>
       </div>
 
+      <!-- Questions to ask (from app data) -->
+      <div style="margin-bottom:10pt;">
+        <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:4pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">❓ Questions to Ask</div>
+        ${questionsHtml}
+      </div>
+
+      <!-- Doctor's Recommendations (blank ruled lines) -->
       <div>
-        <div style="font-size:13pt;font-weight:700;color:#4e7560;margin-bottom:8pt;border-bottom:2pt solid #7a9e87;padding-bottom:4pt;">📌 Doctor's Recommendations</div>
-        <div style="border:1pt solid #c8b8a8;border-radius:6pt;padding:12pt;">
-          ${['', '', ''].map((_, i) => `<div style="border-bottom:${i < 2 ? '1pt solid #e0d8ce' : 'none'};padding:14pt 0;min-height:30pt;">&nbsp;</div>`).join('')}
-        </div>
+        <div style="font-size:11.5pt;font-weight:700;color:#4e7560;margin-bottom:6pt;border-bottom:1.5pt solid #7a9e87;padding-bottom:3pt;">📌 Doctor's Recommendations</div>
+        ${ruledLines}
       </div>
+
     </div>
   `;
 
-  // Show prep page, hide others, then print
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  prepPage.style.display = 'block';
-  window.print();
-  prepPage.style.display = 'none';
-  // Restore dashboard
-  document.getElementById('page-dashboard').classList.add('active');
+  // data-print="visit" set on button inline; CSS @media print shows the page
+  return true;
 }
 
 // ════════════════════════════════════════════════
@@ -4393,7 +4678,32 @@ function skipTooltips() {
 // ── PWA HOME SCREEN INSTALL ──────────────────────────────────────────────
 (function initPWA() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      function showUpdateBanner() {
+        const updateBanner = document.getElementById('update-banner');
+        if (updateBanner) updateBanner.style.display = 'flex';
+      }
+      function trackInstalling(worker) {
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdateBanner();
+          }
+        });
+      }
+      // Already waiting (e.g. page was refreshed while update was pending)
+      if (reg.waiting) { showUpdateBanner(); return; }
+      // New SW found while page is open
+      if (reg.installing) trackInstalling(reg.installing);
+      reg.addEventListener('updatefound', () => {
+        if (reg.installing) trackInstalling(reg.installing);
+      });
+      // Poll every 60s for updates
+      setInterval(() => reg.update(), 60000);
+    }).catch(() => {});
+    // Reload page when new SW takes control so user gets fresh HTML
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
   }
   const banner = document.getElementById('pwa-banner');
   if (!banner) return;
@@ -4431,6 +4741,13 @@ function skipTooltips() {
     setTimeout(() => showBanner(true), 3000);
   }
 })();</script>
+
+<!-- Update Available Banner -->
+<div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--sage-dark);color:#fff;padding:12px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.2);align-items:center;gap:14px;font-size:1rem;max-width:90vw;">
+  <span>🔄 A new version of CareCompanion is ready.</span>
+  <button onclick="document.getElementById('update-banner').style.display='none';navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.waiting){navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload(),{once:true});r.waiting.postMessage({type:'SKIP_WAITING'});}})" style="background:#fff;color:var(--sage-dark);border:none;padding:6px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;">Update now</button>
+  <button onclick="document.getElementById('update-banner').style.display='none'" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.9rem;">Later</button>
+</div>
 
 <!-- PWA Install Banner -->
 <div id="pwa-banner">
