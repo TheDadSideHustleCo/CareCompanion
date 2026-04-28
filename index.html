@@ -2667,6 +2667,36 @@ function addAppointment() {
   };
   let appts = load(KEYS.appointments);
   if (editingApptId) {
+    const editing = appts.find(a => a.id === editingApptId);
+    if (editing && editing.recurringGroupId) {
+      const future = appts.filter(a => a.recurringGroupId === editing.recurringGroupId && a.date >= editing.date);
+      if (future.length > 1) {
+        const updateAll = confirm(`This is a repeating appointment.\n\nOK = Update this and all ${future.length} future occurrences\nCancel = Update just this one`);
+        if (updateAll) {
+          // Update all future — preserve visitNotes per-appointment, update everything else
+          const { visitNotes, ...sharedData } = data;
+          appts = appts.map(a =>
+            (a.recurringGroupId === editing.recurringGroupId && a.date >= editing.date)
+              ? { ...a, ...sharedData }
+              : a
+          );
+          showToast(`📅 ${future.length} appointments updated`);
+        } else {
+          // Just this one — full update including visitNotes
+          appts = appts.map(a => a.id === editingApptId ? { ...a, ...data } : a);
+          showToast('📅 Appointment updated');
+        }
+        editingApptId = null;
+        document.getElementById('appt-save-btn').textContent = '➕ Add Appointment';
+        document.getElementById('appt-recurring-row').style.display = 'block';
+        save(KEYS.appointments, sortAppointments(appts));
+        ['appt-title','appt-doctor','appt-address','appt-notes','appt-time','appt-date','appt-visit-notes','appt-recur-end'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('appt-visit-notes-row').style.display = 'none';
+        document.getElementById('appt-recurring').checked = false;
+        document.getElementById('appt-recurring-fields').style.display = 'none';
+        renderAppointments(); renderDashboard(); return;
+      }
+    }
     appts = appts.map(a => a.id === editingApptId ? { ...a, ...data } : a);
     editingApptId = null;
     document.getElementById('appt-save-btn').textContent = '➕ Add Appointment';
