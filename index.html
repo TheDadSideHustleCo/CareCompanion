@@ -2768,7 +2768,7 @@ function deleteAppointment(id) {
   if (target && target.recurringGroupId) {
     const future = appts.filter(a => a.recurringGroupId === target.recurringGroupId && a.date >= target.date);
     if (future.length > 1) {
-      const choice = confirm(`This is a repeating appointment.\n\nOK = Delete this and all ${future.length} future occurrences\nCancel = Delete just this one`);
+      const choice = confirm(`This is a repeating appointment.\n\nOK = Remove this and all ${future.length} future occurrences\nCancel = Remove just this one`);
       if (choice) {
         save(KEYS.appointments, appts.filter(a => !(a.recurringGroupId === target.recurringGroupId && a.date >= target.date)));
         showToast(`🗑️ ${future.length} appointments removed`, 'info');
@@ -2777,6 +2777,7 @@ function deleteAppointment(id) {
       }
     }
   }
+  if (!confirm(`Remove this appointment?`)) return;
   if (editingApptId === id) { editingApptId = null; document.getElementById('appt-save-btn').textContent = '➕ Add Appointment'; document.getElementById('appt-recurring-row').style.display = 'block'; }
   save(KEYS.appointments, appts.filter(a => a.id !== id));
   renderAppointments();
@@ -2807,14 +2808,17 @@ function renderAppointments() {
         <div class="day" style="color:${badgeTextColor};">${d.getDate()}</div>
         <div class="mon" style="color:${badgeTextColor};">${d.toLocaleDateString('en-US',{month:'short'})}</div>
       </div>
-      <div class="appt-info" style="flex:1;">
-        <h4>${a.title}
+      <div class="appt-info" style="flex:1;min-width:0;">
+        <h4 style="margin-bottom:4px;">${a.title}</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
           <span class="badge badge-sage">${a.category}</span>
           ${a.recurringGroupId ? `<span class="badge" style="background:var(--gold-light);color:var(--brown);">🔁 Repeating</span>` : ''}
-          ${attended ? `<span class="badge" style="background:var(--sage);color:white;">✓ Attended</span> <button class="btn btn-ghost btn-sm" style="font-size:0.85rem;padding:2px 8px;color:var(--text-muted);" onclick="unmarkAttended(${a.id})" title="Undo attended">↩ Undo</button>` : isPast ? '<span class="badge badge-muted">Past</span>' : ''}
-        </h4>
-        <p>${a.doctor ? a.doctor + ' · ' : ''}${a.time ? formatTime(a.time) : ''}</p>
-        ${a.address ? `<p style="margin-top:3px;font-size:1rem;color:var(--text-muted);">📍 ${a.address}</p>` : ''}
+          ${attended ? `<span class="badge" style="background:var(--sage);color:white;">✓ Attended</span>` : isPast ? '<span class="badge badge-muted">Past</span>' : ''}
+          ${attended ? `<button class="btn btn-ghost btn-sm" style="font-size:0.85rem;padding:2px 8px;color:var(--text-muted);" onclick="unmarkAttended(${a.id})" title="Undo attended">↩ Undo</button>` : ''}
+        </div>
+        ${a.doctor ? `<p style="margin-bottom:2px;">👨‍⚕️ ${a.doctor}</p>` : ''}
+        ${a.time ? `<p style="margin-bottom:2px;">🕐 ${formatTime(a.time)}</p>` : ''}
+        ${a.address ? `<p style="margin-bottom:2px;">📍 ${a.address}</p>` : ''}
         ${a.notes ? `<p style="margin-top:4px;font-size:1rem;color:var(--text-muted);">${a.notes}</p>` : ''}
         ${a.visitNotes ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(122,158,135,0.1);border-left:3px solid var(--sage);border-radius:0 8px 8px 0;"><div style="font-size:1.05rem;font-weight:700;color:var(--sage-dark);margin-bottom:3px;">📋 Visit Notes</div><div style="font-size:1rem;color:var(--text);">${a.visitNotes}</div></div>` : (isPast || attended) ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:1.05rem;" onclick="editAppointment(${a.id})">📋 Add visit notes</button>` : ''}
       </div>
