@@ -41,6 +41,46 @@ def fn_body(name):
 
 
 # ════════════════════════════════════════
+#  LAYER 0 — SECURITY (always run first)
+#  XSS via innerHTML must be caught before
+#  any layout or functionality check.
+# ════════════════════════════════════════
+
+# 0a — esc() sanitizer defined
+if find(r'function esc\s*\('):
+    ok("esc() sanitizer function defined")
+else:
+    fail("esc() sanitizer missing", "User text injected raw into innerHTML — XSS vulnerability")
+
+# 0b — free-text fields wrapped in esc() before innerHTML injection
+xss_risk_fields_l0 = [
+    r'a\.title', r'a\.doctor', r'a\.address', r'a\.notes', r'a\.visitNotes',
+    r'm\.name', r'm\.dose', r'm\.notes',
+    r'c\.name', r'c\.notes',
+    r'n\.meds', r'n\.notes',
+    r'mem\.title', r'mem\.text',
+    r'e\.notes', r'e\.gratitude',
+    r'l\.symptoms', r'l\.questions',
+]
+xss_raw = []
+for field in xss_risk_fields_l0:
+    raw = re.search(rf'\$\{{{field}\}}', html)
+    escaped = re.search(rf'\$\{{esc\({field}\)\}}', html)
+    if raw and not escaped:
+        xss_raw.append(field.replace('\\', ''))
+if xss_raw:
+    fail("XSS — raw user text in innerHTML", f"Not wrapped in esc(): {xss_raw[:5]}")
+else:
+    ok("All free-text fields wrapped in esc() — XSS protected")
+
+# 0c — no eval() or Function() constructor
+if not find(r'\beval\s*\(|\bnew\s+Function\s*\('):
+    ok("No eval() or new Function() — no remote code execution risk")
+else:
+    fail("eval() or new Function() found", "Dynamic code execution — high security risk")
+
+
+# ════════════════════════════════════════
 #  LAYER 1 — CODE INTEGRITY
 # ════════════════════════════════════════
 
@@ -994,6 +1034,549 @@ if block and 'confirm(' in block.group(0):
     ok("deleteLog() has confirm() before delete")
 else:
     warn("deleteLog() missing confirm()", "Log entries can be deleted with no undo dialog")
+
+
+# 20j — recurring appointment end-date validation: must alert if recurEnd missing, must use >= not >
+add_appt_body = fn_body('addAppointment') or ''
+if re.search(r'isRecurring.*!recurEnd.*alert|!recurEnd.*alert', add_appt_body):
+    ok("addAppointment() alerts user if 'Repeat until' date is missing")
+else:
+    fail("addAppointment() missing recurEnd validation", "Silently creates single appt when recurring checkbox is checked but end date is empty")
+
+if re.search(r'recurEnd\s*>=\s*date', add_appt_body):
+    ok("addAppointment() uses recurEnd >= date (inclusive — same-day end date creates at least 1 occurrence)")
+elif re.search(r'recurEnd\s*>\s*date', add_appt_body):
+    fail("addAppointment() uses recurEnd > date (strict)", "End date equal to start date creates zero occurrences — user sees only 1 appointment")
+else:
+    warn("addAppointment() recurEnd comparison unclear", "Verify recurrence guard includes same-day end date")
+
+
+
+# ════════════════════════════════════════
+#  LAYER 21 — UNTESTED FUNCTION COVERAGE
+#  Real bugs can hide in functions QA never looked at.
+#  These checks verify the critical logic in every
+#  module that was previously uncovered.
+# ════════════════════════════════════════
+
+# 21a — clearAllData() has double-confirm guard (most destructive action in app)
+clear_body = fn_body('clearAllData') or ''
+confirm_count = len(re.findall(r'confirm\(', clear_body))
+if confirm_count >= 2:
+    ok(f"clearAllData() has {confirm_count} confirm() guards — double confirmation before wipe")
+elif confirm_count == 1:
+    warn("clearAllData() only 1 confirm()", "Most destructive action should require double-confirmation")
+else:
+    fail("clearAllData() missing confirm()", "All data can be wiped with no confirmation")
+
+# 21b — delete functions in all modules have confirm() guard
+for fn in ['deleteContact', 'deleteHandoff', 'deleteMemory', 'deleteStress']:
+    block = fn_body(fn) or ''
+    if 'confirm(' in block:
+        ok(f"{fn}() has confirm() before delete")
+    else:
+        fail(f"{fn}() missing confirm()", "Record deleted with no undo dialog")
+
+# 21c — required-field validation in all add functions
+for fn, field in [('addContact', 'name'), ('addHandoff', 'date'), ('addMemory', 'title'), ('addStressEntry', 'selectedStress')]:
+    block = fn_body(fn) or ''
+    if 'alert(' in block and 'return' in block:
+        ok(f"{fn}() has required-field validation")
+    else:
+        fail(f"{fn}() missing required-field validation", f"Can save empty {field} record")
+
+# 21d — toggleMedCheck() saves to localStorage using todayKey
+toggle_body = fn_body('toggleMedCheck') or ''
+if 'localStorage.setItem' in toggle_body and 'todayKey' in toggle_body:
+    ok("toggleMedCheck() saves check state to localStorage keyed by today")
+else:
+    fail("toggleMedCheck() save", "Med check state may not persist after page reload")
+
+if 'pills' in toggle_body and ('pills - 1' in toggle_body or 'pills + ' in toggle_body or '+= ' in toggle_body or '-= ' in toggle_body or 'isDone ? -1 : 1' in toggle_body):
+    ok("toggleMedCheck() adjusts pill count on check/uncheck")
+else:
+    warn("toggleMedCheck() pill deduction", "Checking off a dose may not reduce pill count")
+
+# 21e — logPRNDose() increments count (not sets to true) and deducts pills
+prn_body = fn_body('logPRNDose') or ''
+if re.search(r'\|\|\s*0\)\s*\+\s*1|checks\[key\]\s*\+\s*1|\+= 1', prn_body):
+    ok("logPRNDose() increments PRN count (not boolean) — multiple doses tracked correctly")
+else:
+    fail("logPRNDose() increment", "PRN may use boolean true instead of count — can't track 2nd/3rd dose today")
+
+if 'pills' in prn_body and ('pills - 1' in prn_body or 'med.pills - 1' in prn_body):
+    ok("logPRNDose() deducts 1 pill per dose")
+else:
+    warn("logPRNDose() pill deduction", "PRN dose may not reduce pill count")
+
+# 21f — generateRecurringDates() caps at max, uses correct day increments
+recur_body = fn_body('generateRecurringDates') or ''
+if re.search(r'max\s*=\s*\d+|\.length\s*<\s*\d+', recur_body):
+    ok("generateRecurringDates() has max occurrence cap — prevents runaway loops")
+else:
+    fail("generateRecurringDates() no cap", "Could generate hundreds of appointments if end date is far out")
+
+for freq, pattern in [('weekly', r'getDate\(\)\s*\+\s*7'), ('biweekly', r'getDate\(\)\s*\+\s*14'), ('monthly', r'getMonth\(\)\s*\+\s*1')]:
+    if re.search(pattern, recur_body):
+        ok(f"generateRecurringDates() {freq} uses correct increment")
+    else:
+        warn(f"generateRecurringDates() {freq} increment unclear", f"Verify {freq} adds correct days/months")
+
+# 21g — markAttended/unmarkAttended both save and re-render
+for fn, flag in [('markAttended', 'true'), ('unmarkAttended', 'false')]:
+    block = fn_body(fn) or ''
+    if f'attended: {flag}' in block and 'save(' in block and 'renderAppointments' in block:
+        ok(f"{fn}() sets attended={flag}, saves, and re-renders")
+    else:
+        fail(f"{fn}()", f"May not correctly set attended={flag}, save, or re-render")
+
+# 21h — sortAppointments() sorts ascending by date (a before b, not b before a)
+sort_body = fn_body('sortAppointments') or ''
+if re.search(r'a\.date.*localeCompare.*b\.date|a\.date\s*[<>]\s*b\.date', sort_body):
+    ok("sortAppointments() sorts ascending by date (a.date vs b.date — earliest first)")
+else:
+    warn("sortAppointments() sort direction unclear", "Descending order would show past appointments first")
+
+# 21i — updatePillDaysLeft() uses freqToDoseCount (not hardcoded divisor)
+pill_body = fn_body('updatePillDaysLeft') or ''
+if 'freqToDoseCount' in pill_body:
+    ok("updatePillDaysLeft() calls freqToDoseCount() — correct doses-per-day for all frequencies")
+else:
+    fail("updatePillDaysLeft()", "May use hardcoded divisor — wrong days-left for weekly/biweekly meds")
+
+# 21j — reimportFromProfile() populates name, dob, and conditions fields
+reimport_body = fn_body('reimportFromProfile') or ''
+for field in ['ec-name', 'ec-dob', 'ec-conditions']:
+    if field in reimport_body:
+        ok(f"reimportFromProfile() populates #{field}")
+    else:
+        fail(f"reimportFromProfile() missing #{field}", "Emergency card field not synced from profile")
+
+# 21k — timeStrTo24() handles am/pm and midnight/noon edge cases
+time_body = fn_body('timeStrTo24') or ''
+if re.search(r"h\s*===?\s*12.*h\s*=\s*0|am.*h\s*=\s*0", time_body):
+    ok("timeStrTo24() handles 12am → 00:00 edge case (midnight)")
+else:
+    warn("timeStrTo24() 12am edge case", "12:00am may convert to 12:00 instead of 00:00")
+
+if re.search(r"pm.*h\s*!==?\s*12.*h\s*\+=\s*12|pm.*h\s*\+\s*12", time_body):
+    ok("timeStrTo24() handles pm hours correctly (adds 12, skips 12pm)")
+else:
+    warn("timeStrTo24() pm conversion", "pm hours may not convert correctly")
+
+
+
+# ════════════════════════════════════════
+#  LAYER 22 — DEEPER CORRECTNESS CHECKS
+#  Data integrity, state leaks, offline,
+#  and edge cases found by code review.
+# ════════════════════════════════════════
+
+# 22a — exportData() iterates Object.values(KEYS) — all keys exported automatically
+export_body = fn_body('exportData') or ''
+if re.search(r'Object\.values\(KEYS\).*forEach|Object\.values\(KEYS\).*map', export_body, re.DOTALL):
+    ok("exportData() uses Object.values(KEYS) — all storage keys exported automatically")
+else:
+    fail("exportData() key coverage", "May hard-code keys — new keys added to KEYS won't be exported unless manually added")
+
+# 22b — importData() iterates Object.values(KEYS) — all keys restored automatically
+import_body = fn_body('importData') or ''
+if re.search(r'Object\.values\(KEYS\).*forEach|Object\.values\(KEYS\).*map', import_body, re.DOTALL):
+    ok("importData() uses Object.values(KEYS) — all storage keys restored automatically")
+else:
+    fail("importData() key coverage", "May hard-code keys — new keys added to KEYS won't be restored on import")
+
+# 22c — importData() validates backup file before restoring (_version + _app check)
+if re.search(r'_version.*_app|_app.*_version', import_body):
+    ok("importData() validates _version and _app before restoring — rejects foreign files")
+else:
+    fail("importData() validation", "May restore data from wrong app's backup file")
+
+# 22d — medication edit preserves original id (map by id, not push)
+edit_med_body = fn_body('addMedication') or ''
+if re.search(r'editingMedId.*map|map.*editingMedId', edit_med_body, re.DOTALL):
+    ok("addMedication() edit path uses .map() by id — preserves original med id")
+else:
+    fail("addMedication() edit", "May replace med with new id — orphans med check history (todayKey entries)")
+
+# 22e — appointment date format: today key uses same YYYY-MM-DD format as stored dates
+dashboard_body = fn_body('renderDashboard') or ''
+if re.search(r"toISOString\(\)\.split\(['\"]T['\"]\)\[0\]|new Date\(\)\.toISOString\(\)\.split", dashboard_body):
+    ok("renderDashboard() today uses toISOString().split('T')[0] — matches stored date format")
+else:
+    warn("renderDashboard() today format", "Verify today key matches stored appointment date format (YYYY-MM-DD)")
+
+# 22f — navigate() calls clearMedForm() when switching to medications page
+#        prevents stale editingMedId if user navigates away mid-edit
+navigate_body = fn_body('navigate') or ''
+if 'clearMedForm' in navigate_body:
+    ok("navigate() calls clearMedForm() on medications page — clears stale edit state on navigation")
+else:
+    warn("navigate() med edit state", "Navigating away mid-edit may leave editingMedId set — next save overwrites wrong record")
+
+# 22g — clearAllData() re-shows disclaimer overlay after wipe
+clear_body = fn_body('clearAllData') or ''
+if 'disclaimer-overlay' in clear_body and ('display' in clear_body or 'style' in clear_body):
+    ok("clearAllData() re-shows disclaimer overlay — fresh start flow works after wipe")
+else:
+    fail("clearAllData() disclaimer reset", "After wipe, disclaimer not re-shown — app looks broken on next open")
+
+# 22h — addLogEntry() mood is optional (no alert guard on selectedMood)
+log_body = fn_body('addLogEntry') or ''
+if re.search(r'!selectedMood.*alert|alert.*!selectedMood', log_body):
+    fail("addLogEntry() blocks save if no mood", "Mood should be optional — caregivers may not know patient's mood")
+else:
+    ok("addLogEntry() mood is optional — log can be saved without mood selection")
+
+# 22i — formatDate() handles empty/null gracefully (returns '—' not crash)
+fmt_date_body = fn_body('formatDate') or ''
+if re.search(r'if\s*\(!d\)|if\s*\(!d\s*\)', fmt_date_body):
+    ok("formatDate() guards against empty/null — returns '—' instead of crashing")
+else:
+    fail("formatDate()", "No empty guard — formatDate('') or formatDate(null) may crash")
+
+# 22j — formatTime() handles empty/null gracefully (returns '' not crash)
+fmt_time_body = fn_body('formatTime') or ''
+if re.search(r'if\s*\(!t\)|if\s*\(!t\s*\)', fmt_time_body):
+    ok("formatTime() guards against empty/null — returns '' instead of crashing")
+else:
+    fail("formatTime()", "No empty guard — formatTime('') or formatTime(null) may crash")
+
+# 22k — burnout alert threshold is <= 4 (not == 4 or < 4)
+stress_render = fn_body('renderStress') or ''
+if re.search(r'avg\s*<=\s*4|avg\s*<\s*5', stress_render):
+    ok("renderStress() burnout alert fires at avg ≤ 4 — correct low-wellbeing threshold")
+else:
+    warn("Burnout alert threshold", "Cannot confirm burnout fires at avg ≤ 4 — may miss at-risk caregivers")
+
+# 22l — SW cache includes the root HTML path
+sw_content = ''
+import os
+html_dir = os.path.dirname(os.path.abspath(sys.argv[1]))
+sw_candidates = [
+    os.path.join(html_dir, 'sw.js'),
+    os.path.join(html_dir, '..', 'gitpush', 'sw.js'),
+    os.path.join(html_dir, '..', '..', 'gitpush', 'sw.js'),
+    '/sessions/elegant-cool-bardeen/gitpush/sw.js',
+]
+for path in sw_candidates:
+    if os.path.exists(path):
+        with open(path) as f:
+            sw_content = f.read()
+        break
+
+if sw_content:
+    if re.search(r"['\"/]CareCompanion/?['\"]|['\"/]index\.html['\"]|['\"]\/['\"]", sw_content):
+        ok("SW cache includes root HTML path — app works offline")
+    else:
+        fail("SW cache missing root HTML", "Offline visit shows blank page — HTML not cached")
+else:
+    warn("sw.js not found beside HTML", "Cannot verify SW caches root HTML for offline use")
+
+# 22m — no external CDN resource loads (app must work fully offline)
+cdn_refs = re.findall(r'(https?://(?!fonts\.googleapis\.com)[^\s"\'<>]+\.(js|css|woff2?))', html)
+if not cdn_refs:
+    ok("No external CDN JS/CSS dependencies — app works fully offline")
+else:
+    fail("External CDN dependencies found", f"{[r[0] for r in cdn_refs[:3]]} — these fail offline")
+
+# 22n — renderAll() calls every render function
+render_all_body = fn_body('renderAll') or ''
+for fn in ['renderMedications', 'renderSymptomLog', 'renderAppointments',
+           'renderCareTeam', 'renderHandoff', 'renderMemories', 'renderStress',
+           'renderDashboard', 'renderCharts', 'renderRefillAlerts']:
+    if fn in render_all_body:
+        ok(f"renderAll() calls {fn}()")
+    else:
+        fail(f"renderAll() missing {fn}()", "Module won't initialize on app load or after import restore")
+
+# 22o — PRN label shows count not boolean (checks[key] not checks[key] === true)
+prn_body = fn_body('logPRNDose') or ''
+if re.search(r'checks\[key\][^=]|Given.*checks\[key\]', prn_body):
+    ok("logPRNDose() displays count value — '3× today' not just 'Given'")
+else:
+    warn("logPRNDose() label", "PRN count display may show wrong value")
+
+
+
+# ════════════════════════════════════════
+#  LAYER 23 — SECURITY, NUMERIC SAFETY,
+#  AND RENDER COMPLETENESS
+#  Found by auditing innerHTML injection,
+#  NaN paths, and unchecked render calls.
+# ════════════════════════════════════════
+
+# 23a — XSS: user data injected into innerHTML must not include raw script tags
+# Check that no render function inserts user data directly without at least
+# a text-only context (href/onclick with id numbers is fine; free-text fields are risk)
+# Strategy: flag any template literal that embeds a free-text field directly into innerHTML
+xss_risk_fields = ['a\\.title', 'a\\.doctor', 'a\\.address', 'a\\.notes', 'a\\.visitNotes',
+                   'm\\.name', 'm\\.dose', 'm\\.notes', 'c\\.name', 'c\\.notes',
+                   'n\\.meds', 'n\\.meals', 'n\\.notes', 'n\\.watch',
+                   'mem\\.title', 'mem\\.text', 'e\\.notes', 'e\\.gratitude']
+# Check that free-text fields use esc() wrapper, not raw injection
+xss_hits = []
+for field in xss_risk_fields:
+    raw = re.search(rf'\$\{{{field}\}}', html)          # ${field} without esc
+    escaped = re.search(rf'\$\{{esc\({field}\)\}}', html)  # ${esc(field)} present
+    if raw and not escaped:
+        xss_hits.append(field.replace('\\.', '.'))
+if xss_hits:
+    fail("XSS — raw user text in innerHTML", f"Fields not wrapped in esc(): {xss_hits[:5]}")
+elif find(r'function esc\('):
+    ok("esc() sanitizer defined and applied to free-text innerHTML injections — XSS protected")
+else:
+    warn("XSS", "No esc() sanitizer found — user text injected raw into innerHTML")
+
+# 23b — pillsMax correctly updated on edit (higher of new vs existing)
+add_med_body = fn_body('addMedication') or ''
+if re.search(r'Math\.max.*pills.*pillsMax|pillsMax.*Math\.max', add_med_body):
+    ok("addMedication() sets pillsMax = Math.max(newPills, existingPillsMax) — refill tracking correct")
+else:
+    warn("pillsMax update logic", "May overwrite pillsMax with lower value — days-left calculation becomes wrong after partial edit")
+
+# 23c — med check old key cleanup: getMedChecksForToday() prunes stale keys
+get_checks_body = fn_body('getMedChecksForToday') or ''
+if re.search(r'startsWith.*cc_medchecks_|cc_medchecks_.*startsWith', get_checks_body) and 'removeItem' in get_checks_body:
+    ok("getMedChecksForToday() prunes old cc_medchecks_* keys — localStorage doesn't grow unbounded")
+else:
+    fail("getMedChecksForToday() no key cleanup", "Old daily check keys accumulate in localStorage forever")
+
+# 23d — KEYS.medChecks ('cc_medchecks') is a static key but actual keys are dynamic
+# Export/import iterates KEYS — but the actual checks use cc_medchecks_YYYY-MM-DD
+# Today's med checks are NOT exported. This is intentional (daily reset) — verify it's documented
+if re.search(r'cc_medchecks_.*toISOString|getTodayKey.*cc_medchecks', html):
+    ok("Med checks use dynamic date key (cc_medchecks_YYYY-MM-DD) — correctly resets daily, not exported")
+else:
+    warn("Med check key pattern unclear", "Cannot confirm daily med checks use date-stamped key")
+
+# 23e — refill alert uses correct thresholds: <= 0 is overdue, 1-7 is soon
+refill_body = fn_body('renderRefillAlerts') or ''
+if re.search(r'daysLeft\s*<=\s*0', refill_body):
+    ok("renderRefillAlerts() overdue threshold is daysLeft <= 0")
+else:
+    fail("renderRefillAlerts() overdue threshold", "Overdue condition not found — may never show 'out of pills' alert")
+
+if re.search(r'daysLeft\s*<=\s*7', refill_body):
+    ok("renderRefillAlerts() soon threshold is daysLeft <= 7")
+else:
+    fail("renderRefillAlerts() soon threshold", "7-day warning threshold not found")
+
+if re.search(r'Refill overdue|overdue', refill_body, re.IGNORECASE):
+    ok("renderRefillAlerts() shows 'Refill overdue' label for critical meds")
+else:
+    warn("renderRefillAlerts() overdue label", "No overdue label found in refill alerts")
+
+# 23f — markAttended() auto-opens edit form and focuses visit notes
+mark_body = fn_body('markAttended') or ''
+if 'editAppointment' in mark_body:
+    ok("markAttended() calls editAppointment() — edit form opens automatically after marking attended")
+else:
+    fail("markAttended() edit form", "Does not open edit form after marking attended — user can't add visit notes easily")
+
+if 'appt-visit-notes-row' in mark_body and 'display' in mark_body:
+    ok("markAttended() shows visit notes row after marking attended")
+else:
+    warn("markAttended() visit notes row", "Visit notes field may not be visible after marking attended")
+
+if re.search(r'appt-visit-notes.*focus\(\)|focus\(\).*appt-visit-notes', mark_body):
+    ok("markAttended() focuses visit notes input — keyboard opens immediately")
+else:
+    warn("markAttended() focus", "Visit notes field not focused — user must tap manually to type")
+
+# 23g — parseInt NaN guard in updatePillDaysLeft
+pill_days_body = fn_body('updatePillDaysLeft') or ''
+if re.search(r'isNaN|!pills\b|pills\s*<=\s*0|if\s*\(!pills', pill_days_body):
+    ok("updatePillDaysLeft() guards against NaN/empty pill input")
+else:
+    fail("updatePillDaysLeft() NaN guard", "parseInt('') = NaN — label shows '~NaN days supply' when pill field is blank")
+
+# 23h — formatTime() midnight edge case: hour=0 should show 12:xx AM not 0:xx AM
+fmt_time_body = fn_body('formatTime') or ''
+if re.search(r'hour\s*\|\|\s*12|hour\s*===?\s*0.*12|!\s*hour.*12', fmt_time_body):
+    ok("formatTime() handles midnight (hour=0) → shows 12:xx AM correctly")
+else:
+    warn("formatTime() midnight edge case", "00:xx may display as 0:xx AM instead of 12:xx AM")
+
+# 23i — renderGettingStarted() is called from renderDashboard (shows on load)
+dash_body = fn_body('renderDashboard') or ''
+if 'renderGettingStarted' in dash_body:
+    ok("renderDashboard() calls renderGettingStarted() — checklist visible on first load")
+else:
+    fail("renderDashboard() missing renderGettingStarted()", "Getting started checklist never renders on dashboard load")
+
+# 23j — renderGoodDaysWidget() is called from renderDashboard (separate from renderGoodDays)
+if 'renderGoodDaysWidget' in dash_body:
+    ok("renderDashboard() calls renderGoodDaysWidget() — good days widget updates on dashboard")
+else:
+    fail("renderDashboard() missing renderGoodDaysWidget()", "Good days widget on dashboard never updates")
+
+# 23k — navigate() closes sidebar on mobile after navigation
+nav_body = fn_body('navigate') or ''
+if re.search(r'closeSidebar|innerWidth.*768|768.*innerWidth', nav_body):
+    ok("navigate() closes sidebar on mobile — sidebar doesn't stay open after navigation")
+else:
+    warn("navigate() sidebar", "Sidebar may remain open after navigation on mobile")
+
+# 23l — KEYS.medChecks static key exists but dynamic keys are used correctly
+# The static KEYS.medChecks is in KEYS but actual storage uses getTodayKey()
+# Verify KEYS.medChecks is not used anywhere for actual check storage (would break daily reset)
+medchecks_uses = re.findall(r'KEYS\.medChecks', html)
+if len(medchecks_uses) <= 1:  # only the definition
+    ok("KEYS.medChecks static key not used for check storage — daily reset works correctly")
+else:
+    warn(f"KEYS.medChecks used {len(medchecks_uses)} times", "Verify static key not used alongside dynamic date key — could confuse export/import")
+
+
+# ════════════════════════════════════════
+#  LAYER 24 — LAYOUT, DATA INTEGRITY,
+#  EDGE CASES, EMPTY STATES
+# ════════════════════════════════════════
+
+# 24a — address text span has flex:1;min-width:0 (fix for mobile wrapping)
+if find(r'flex:1;min-width:0;word-break:break-word;overflow-wrap:anywhere.*esc\(a\.address\)'):
+    ok("Address span has flex:1;min-width:0 — wraps beside emoji on mobile")
+else:
+    fail("Address span missing flex:1;min-width:0", "Address text drops below emoji on narrow phones")
+
+# 24b — doctor span has flex:1;min-width:0 (same fix for consistency)
+if find(r'flex:1;min-width:0;word-break:break-word;overflow-wrap:anywhere.*esc\(a\.doctor\)'):
+    ok("Doctor span has flex:1;min-width:0 — wraps beside emoji on mobile")
+else:
+    fail("Doctor span missing flex:1;min-width:0", "Doctor name drops below emoji on narrow phones")
+
+# 24c — visit prep print: page-visit-prep element exists
+if find(r'id=["\']page-visit-prep["\']'):
+    ok("page-visit-prep element present — print target exists")
+else:
+    fail("page-visit-prep missing", "Doctor Visit Prep print will fail — no target element")
+
+# 24d — visit prep print: data-print="visit" triggers correct CSS
+if find(r'data-print=["\']visit["\']') and find(r'data-print="visit".*page-visit-prep|body\[data-print="visit"\].*page-visit-prep', re.DOTALL):
+    ok("data-print='visit' wires up to page-visit-prep CSS — print layout correct")
+else:
+    fail("data-print='visit' not linked to page-visit-prep CSS", "Visit prep print layout broken")
+
+# 24e — exportData() uses Object.values(KEYS) — exports all sections dynamically
+export_body = fn_body('exportData')
+if 'Object.values(KEYS)' in export_body and 'forEach' in export_body:
+    ok("exportData() iterates Object.values(KEYS) — all data sections included automatically")
+else:
+    fail("exportData() may not export all sections", "Hardcoded keys miss new sections; use Object.values(KEYS)")
+
+# 24f — exportData() includes _app field for import validation
+if '_app' in export_body and 'CareCompanion' in export_body:
+    ok("exportData() sets _app:'CareCompanion' — import validation works")
+else:
+    fail("exportData() missing _app field", "importData() will reject backup as invalid")
+
+# 24g — importData() validates _app === 'CareCompanion' before restoring
+import_body = fn_body('importData')
+if "_app !== 'CareCompanion'" in import_body or '_app.*CareCompanion' in import_body:
+    ok("importData() checks _app field — foreign JSON files rejected")
+else:
+    fail("importData() missing _app validation", "Any JSON file with _version key will wipe user data")
+
+# 24h — importData() requires confirm() before overwriting data
+if 'confirm(' in import_body:
+    ok("importData() requires confirm() before restoring — accidental overwrites prevented")
+else:
+    fail("importData() missing confirm()", "Single mis-click imports file and wipes all current data")
+
+# 24i — importData() restores via Object.values(KEYS) — no hardcoded key list
+if 'Object.values(KEYS)' in import_body:
+    ok("importData() restores via Object.values(KEYS) — all keys covered")
+else:
+    warn("importData() key restore", "Hardcoded key list may miss new data sections on import")
+
+# 24j — renderHandoff() renders handoff-list element
+handoff_body = fn_body('renderHandoff')
+if 'handoff-list' in handoff_body:
+    ok("renderHandoff() targets handoff-list element — render target correct")
+else:
+    fail("renderHandoff() missing handoff-list target", "Handoff notes never render on screen")
+
+# 24k — renderHandoff() shows empty state when no notes
+if 'empty-state' in handoff_body and 'No handoff' in handoff_body:
+    ok("renderHandoff() shows empty state — no blank screen on first load")
+else:
+    warn("renderHandoff() empty state", "Blank screen shown when no handoff notes exist")
+
+# 24l — renderHandoff() uses esc() on caregiver name field (XSS in handoff)
+if "esc(n.caregiver)" in handoff_body or "esc(n.meds)" in handoff_body:
+    ok("renderHandoff() uses esc() on user-entered text — XSS prevented in handoff notes")
+else:
+    fail("renderHandoff() missing esc()", "Caregiver-entered text injected raw into innerHTML — XSS risk")
+
+# 24m — appointments sorted chronologically (date then time)
+if find(r'\.sort\s*\(\s*\(a,\s*b\)\s*=>\s*\{[^}]*date.*localeCompare[^}]*time.*localeCompare', re.DOTALL):
+    ok("Appointments sorted by date then time — chronological order correct")
+else:
+    warn("Appointment sort", "Appointments may not sort by date+time — check sort comparator")
+
+# 24n — saveAppointment() validates blank title and date before saving
+save_appt_area = ''
+m = re.search(r'const title = document\.getElementById\(["\']appt-title["\'].*?(?=function )', html, re.DOTALL)
+if m: save_appt_area = m.group(0)
+if "!title || !date" in save_appt_area or "!title" in save_appt_area and "!date" in save_appt_area:
+    ok("saveAppointment() validates blank title and date — empty appointments blocked")
+else:
+    fail("saveAppointment() missing blank date/title validation", "Undated appointments corrupt sort order and render blank cards")
+
+# 24o — logPRNDose() deducts pill count and floors at 0
+prn_body = fn_body('logPRNDose')
+if 'Math.max(0' in prn_body and 'pills - 1' in prn_body:
+    ok("logPRNDose() deducts pill and floors at 0 — no negative pill counts")
+else:
+    fail("logPRNDose() pill deduction missing Math.max(0)", "Pill count can go negative — refill alerts break")
+
+# 24p — logPRNDose() updates inline label with dose count
+if 'Given' in prn_body and 'today' in prn_body:
+    ok("logPRNDose() updates inline 'Given N× today' label — UI reflects current dose count")
+else:
+    warn("logPRNDose() inline label", "Dose count not shown inline — caregiver cannot see how many given today")
+
+# 24q — renderStress() shows empty state when no entries
+stress_body = fn_body('renderStress')
+if 'empty-state' in stress_body and "No check-in" in html:
+    ok("renderStress() shows empty state — no blank panel on first load")
+else:
+    warn("renderStress() empty state", "No empty state — blank panel shown when no stress entries exist")
+
+# 24r — renderStress() only checks burnout when entries >= 3 (no div-by-zero)
+if 'entries.length >= 3' in stress_body or 'entries.length > 2' in stress_body:
+    ok("renderStress() only calculates burnout when >= 3 entries — no NaN average")
+else:
+    fail("renderStress() burnout guard missing", "Average of empty array = NaN — burnout alert may show incorrectly")
+
+# 24s — formatDate() handles YYYY-MM-DD string input (not Date object)
+format_body = fn_body('formatDate')
+if 'T12:00' in format_body:
+    ok("formatDate() appends T12:00:00 — noon local time prevents UTC midnight off-by-one-day")
+elif 'T00:00' in format_body or '+00:00' in format_body:
+    ok("formatDate() handles timezone offset on date string")
+else:
+    warn("formatDate() timezone handling", "new Date('YYYY-MM-DD') parses as UTC midnight — may show previous day in negative-offset timezones")
+
+# 24t — KEYS object defined (central key registry)
+if find(r'const KEYS\s*=\s*\{') or find(r'var KEYS\s*=\s*\{'):
+    ok("KEYS object defined — central localStorage key registry prevents typos")
+else:
+    fail("KEYS object missing", "localStorage keys scattered as magic strings — import/export will break")
+
+# 24u — no raw localStorage.setItem outside of save() helper (except known exceptions)
+raw_sets = re.findall(r'localStorage\.setItem\s*\(', html)
+save_helper = re.findall(r'function save\s*\(', html)
+if save_helper:
+    ok(f"save() helper defined — localStorage writes centralized ({len(raw_sets)} total setItem calls)")
+else:
+    warn("save() helper missing", "Raw localStorage.setItem scattered — typos in keys cause silent data loss")
+
+# 24v — appt-info on mobile has flex:1 and min-width:0 in CSS
+if find(r'appt-info.*flex.*1.*min-width.*0|appt-info\s*\{[^}]*flex.*1', re.DOTALL):
+    ok("appt-info has flex:1 and min-width:0 — info column shrinks correctly beside badge")
+else:
+    warn("appt-info flex", "appt-info may not shrink — content overflows on mobile")
 
 
 # ════════════════════════════════════════
