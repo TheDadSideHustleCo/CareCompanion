@@ -1,4 +1,4 @@
-const CACHE = 'carecompanion-v61';
+const CACHE = 'carecompanion-v62';
 const FILES = [
   '/CareCompanion/',
   '/CareCompanion/manifest.json',

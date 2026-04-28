@@ -1580,6 +1580,153 @@ else:
 
 
 # ════════════════════════════════════════
+#  LAYER 25 — ONBOARDING, EMERGENCY CARD,
+#  RECURRING LOGIC, DASHBOARD WIDGETS,
+#  MED DOSE LOGIC
+# ════════════════════════════════════════
+
+# 25a — clearAllData() requires double confirm() before wiping
+clear_body = fn_body('clearAllData')
+confirm_count = clear_body.count('confirm(')
+if confirm_count >= 2:
+    ok("clearAllData() requires two confirm() dialogs — accidental full wipe prevented")
+else:
+    fail("clearAllData() missing double confirm()", f"Only {confirm_count} confirm() — one mis-click deletes all data permanently")
+
+# 25b — clearAllData() calls localStorage.clear()
+if 'localStorage.clear()' in clear_body:
+    ok("clearAllData() calls localStorage.clear() — full wipe executed")
+else:
+    fail("clearAllData() missing localStorage.clear()", "Data not actually deleted on clear")
+
+# 25c — clearAllData() re-shows disclaimer overlay after wipe
+if 'disclaimer-overlay' in clear_body and 'display' in clear_body:
+    ok("clearAllData() re-shows disclaimer overlay — fresh-start flow correct")
+else:
+    warn("clearAllData() disclaimer reset", "Disclaimer not shown after wipe — app may appear stale on re-open")
+
+# 25d — acceptDisclaimer() saves KEYS.disclaimer = true
+accept_body = fn_body('acceptDisclaimer')
+if 'KEYS.disclaimer' in accept_body and ('true' in accept_body or 'save(' in accept_body):
+    ok("acceptDisclaimer() saves KEYS.disclaimer=true — won't show again on reload")
+else:
+    fail("acceptDisclaimer() doesn't persist acceptance", "Disclaimer re-shown every time app loads")
+
+# 25e — acceptDisclaimer() opens setup overlay when no profile exists
+if 'setup-overlay' in accept_body and ('remove' in accept_body or 'display' in accept_body):
+    ok("acceptDisclaimer() opens setup overlay when no profile — onboarding flow correct")
+else:
+    warn("acceptDisclaimer() setup flow", "Setup overlay not opened after disclaimer — new users land on blank app")
+
+# 25f — saveSetup() syncs emergency card from profile when _saved !== true
+setup_body = fn_body('saveSetup')
+if '_saved' in setup_body and 'ec.' in setup_body:
+    ok("saveSetup() syncs emergency card from profile when not manually saved — auto-populate works")
+else:
+    warn("saveSetup() emergency card sync", "Emergency card not pre-filled from profile — users must enter name/dob twice")
+
+# 25g — saveEmergencyFields() sets _saved:true to lock auto-sync
+ec_body = fn_body('saveEmergencyFields')
+if '_saved' in ec_body and 'true' in ec_body:
+    ok("saveEmergencyFields() sets _saved:true — prevents profile sync from overwriting manual edits")
+else:
+    fail("saveEmergencyFields() missing _saved:true", "Profile saves will overwrite manually edited emergency card data")
+
+# 25h — freqToDoseCount() maps 'twice' → 2, 'three' → 3, 'every 8' → 3, 'every 6' → 4
+freq_body = fn_body('freqToDoseCount')
+if 'twice' in freq_body and 'return 2' in freq_body:
+    ok("freqToDoseCount() maps 'twice' → 2 doses")
+else:
+    fail("freqToDoseCount() 'twice' mapping broken", "Twice-daily meds show only 1 dose checkbox")
+
+if 'every 6' in freq_body and 'return 4' in freq_body:
+    ok("freqToDoseCount() maps 'every 6' → 4 doses")
+else:
+    fail("freqToDoseCount() 'every 6h' mapping broken", "Every-6-hour meds show wrong dose count")
+
+# 25i — getDoseCount() uses times field as source of truth when provided
+dose_count_body = fn_body('getDoseCount')
+if 'm.times' in dose_count_body and 'split' in dose_count_body:
+    ok("getDoseCount() uses m.times as source of truth when provided — saved times override freq string")
+else:
+    warn("getDoseCount() times field", "Dose count derived from frequency string only — ignores saved times field")
+
+# 25j — getDoseLabels() returns individual time strings when m.times set
+dose_label_body = fn_body('getDoseLabels')
+if 'm.times' in dose_label_body and 'split' in dose_label_body and 'parts' in dose_label_body:
+    ok("getDoseLabels() returns time strings from m.times — checkboxes show actual times not 'Dose 1/2'")
+else:
+    warn("getDoseLabels() times display", "Dose checkboxes show generic 'Dose 1' instead of actual times")
+
+# 25k — generateRecurringDates() caps at 52 max instances
+recur_body = fn_body('generateRecurringDates')
+if 'max' in recur_body and '52' in recur_body and 'dates.length < max' in recur_body:
+    ok("generateRecurringDates() capped at 52 instances — no runaway infinite loops")
+else:
+    fail("generateRecurringDates() missing max cap", "Recurring appointments with distant end date could generate thousands of records")
+
+# 25l — generateRecurringDates() uses T12:00:00 on date strings (timezone safe)
+if 'T12:00:00' in recur_body:
+    ok("generateRecurringDates() appends T12:00:00 — timezone-safe date math")
+else:
+    warn("generateRecurringDates() timezone", "Date math without T12:00:00 may skip or duplicate dates in negative-UTC timezones")
+
+# 25m — generateRecurringDates() handles all four frequencies
+for freq_val in ['daily', 'weekly', 'biweekly', 'monthly']:
+    if freq_val in recur_body:
+        ok(f"generateRecurringDates() handles '{freq_val}' frequency")
+    else:
+        fail(f"generateRecurringDates() missing '{freq_val}'", f"'{freq_val}' recurring appointments never generate instances")
+
+# 25n — renderGoodDays() hides strip when no good-mood entries
+good_body = fn_body('renderGoodDays')
+if "strip.style.display = 'none'" in good_body or "display.*none" in good_body:
+    ok("renderGoodDays() hides widget when no 😊 entries — no empty box on dashboard")
+else:
+    warn("renderGoodDays() empty state", "Good Days widget shows empty box when no happy entries exist")
+
+# 25o — renderGoodDays() streak guard prevents infinite loop
+if 'streak > 365' in good_body or 'streak >= 365' in good_body:
+    ok("renderGoodDays() streak loop guarded at 365 — no infinite loop on long streaks")
+else:
+    fail("renderGoodDays() streak loop unguarded", "while(true) streak loop could hang browser if data is corrupt")
+
+# 25p — renderMoodSnapshot() shows empty state when no logs
+mood_body = fn_body('renderMoodSnapshot')
+if 'empty-state' in mood_body or 'No log' in mood_body:
+    ok("renderMoodSnapshot() shows empty state — no blank panel when no logs")
+else:
+    warn("renderMoodSnapshot() empty state", "Blank panel shown when no log entries exist")
+
+# 25q — renderMedSearch() shows prompt when query is empty
+med_search_body = fn_body('renderMedSearch')
+if "!query" in med_search_body or "!query.trim()" in med_search_body:
+    ok("renderMedSearch() shows prompt when query empty — no phantom search on load")
+else:
+    warn("renderMedSearch() empty query", "Empty query may run search and show 'no results' on load")
+
+# 25r — renderMedSearch() searches name, dose, notes, frequency fields
+for field in ['m.name', 'm.dose', 'm.notes', 'm.frequency']:
+    if field in med_search_body:
+        ok(f"renderMedSearch() searches {field} field")
+    else:
+        warn(f"renderMedSearch() missing {field}", f"Searching by {field} won't find results")
+
+# 25s — prepareVisitPrep() uses T12:00:00 on appointment date
+prep_body = fn_body('prepareVisitPrep')
+if 'T12:00:00' in prep_body:
+    ok("prepareVisitPrep() uses T12:00:00 — appointment date displays correctly in all timezones")
+else:
+    warn("prepareVisitPrep() timezone", "Appointment date may show as previous day in UTC-offset timezones on print")
+
+# 25t — prepareVisitPrep() falls back to 'Patient' if no profile
+if "'Patient'" in prep_body or '"Patient"' in prep_body:
+    ok("prepareVisitPrep() falls back to 'Patient' label when no profile set — print never shows blank name")
+else:
+    warn("prepareVisitPrep() profile fallback", "Visit prep may show blank patient name when no profile saved")
+
+
+# ════════════════════════════════════════
 #  REPORT
 # ════════════════════════════════════════
 print()
