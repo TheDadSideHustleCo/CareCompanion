@@ -1257,7 +1257,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      CareCompanion v1.4<br>
+      CareCompanion v1.5<br>
       Data stored locally on your device.<br>
       Not a medical device.<br><br>
       <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
@@ -2784,7 +2784,7 @@ function navigateToAppointment(id) {
 function sortAppointments(appts) {
   return [...appts].sort((a, b) => {
     // Sort by date, then by time within same date
-    const dateCmp = a.date.localeCompare(b.date);
+    const dateCmp = (a.date || '').localeCompare(b.date || '');
     if (dateCmp !== 0) return dateCmp;
     return (a.time || '').localeCompare(b.time || '');
   });
@@ -3980,7 +3980,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '1.4',
+    _version: '1.5',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
@@ -4754,4 +4754,4 @@ function skipTooltips() {
 <!-- Update Available Banner -->
 <div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--sage-dark);color:#fff;padding:12px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.2);align-items:center;gap:14px;font-size:1rem;max-width:90vw;">
   <span>🔄 A new version of CareCompanion is ready.</span>
-  <button onclick="document.getElementById('update-banner').style.display='none';navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.waiting){navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload(),{once:true});r.waiting.postMessage({type:'SKIP_WAITING'});}})" style="b
+  <button onclick="document.getElementById('update-banner').style.display='none';navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.waiting){navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload(),{once:true});r.waiting.postMessage({type:'SKIP_WAITING'})
