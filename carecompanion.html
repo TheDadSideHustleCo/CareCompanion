@@ -3231,7 +3231,7 @@ function reimportFromProfile() {
   if (nameEl) nameEl.value = profile.name || '';
   if (dobEl)  dobEl.value  = profile.dob  || '';
   if (condEl) condEl.value = profile.condition || '';
-  renderEmergencyCard();
+  updateEmergencyCard();
 }
 
 function loadEmergencyCard() {
