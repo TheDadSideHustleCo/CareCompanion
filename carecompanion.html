@@ -12,7 +12,14 @@
 <meta name="apple-mobile-web-app-title" content="CareCompanion">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family: 'Lato'; font-style: normal; font-weight: 300; font-display: swap; src: url('./lato-300.ttf') format('truetype'); }
+@font-face { font-family: 'Lato'; font-style: normal; font-weight: 400; font-display: swap; src: url('./lato-400.ttf') format('truetype'); }
+@font-face { font-family: 'Lato'; font-style: normal; font-weight: 700; font-display: swap; src: url('./lato-700.ttf') format('truetype'); }
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 400; font-display: swap; src: url('./playfair-400.ttf') format('truetype'); }
+@font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 600; font-display: swap; src: url('./playfair-600.ttf') format('truetype'); }
+@font-face { font-family: 'Playfair Display'; font-style: italic; font-weight: 400; font-display: swap; src: url('./playfair-italic-400.ttf') format('truetype'); }
+</style>
 <style>
   :root {
     --cream: #faf7f2;
@@ -2010,6 +2017,8 @@
 // ════════════════════════════════════════════════
 //  DATA LAYER — localStorage
 // ════════════════════════════════════════════════
+const APP_VERSION = '1.3';
+
 const KEYS = {
   profile: 'cc_profile',
   medications: 'cc_medications',
@@ -4745,18 +4754,4 @@ function skipTooltips() {
 <!-- Update Available Banner -->
 <div id="update-banner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--sage-dark);color:#fff;padding:12px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.2);align-items:center;gap:14px;font-size:1rem;max-width:90vw;">
   <span>🔄 A new version of CareCompanion is ready.</span>
-  <button onclick="document.getElementById('update-banner').style.display='none';navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.waiting){navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload(),{once:true});r.waiting.postMessage({type:'SKIP_WAITING'});}})" style="background:#fff;color:var(--sage-dark);border:none;padding:6px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;">Update now</button>
-  <button onclick="document.getElementById('update-banner').style.display='none'" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.9rem;">Later</button>
-</div>
-
-<!-- PWA Install Banner -->
-<div id="pwa-banner">
-  <div class="pwa-icon">🌿</div>
-  <div class="pwa-text"><strong>Install CareCompanion</strong>Add to your home screen for quick access.</div>
-  <div class="pwa-actions">
-    <button class="pwa-btn pwa-btn-install">Install</button>
-    <button class="pwa-btn pwa-btn-dismiss">Not now</button>
-  </div>
-</div>
-</body>
-</html>
+  <button onclick="document.getElementById('update-banner').style.display='none';navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.waiting){navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload(),{once:true});r.waiting.postMessage({type:'SKIP_WAITING'});}})" style="b
