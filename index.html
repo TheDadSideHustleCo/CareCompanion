@@ -1257,7 +1257,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      CareCompanion v1.3<br>
+      CareCompanion v1.4<br>
       Data stored locally on your device.<br>
       Not a medical device.<br><br>
       <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
@@ -3980,7 +3980,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '1.3',
+    _version: '1.4',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
