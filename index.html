@@ -1284,7 +1284,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      CareCompanion v<span id="app-version-label">1.9</span><br>
+      CareCompanion v<span id="app-version-label">2.0</span><br>
       Data stored locally on your device.<br>
       Not a medical device.<br><br>
       <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
@@ -2044,7 +2044,7 @@
 // ════════════════════════════════════════════════
 //  DATA LAYER — localStorage
 // ════════════════════════════════════════════════
-const APP_VERSION = '1.9';
+const APP_VERSION = '2.0';
 (function(){ try { var vl = document.getElementById('app-version-label'); if (vl) vl.textContent = APP_VERSION; } catch(e) {} })();
 
 const KEYS = {
@@ -3904,6 +3904,167 @@ window.addEventListener('afterprint', function() {
   if (grid) grid.style.display = 'none';
 });
 
+// ── iPhone Home Screen printing fallback ─────────────────────────────────
+// iPhone Home Screen apps ignore window.print(). In that one situation the Print
+// buttons build a simple PDF of the page and open the iPhone share sheet
+// (Print, Save to Files, Mail, Messages). Every other device keeps normal printing.
+(function ccPdfPrintFallback() {
+  const W = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+  const MAP = {'‘':"'",'’':"'",'“':'"','”':'"','–':'-','—':'-','…':'...','•':'\x95','·':'\xB7','→':'->','✓':'*','✔':'*',' ':' ','→':'->'};
+  function clean(s) {
+    let o = '';
+    for (const ch of String(s)) {
+      if (MAP[ch] !== undefined) { o += MAP[ch]; continue; }
+      const c = ch.codePointAt(0);
+      if (c === 10 || c === 13 || c === 9) o += ' ';
+      else if (c >= 32 && c < 127) o += ch;
+      else if (c >= 161 && c <= 255) o += ch;
+    }
+    return o.replace(/\s+/g, ' ').trim();
+  }
+  function width(s, size, bold) {
+    let w = 0;
+    for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); w += (c >= 32 && c <= 126 ? W[c - 32] : 556); }
+    return w * size / 1000 * (bold ? 1.06 : 1);
+  }
+  function wrap(text, size, bold, maxW) {
+    const words = text.split(' '), lines = []; let cur = '';
+    for (const w of words) {
+      let word = w;
+      while (width(word, size, bold) > maxW) {                       // break very long words
+        let k = word.length; while (k > 1 && width(word.slice(0, k), size, bold) > maxW) k--;
+        if (cur) { lines.push(cur); cur = ''; }
+        lines.push(word.slice(0, k)); word = word.slice(k);
+      }
+      const t = cur ? cur + ' ' + word : word;
+      if (width(t, size, bold) <= maxW) cur = t; else { if (cur) lines.push(cur); cur = word; }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  const BLOCK = /^(DIV|P|H1|H2|H3|H4|H5|H6|LI|UL|OL|TABLE|SECTION|HEADER|TBODY|THEAD|LABEL)$/;
+  const SKIP = /^(BUTTON|INPUT|SELECT|TEXTAREA|SCRIPT|STYLE|SVG|NOSCRIPT)$/;
+  function collect(root) {
+    const out = []; let cur = '';
+    const flush = (o) => { const t = clean(cur); cur = ''; if (t) out.push(Object.assign({ t, size: 11, bold: false, indent: 0, gap: 0 }, o || {})); };
+    (function walk(n, o) {
+      if (n.nodeType === 3) { cur += ' ' + n.textContent; return; }
+      if (n.nodeType !== 1) return;
+      const tag = n.tagName, cls = String(n.className || '');
+      if (SKIP.test(tag) || n.classList.contains('no-print') || n.classList.contains('toast')) return;
+      if (n.tagName === 'BR') { cur += ' '; return; }
+      if (tag === 'TABLE') {
+        flush();
+        const heads = [...n.querySelectorAll('thead th')].map(th => clean(th.textContent));
+        n.querySelectorAll('tbody tr, tr').forEach(tr => {
+          if (tr.closest('thead')) return;
+          const raw = [...tr.children].map(c => { const d = c.cloneNode(true); d.querySelectorAll('br').forEach(b => b.replaceWith('\n')); return String(d.textContent || '').split('\n').map(clean).filter(Boolean); });
+          const cells = raw.map(a => a[0] || '');
+          if (!cells.some(Boolean)) return;
+          if (heads.length >= 2 && cells.length === heads.length) {
+            out.push({ t: cells[0], size: 11.5, bold: true, indent: 0, gap: 6 });
+            raw[0].slice(1).forEach(note => out.push({ t: note, size: 10, bold: false, indent: 14, gap: 0 }));
+            cells.slice(1).forEach((v, i) => { if (v && v !== '-') out.push({ t: heads[i + 1] + ': ' + v, size: 10.5, bold: false, indent: 14, gap: 0 }); });
+          } else {
+            out.push({ t: cells.filter(Boolean).join('   |   '), size: 10.5, bold: false, indent: 0, gap: 2 });
+          }
+        });
+        return;
+      }
+      const hs = /^H([1-6])$/.exec(tag);
+      const isTitle = cls.indexOf('prt-title') >= 0;
+      const isBlock = BLOCK.test(tag) || isTitle;
+      if (isBlock) flush();
+      const startLen = out.length;
+      n.childNodes.forEach(c => walk(c));
+      if (isBlock) {
+        const styled = /font-weight:\s*(700|bold)/.test(n.getAttribute('style') || '') || /section-head|-head$|-title$/.test(cls);
+        const headish = !!(hs || isTitle || (styled && clean(cur).length < 90));
+        const size = isTitle ? 17 : hs ? (hs[1] <= 2 ? 15 : 12.5) : headish ? 12.5 : 11;
+        flush({ size, bold: headish, gap: headish ? 8 : 0 });
+        if (/card|entry|contact|handoff-item|appt/i.test(cls) && out.length > startLen) out[out.length - 1].after = 8;
+      }
+    })(root);
+    flush();
+    return out;
+  }
+  function pdfEsc(s) { return s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)'); }
+  function buildPdf(items, title) {
+    const PW = 612, PH = 792, M = 54, maxW = PW - 2 * M, lead = 1.32;
+    const pages = []; let y = PH - M - 10, cmds = [];
+    const newPage = () => { pages.push(cmds.join('\n')); cmds = []; y = PH - M - 10; };
+    for (const it of items) {
+      const lines = wrap(it.t, it.size, it.bold, maxW - it.indent);
+      const h = it.size * lead;
+      if (y - it.gap - h < M + 20) newPage();
+      y -= it.gap;
+      for (const ln of lines) {
+        if (y - h < M + 20) newPage();
+        y -= h;
+        cmds.push('BT /' + (it.bold ? 'F2' : 'F1') + ' ' + it.size + ' Tf ' + (M + it.indent) + ' ' + y.toFixed(1) + ' Td (' + pdfEsc(ln) + ') Tj ET');
+      }
+      if (it.after) y -= it.after;
+    }
+    pages.push(cmds.join('\n'));
+    const foot = (i) => 'BT /F1 8 Tf ' + M + ' 30 Td (' + pdfEsc('CareCompanion - ' + clean(title) + ' - page ' + (i + 1) + ' of ' + pages.length) + ') Tj ET';
+    const objs = []; const add = (s) => { objs.push(s); return objs.length; };
+    add('<< /Type /Catalog /Pages 2 0 R >>');
+    add('PAGES');
+    const f1 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    const f2 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    const kids = [];
+    pages.forEach((c, i) => {
+      const body = c + '\n' + foot(i);
+      const cid = add('<< /Length ' + body.length + ' >>\nstream\n' + body + '\nendstream');
+      const pid = add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + PW + ' ' + PH + '] /Resources << /Font << /F1 ' + f1 + ' 0 R /F2 ' + f2 + ' 0 R >> >> /Contents ' + cid + ' 0 R >>');
+      kids.push(pid + ' 0 R');
+    });
+    objs[1] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + pages.length + ' >>';
+    let pdf = '%PDF-1.4\n'; const offs = [];
+    objs.forEach((o, i) => { offs.push(pdf.length); pdf += (i + 1) + ' 0 obj\n' + o + '\nendobj\n'; });
+    const x = pdf.length;
+    pdf += 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n' + offs.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('');
+    pdf += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + x + '\n%%EOF';
+    const bytes = new Uint8Array(pdf.length); for (let i = 0; i < pdf.length; i++) bytes[i] = pdf.charCodeAt(i) & 255;
+    return bytes;
+  }
+  const KINDS = {
+    med:     { title: 'Medication List',    parts: ['#med-print-header', '#medications-print-table-wrap'] },
+    ct:      { title: 'Care Team Directory', parts: ['#ct-print-header', '#ct-print-grid'] },
+    handoff: { title: 'Handoff Notes',      parts: ['#handoff-print-header', '#handoff-list'] },
+    ec:      { title: 'Emergency Card',     parts: ['#ec-print-header', '#ec-preview-content'] },
+    visit:   { title: 'Doctor Visit Prep',  parts: ['#page-visit-prep'] }
+  };
+  function buildPrintPdf(kind) {
+    const k = KINDS[kind]; if (!k) return null;
+    let items = [];
+    k.parts.forEach(sel => { const el = document.querySelector(sel); if (el) items = items.concat(collect(el)); });
+    if (!items.length) return null;
+    return { bytes: buildPdf(items, k.title), title: k.title };
+  }
+  window.__ccBuildPrintPdf = buildPrintPdf;                         // used by the automated tests
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (!(isIOS && standalone) && !window.__ccForcePdfPrint) return;
+  window.print = function () {
+    const kind = document.body.dataset.print;
+    try {
+      const r = buildPrintPdf(kind);
+      if (!r) { alert('There is nothing to print here yet.'); return; }
+      const name = 'CareCompanion-' + r.title.replace(/\s+/g, '-') + '.pdf';
+      const blob = new Blob([r.bytes], { type: 'application/pdf' });
+      const file = new File([blob], name, { type: 'application/pdf' });
+      window.__ccLastPdf = { name, size: r.bytes.length };
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: r.title }).catch(() => {});
+      } else {
+        window.open(URL.createObjectURL(blob), '_blank');
+      }
+    } catch (e) { alert('Sorry, the printable PDF could not be created. Please tell us about this problem.'); console.error(e); }
+    finally { delete document.body.dataset.print; const g = document.getElementById('ct-print-grid'); if (g) g.style.display = 'none'; }
+  };
+})();
+
 // Renders medication print table — called at startup and after any medication change
 function renderMedicationPrintTable() {
   const meds = load(KEYS.medications).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -3966,7 +4127,8 @@ function renderCareTeamPrintGrid() {
       <div class="ct-print-card-body">
         ${c.phone  ? `<div class="ct-detail"><span class="ct-detail-icon">📞</span><span>${esc(c.phone)}</span></div>` : ''}
         ${c.email  ? `<div class="ct-detail"><span class="ct-detail-icon">✉️</span><span>${esc(c.email)}</span></div>` : ''}
-        ${c.clinic ? `<div class="ct-detail"><span class="ct-detail-icon">🏥</span><span>${c.clinic}</span></div>` : ''}
+        ${c.fax    ? `<div class="ct-detail"><span class="ct-detail-icon">📠</span><span>Fax: ${esc(c.fax)}</span></div>` : ''}
+        ${(c.facility || c.clinic) ? `<div class="ct-detail"><span class="ct-detail-icon">🏥</span><span>${esc(c.facility || c.clinic)}</span></div>` : ''}
         ${c.notes  ? `<div class="ct-notes">${esc(c.notes)}</div>` : ''}
       </div>
     </div>`).join('');
@@ -4008,7 +4170,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '1.9',
+    _version: '2.0',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
