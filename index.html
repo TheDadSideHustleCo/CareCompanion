@@ -1259,7 +1259,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      CareCompanion v<span id="app-version-label">1.5</span><br>
+      CareCompanion v<span id="app-version-label">1.6</span><br>
       Data stored locally on your device.<br>
       Not a medical device.<br><br>
       <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
@@ -2019,7 +2019,7 @@
 // ════════════════════════════════════════════════
 //  DATA LAYER — localStorage
 // ════════════════════════════════════════════════
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 (function(){ try { var vl = document.getElementById('app-version-label'); if (vl) vl.textContent = APP_VERSION; } catch(e) {} })();
 
 const KEYS = {
@@ -3983,7 +3983,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '1.5',
+    _version: '1.6',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
@@ -4717,6 +4717,8 @@ function skipTooltips() {
       window.location.reload();
     });
   }
+  // The install banner markup sits at the very end of the page, after this script, so wait for the page to finish loading.
+  function initInstallBanner() {
   const banner = document.getElementById('pwa-banner');
   if (!banner) return;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -4747,11 +4749,20 @@ function skipTooltips() {
   function hideBanner() { banner.classList.remove('visible'); localStorage.setItem('cc_pwa_dismissed', '1'); }
   const dismissBtn = banner.querySelector('.pwa-btn-dismiss');
   if (dismissBtn) dismissBtn.addEventListener('click', hideBanner);
-  if (!isIOS) {
-    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; showBanner(false); });
-  } else {
-    setTimeout(() => showBanner(true), 3000);
+  // Never cover the first-run notice or tour: wait until both are finished, then show.
+  function whenFirstRunDone(fn) {
+    if (localStorage.getItem('cc_pwa_dismissed')) return;
+    if (localStorage.getItem('cc_disclaimer') && localStorage.getItem('cc_tour_done')) fn();
+    else setTimeout(() => whenFirstRunDone(fn), 2000);
   }
+  if (!isIOS) {
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; whenFirstRunDone(() => showBanner(false)); });
+  } else {
+    setTimeout(() => whenFirstRunDone(() => showBanner(true)), 3000);
+  }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initInstallBanner);
+  else initInstallBanner();
 })();</script>
 
 <!-- Update Available Banner -->
