@@ -1284,7 +1284,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      CareCompanion v<span id="app-version-label">2.0</span><br>
+      CareCompanion v<span id="app-version-label">2.1</span><br>
       Data stored locally on your device.<br>
       Not a medical device.<br><br>
       <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
@@ -2044,7 +2044,7 @@
 // ════════════════════════════════════════════════
 //  DATA LAYER — localStorage
 // ════════════════════════════════════════════════
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 (function(){ try { var vl = document.getElementById('app-version-label'); if (vl) vl.textContent = APP_VERSION; } catch(e) {} })();
 
 const KEYS = {
@@ -3906,14 +3906,18 @@ window.addEventListener('afterprint', function() {
 
 // ── iPhone Home Screen printing fallback ─────────────────────────────────
 // iPhone Home Screen apps ignore window.print(). In that one situation the Print
-// buttons build a simple PDF of the page and open the iPhone share sheet
+// buttons build a professionally laid-out PDF and open the iPhone share sheet
 // (Print, Save to Files, Mail, Messages). Every other device keeps normal printing.
 (function ccPdfPrintFallback() {
-  const W = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
-  const MAP = {'‘':"'",'’':"'",'“':'"','”':'"','–':'-','—':'-','…':'...','•':'\x95','·':'\xB7','→':'->','✓':'*','✔':'*',' ':' ','→':'->'};
+  const WR = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+  const WB = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+  const MAP = {'‘':"'",'’':"'",'“':'"','”':'"','–':'-','—':'-','…':'...','•':'\x95','·':'\xB7','→':'->','✓':'*','✔':'*',' ':' '};
+  const C = { green:'2D5A3D', sage:'4E7560', tint:'EDF4EF', tint2:'F6F9F7', line:'D5DDD8', ink:'222222', gray:'666666', light:'999999', gold:'C8A96A', red:'B3261E', redTint:'FDECEA', white:'FFFFFF', rose:'A23B3B' };
+  const PW = 612, PH = 792, ML = 48, CW = PW - 2 * ML, BOTTOM = 64;
+
   function clean(s) {
     let o = '';
-    for (const ch of String(s)) {
+    for (const ch of String(s == null ? '' : s)) {
       if (MAP[ch] !== undefined) { o += MAP[ch]; continue; }
       const c = ch.codePointAt(0);
       if (c === 10 || c === 13 || c === 9) o += ' ';
@@ -3922,102 +3926,212 @@ window.addEventListener('afterprint', function() {
     }
     return o.replace(/\s+/g, ' ').trim();
   }
-  function width(s, size, bold) {
-    let w = 0;
-    for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); w += (c >= 32 && c <= 126 ? W[c - 32] : 556); }
-    return w * size / 1000 * (bold ? 1.06 : 1);
+  function tw(s, size, bold) {
+    const T = bold ? WB : WR; let w = 0;
+    for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); w += (c >= 32 && c <= 126 ? T[c - 32] : 556); }
+    return w * size / 1000;
   }
   function wrap(text, size, bold, maxW) {
-    const words = text.split(' '), lines = []; let cur = '';
-    for (const w of words) {
+    const lines = []; let cur = '';
+    for (const w of String(text).split(' ')) {
       let word = w;
-      while (width(word, size, bold) > maxW) {                       // break very long words
-        let k = word.length; while (k > 1 && width(word.slice(0, k), size, bold) > maxW) k--;
+      while (tw(word, size, bold) > maxW) {
+        let k = word.length; while (k > 1 && tw(word.slice(0, k), size, bold) > maxW) k--;
         if (cur) { lines.push(cur); cur = ''; }
         lines.push(word.slice(0, k)); word = word.slice(k);
       }
       const t = cur ? cur + ' ' + word : word;
-      if (width(t, size, bold) <= maxW) cur = t; else { if (cur) lines.push(cur); cur = word; }
+      if (tw(t, size, bold) <= maxW) cur = t; else { if (cur) lines.push(cur); cur = word; }
     }
     if (cur) lines.push(cur);
-    return lines;
+    return lines.length ? lines : [''];
   }
-  const BLOCK = /^(DIV|P|H1|H2|H3|H4|H5|H6|LI|UL|OL|TABLE|SECTION|HEADER|TBODY|THEAD|LABEL)$/;
-  const SKIP = /^(BUTTON|INPUT|SELECT|TEXTAREA|SCRIPT|STYLE|SVG|NOSCRIPT)$/;
-  function collect(root) {
-    const out = []; let cur = '';
-    const flush = (o) => { const t = clean(cur); cur = ''; if (t) out.push(Object.assign({ t, size: 11, bold: false, indent: 0, gap: 0 }, o || {})); };
-    (function walk(n, o) {
-      if (n.nodeType === 3) { cur += ' ' + n.textContent; return; }
-      if (n.nodeType !== 1) return;
-      const tag = n.tagName, cls = String(n.className || '');
-      if (SKIP.test(tag) || n.classList.contains('no-print') || n.classList.contains('toast')) return;
-      if (n.tagName === 'BR') { cur += ' '; return; }
-      if (tag === 'TABLE') {
-        flush();
-        const heads = [...n.querySelectorAll('thead th')].map(th => clean(th.textContent));
-        n.querySelectorAll('tbody tr, tr').forEach(tr => {
-          if (tr.closest('thead')) return;
-          const raw = [...tr.children].map(c => { const d = c.cloneNode(true); d.querySelectorAll('br').forEach(b => b.replaceWith('\n')); return String(d.textContent || '').split('\n').map(clean).filter(Boolean); });
-          const cells = raw.map(a => a[0] || '');
-          if (!cells.some(Boolean)) return;
-          if (heads.length >= 2 && cells.length === heads.length) {
-            out.push({ t: cells[0], size: 11.5, bold: true, indent: 0, gap: 6 });
-            raw[0].slice(1).forEach(note => out.push({ t: note, size: 10, bold: false, indent: 14, gap: 0 }));
-            cells.slice(1).forEach((v, i) => { if (v && v !== '-') out.push({ t: heads[i + 1] + ': ' + v, size: 10.5, bold: false, indent: 14, gap: 0 }); });
-          } else {
-            out.push({ t: cells.filter(Boolean).join('   |   '), size: 10.5, bold: false, indent: 0, gap: 2 });
-          }
-        });
-        return;
-      }
-      const hs = /^H([1-6])$/.exec(tag);
-      const isTitle = cls.indexOf('prt-title') >= 0;
-      const isBlock = BLOCK.test(tag) || isTitle;
-      if (isBlock) flush();
-      const startLen = out.length;
-      n.childNodes.forEach(c => walk(c));
-      if (isBlock) {
-        const styled = /font-weight:\s*(700|bold)/.test(n.getAttribute('style') || '') || /section-head|-head$|-title$/.test(cls);
-        const headish = !!(hs || isTitle || (styled && clean(cur).length < 90));
-        const size = isTitle ? 17 : hs ? (hs[1] <= 2 ? 15 : 12.5) : headish ? 12.5 : 11;
-        flush({ size, bold: headish, gap: headish ? 8 : 0 });
-        if (/card|entry|contact|handoff-item|appt/i.test(cls) && out.length > startLen) out[out.length - 1].after = 8;
-      }
-    })(root);
-    flush();
-    return out;
+  const rgb = (h) => [0, 2, 4].map(i => (parseInt(h.substr(i, 2), 16) / 255).toFixed(3)).join(' ');
+  const pe = (s) => s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
+  // ── Document / layout engine ──
+  function Doc(meta) {
+    this.meta = meta; this.pages = []; this.y = 0; this.ops = null; this.first = true; this.newPage();
   }
-  function pdfEsc(s) { return s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)'); }
-  function buildPdf(items, title) {
-    const PW = 612, PH = 792, M = 54, maxW = PW - 2 * M, lead = 1.32;
-    const pages = []; let y = PH - M - 10, cmds = [];
-    const newPage = () => { pages.push(cmds.join('\n')); cmds = []; y = PH - M - 10; };
-    for (const it of items) {
-      const lines = wrap(it.t, it.size, it.bold, maxW - it.indent);
-      const h = it.size * lead;
-      if (y - it.gap - h < M + 20) newPage();
-      y -= it.gap;
-      for (const ln of lines) {
-        if (y - h < M + 20) newPage();
-        y -= h;
-        cmds.push('BT /' + (it.bold ? 'F2' : 'F1') + ' ' + it.size + ' Tf ' + (M + it.indent) + ' ' + y.toFixed(1) + ' Td (' + pdfEsc(ln) + ') Tj ET');
-      }
-      if (it.after) y -= it.after;
+  Doc.prototype.newPage = function () {
+    this.ops = []; this.pages.push(this.ops);
+    const m = this.meta, accent = m.accent || C.green;
+    if (this.pages.length === 1) {
+      this.rect(0, PH - 84, PW, 84, accent);
+      this.rect(0, PH - 88, PW, 4, C.gold);
+      this.text(ML, PH - 42, clean(m.title), 'F4', 24, C.white);
+      if (m.sub) this.text(ML, PH - 64, clean(m.sub), 'F1', 11, 'E6EFE9');
+      const r1 = clean(m.right || ''); if (r1) this.text(PW - ML - tw(r1, 9.5, false), PH - 42, r1, 'F1', 9.5, 'E6EFE9');
+      const br = 'CareCompanion'; this.text(PW - ML - tw(br, 9, true), PH - 64, br, 'F2', 9, C.white);
+      this.y = PH - 88 - 26;
+    } else {
+      const left = clean(m.title + (m.sub ? '  -  ' + m.sub : ''));
+      this.text(ML, PH - 36, left, 'F2', 9, C.sage);
+      const r1 = clean(m.right || ''); if (r1) this.text(PW - ML - tw(r1, 8.5, false), PH - 36, r1, 'F1', 8.5, C.gray);
+      this.line(ML, PH - 44, PW - ML, PH - 44, accent, 1.2);
+      this.y = PH - 44 - 24;
     }
-    pages.push(cmds.join('\n'));
-    const foot = (i) => 'BT /F1 8 Tf ' + M + ' 30 Td (' + pdfEsc('CareCompanion - ' + clean(title) + ' - page ' + (i + 1) + ' of ' + pages.length) + ') Tj ET';
+  };
+  Doc.prototype.rect = function (x, y, w, h, fill, stroke, lw) {
+    if (fill) this.ops.push(rgb(fill) + ' rg ' + x.toFixed(1) + ' ' + y.toFixed(1) + ' ' + w.toFixed(1) + ' ' + h.toFixed(1) + ' re f');
+    if (stroke) this.ops.push(rgb(stroke) + ' RG ' + (lw || 0.8) + ' w ' + x.toFixed(1) + ' ' + y.toFixed(1) + ' ' + w.toFixed(1) + ' ' + h.toFixed(1) + ' re S');
+  };
+  Doc.prototype.line = function (x1, y1, x2, y2, col, lw) {
+    this.ops.push(rgb(col) + ' RG ' + (lw || 0.8) + ' w ' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' m ' + x2.toFixed(1) + ' ' + y2.toFixed(1) + ' l S');
+  };
+  Doc.prototype.text = function (x, y, s, font, size, col) {
+    this.ops.push('BT /' + font + ' ' + size + ' Tf ' + rgb(col || C.ink) + ' rg ' + x.toFixed(1) + ' ' + y.toFixed(1) + ' Td (' + pe(s) + ') Tj ET');
+  };
+  Doc.prototype.ensure = function (h) { if (this.y - h < BOTTOM) this.newPage(); };
+  Doc.prototype.gap = function (h) { this.y -= h; };
+
+  Doc.prototype.section = function (title) {
+    this.ensure(54); this.y -= 14;
+    this.rect(ML, this.y - 16, 4, 18, C.gold);
+    this.text(ML + 12, this.y - 12, clean(title), 'F2', 13, C.green);
+    this.line(ML, this.y - 21, PW - ML, this.y - 21, C.line, 1);
+    this.y -= 32;
+  };
+  Doc.prototype.para = function (text, o) {
+    o = o || {}; const size = o.size || 10.5, bold = !!o.bold, indent = o.indent || 0, lead = size * 1.45;
+    const lines = wrap(clean(text), size, bold, CW - indent);
+    for (const ln of lines) { this.ensure(lead + 2); this.y -= lead; this.text(ML + indent, this.y + 2, ln, o.italic ? 'F3' : bold ? 'F2' : 'F1', size, o.color || C.ink); }
+    this.y -= (o.after == null ? 4 : o.after);
+  };
+  // label / value rows inside a tinted panel
+  Doc.prototype.panel = function (rows, o) {
+    o = o || {}; const lw = o.labelW || 104, size = o.size || 11, lead = size * 1.45, pad = 10;
+    const prep = rows.map(r => ({ r, lines: wrap(clean(r.value), size, !!r.bold, CW - 2 * pad - lw) }));
+    let i = 0;
+    while (i < prep.length) {
+      let h = pad, j = i;                                          // fit as many rows as the page allows
+      while (j < prep.length) { const rh = prep[j].lines.length * lead + 5; if (this.y - (h + rh + pad) < BOTTOM && j > i) break; h += rh; j++; }
+      h += pad - 2; this.ensure(h);
+      this.rect(ML, this.y - h, CW, h, o.fill || C.tint2, C.line, 0.8);
+      let yy = this.y - pad;
+      for (let k = i; k < j; k++) {
+        const p = prep[k]; yy -= lead;
+        this.text(ML + pad, yy + 2, clean(p.r.label).toUpperCase(), 'F2', 8.5, C.sage);
+        p.lines.forEach((ln, n) => { if (n) yy -= lead; this.text(ML + pad + lw, yy + 2, ln, p.r.bold ? 'F2' : 'F1', size, p.r.color || C.ink); });
+        yy -= 5;
+      }
+      this.y -= h + 8; i = j;
+    }
+  };
+  Doc.prototype.alert = function (label, text, o) {
+    o = o || {}; const size = 13, lead = size * 1.4, pad = 12, col = o.color || C.red, fill = o.fill || C.redTint;
+    const lines = wrap(clean(text), size, true, CW - 2 * pad - 6);
+    const h = pad + 13 + lines.length * lead + pad - 2; this.ensure(h);
+    this.rect(ML, this.y - h, CW, h, fill, col, 1.2); this.rect(ML, this.y - h, 6, h, col);
+    this.text(ML + pad + 6, this.y - pad - 8, clean(label).toUpperCase(), 'F2', 9, col);
+    let yy = this.y - pad - 13; lines.forEach(ln => { yy -= lead; this.text(ML + pad + 6, yy + 2, ln, 'F2', size, C.ink); });
+    this.y -= h + 10;
+  };
+  Doc.prototype.list = function (items) {      // items: [{b, t}] bullet rows
+    for (const it of items) {
+      const lead = 10.5 * 1.45, lines = wrap(clean((it.b ? it.b + ' ' : '') + it.t), 10.5, false, CW - 18);
+      this.ensure(lead * lines.length + 4);
+      this.rect(ML + 4, this.y - lead + 5, 3.5, 3.5, C.sage);
+      lines.forEach((ln, n) => { this.y -= lead; if (n === 0 && it.b) { this.text(ML + 16, this.y + 2, clean(it.b), 'F2', 10.5, C.ink); this.text(ML + 16 + tw(clean(it.b) + ' ', 10.5, true), this.y + 2, ln.slice(clean(it.b).length + 1), 'F1', 10.5, C.ink); } else this.text(ML + 16, this.y + 2, ln, 'F1', 10.5, C.ink); });
+      this.y -= 4;
+    }
+    this.y -= 4;
+  };
+  // table: cols [{h, w}] (w = relative weight); rows [[{lines:[{t,b,i,s,c}]}]]
+  Doc.prototype.table = function (cols, rows) {
+    const tot = cols.reduce((a, c) => a + c.w, 0), pad = 6, ws = cols.map(c => CW * c.w / tot);
+    const hdr = () => {
+      this.ensure(30); const h = 22; this.rect(ML, this.y - h, CW, h, C.green);
+      let x = ML; cols.forEach((c, i) => { this.text(x + pad, this.y - 15, clean(c.h), 'F2', 9.5, C.white); x += ws[i]; }); this.y -= h;
+    };
+    hdr();
+    rows.forEach((row, ri) => {
+      const cells = row.map((cell, i) => { const L = []; cell.lines.forEach(l => wrap(clean(l.t), l.s || 9.8, !!l.b, ws[i] - 2 * pad).forEach(t => L.push({ t, l }))); return L; });
+      const lead = 13.2, h = Math.max(...cells.map(c => c.length)) * lead + 10;
+      if (this.y - h < BOTTOM) { this.newPage(); hdr(); }
+      if (ri % 2 === 1) this.rect(ML, this.y - h, CW, h, C.tint2);
+      let x = ML;
+      cells.forEach((c, i) => { let yy = this.y - 6; c.forEach(o => { yy -= lead; this.text(x + pad, yy + 3, o.t, o.l.i ? 'F3' : o.l.b ? 'F2' : 'F1', o.l.s || 9.8, o.l.c || C.ink); }); x += ws[i]; });
+      this.line(ML, this.y - h, PW - ML, this.y - h, C.line, 0.7); this.y -= h;
+    });
+    this.rect(ML, this.y, CW, 0, null); this.y -= 12;
+  };
+  // cards in two columns; card: {title, sub, rows:[{label,text}], note}
+  Doc.prototype.cards = function (cards) {
+    const gap = 12, w = (CW - gap) / 2, pad = 10, lead = 13;
+    const meas = cards.map(c => {
+      const body = [];
+      (c.rows || []).forEach(r => wrap(clean(r.label + ': ' + r.text), 9.8, false, w - 2 * pad).forEach((t, n) => body.push({ t, lab: n === 0 ? clean(r.label) + ':' : '' })));
+      const note = c.note ? wrap(clean(c.note), 9.3, false, w - 2 * pad) : [];
+      const tl = wrap(clean(c.title), 11.5, true, w - 2 * pad), sl = c.sub ? wrap(clean(c.sub), 9.5, false, w - 2 * pad) : [];
+      const head = 10 + tl.length * 14 + sl.length * 12 + 6;
+      return { c, tl, sl, body, note, h: head + 8 + body.length * lead + (note.length ? note.length * 12 + 6 : 0) + 8, head };
+    });
+    for (let i = 0; i < meas.length; i += 2) {
+      const pair = meas.slice(i, i + 2), h = Math.max(...pair.map(p => p.h));
+      this.ensure(h + 10);
+      pair.forEach((p, k) => {
+        const x = ML + k * (w + gap), top = this.y;
+        this.rect(x, top - h, w, h, C.white, C.line, 0.9); this.rect(x, top - p.head, w, p.head, C.tint, C.line, 0.9);
+        let ty = top - 6; p.tl.forEach(t => { ty -= 14; this.text(x + pad, ty + 3, t, 'F2', 11.5, C.green); });
+        p.sl.forEach(t => { ty -= 12; this.text(x + pad, ty + 3, t, 'F3', 9.5, C.sage); });
+        let yy = top - p.head - 6;
+        p.body.forEach(o => { yy -= lead; if (o.lab) { this.text(x + pad, yy + 3, o.t.slice(0, o.lab.length), 'F2', 9.8, C.gray); this.text(x + pad + tw(o.lab + ' ', 9.8, true), yy + 3, o.t.slice(o.lab.length + 1), 'F1', 9.8, C.ink); } else this.text(x + pad, yy + 3, o.t, 'F1', 9.8, C.ink); });
+        if (p.note.length) { yy -= 4; p.note.forEach(t => { yy -= 12; this.text(x + pad, yy + 3, t, 'F3', 9.3, C.gray); }); }
+      });
+      this.y -= h + 12;
+    }
+  };
+  // boxed entry with a header bar (handoff notes)
+  Doc.prototype.entry = function (title, meta, rows) {
+    const size = 10.2, lead = size * 1.45, pad = 10, lw = 84, hh = 26;
+    const prep = rows.map(r => ({ r, lines: wrap(clean(r.value), size, false, CW - 2 * pad - lw) }));
+    const body = prep.reduce((a, p) => a + p.lines.length * lead + 4, 0) + 10;
+    const h = hh + body; this.ensure(Math.min(h, 140) + 8);
+    if (this.y - h < BOTTOM) { /* very long entry: split across pages row by row */
+      this.rect(ML, this.y - hh, CW, hh, C.tint, C.line, 0.9); this.text(ML + pad, this.y - 17, clean(title), 'F2', 11.5, C.green);
+      const m = clean(meta || ''); if (m) this.text(PW - ML - pad - tw(m, 8.8, false), this.y - 17, m, 'F1', 8.8, C.gray); this.y -= hh;
+      prep.forEach(p => { p.lines.forEach((ln, n) => { this.ensure(lead + 4); this.y -= lead; if (n === 0) this.text(ML + pad, this.y + 2, clean(p.r.label), 'F2', 9.2, p.r.color || C.gray); this.text(ML + pad + lw, this.y + 2, ln, 'F1', size, p.r.color || C.ink); }); this.y -= 4; });
+      this.y -= 14; return;
+    }
+    this.rect(ML, this.y - h, CW, h, C.white, C.line, 0.9); this.rect(ML, this.y - hh, CW, hh, C.tint, C.line, 0.9);
+    this.text(ML + pad, this.y - 17, clean(title), 'F2', 11.5, C.green);
+    const m = clean(meta || ''); if (m) this.text(PW - ML - pad - tw(m, 8.8, false), this.y - 17, m, 'F1', 8.8, C.gray);
+    let yy = this.y - hh - 4;
+    prep.forEach(p => { p.lines.forEach((ln, n) => { yy -= lead; if (n === 0) this.text(ML + pad, yy + 2, clean(p.r.label), 'F2', 9.2, p.r.color || C.gray); this.text(ML + pad + lw, yy + 2, ln, 'F1', size, p.r.color || C.ink); }); yy -= 4; });
+    this.y -= h + 14;
+  };
+  Doc.prototype.summary = function (title, meta) {
+    const lines = wrap(clean(meta), 10, false, CW - 28), h = 18 + 17 + lines.length * 14 + 8;
+    this.ensure(h);
+    this.rect(ML, this.y - h, CW, h, C.tint, C.line, 0.9); this.rect(ML, this.y - h, 6, h, C.green);
+    this.text(ML + 18, this.y - 22, clean(title), 'F2', 14, C.green);
+    let yy = this.y - 22; lines.forEach(t => { yy -= 15; this.text(ML + 18, yy, t, 'F1', 10, C.gray); }); this.y -= h + 6;
+  };
+  Doc.prototype.ruled = function (n) { for (let i = 0; i < n; i++) { this.ensure(26); this.y -= 26; this.line(ML, this.y, PW - ML, this.y, 'BBBBBB', 0.8); } this.y -= 6; };
+  Doc.prototype.quote = function (text) {
+    const lines = wrap(clean(text), 10.5, false, CW - 20), lead = 14.5, h = lines.length * lead + 8; this.ensure(h + 4);
+    this.rect(ML, this.y - h, 3, h, C.sage); let yy = this.y - 4; lines.forEach(t => { yy -= lead; this.text(ML + 12, yy + 3, t, 'F1', 10.5, C.ink); }); this.y -= h + 6;
+  };
+  Doc.prototype.finish = function (footLeft) {
+    const n = this.pages.length, d = clean(this.meta.right || '');
+    this.pages.forEach((ops, i) => {
+      this.ops = ops;
+      this.line(ML, 50, PW - ML, 50, C.line, 0.8);
+      this.text(ML, 38, clean(footLeft), 'F1', 7.4, C.light);
+      const pg = 'Page ' + (i + 1) + ' of ' + n; this.text(PW - ML - tw(pg, 8, false), 38, pg, 'F1', 8, C.gray);
+    });
+    return serialize(this.pages);
+  };
+  function serialize(pages) {
     const objs = []; const add = (s) => { objs.push(s); return objs.length; };
-    add('<< /Type /Catalog /Pages 2 0 R >>');
-    add('PAGES');
-    const f1 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
-    const f2 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    add('<< /Type /Catalog /Pages 2 0 R >>'); add('PAGES');
+    const fonts = ['Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Times-Bold'].map(f => add('<< /Type /Font /Subtype /Type1 /BaseFont /' + f + ' /Encoding /WinAnsiEncoding >>'));
     const kids = [];
-    pages.forEach((c, i) => {
-      const body = c + '\n' + foot(i);
+    pages.forEach(ops => {
+      const body = ops.join('\n');
       const cid = add('<< /Length ' + body.length + ' >>\nstream\n' + body + '\nendstream');
-      const pid = add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + PW + ' ' + PH + '] /Resources << /Font << /F1 ' + f1 + ' 0 R /F2 ' + f2 + ' 0 R >> >> /Contents ' + cid + ' 0 R >>');
-      kids.push(pid + ' 0 R');
+      kids.push(add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + PW + ' ' + PH + '] /Resources << /Font << /F1 ' + fonts[0] + ' 0 R /F2 ' + fonts[1] + ' 0 R /F3 ' + fonts[2] + ' 0 R /F4 ' + fonts[3] + ' 0 R >> >> /Contents ' + cid + ' 0 R >>') + ' 0 R');
     });
     objs[1] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + pages.length + ' >>';
     let pdf = '%PDF-1.4\n'; const offs = [];
@@ -4028,19 +4142,107 @@ window.addEventListener('afterprint', function() {
     const bytes = new Uint8Array(pdf.length); for (let i = 0; i < pdf.length; i++) bytes[i] = pdf.charCodeAt(i) & 255;
     return bytes;
   }
-  const KINDS = {
-    med:     { title: 'Medication List',    parts: ['#med-print-header', '#medications-print-table-wrap'] },
-    ct:      { title: 'Care Team Directory', parts: ['#ct-print-header', '#ct-print-grid'] },
-    handoff: { title: 'Handoff Notes',      parts: ['#handoff-print-header', '#handoff-list'] },
-    ec:      { title: 'Emergency Card',     parts: ['#ec-print-header', '#ec-preview-content'] },
-    visit:   { title: 'Doctor Visit Prep',  parts: ['#page-visit-prep'] }
+
+  // ── Readers: turn each print area into document blocks ──
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+  const tx = (el) => clean(el ? el.textContent : '');
+  const FOOT = 'CareCompanion - personal reference only. Always verify medications and medical details with your pharmacist or physician.';
+  function header(sel, title, accent) {
+    const h = $(sel);
+    return { title, accent, sub: tx($('.prt-sub', h)), right: tx($('.prt-right', h)) };
+  }
+  function cellLines(td, first) {
+    const clone = td.cloneNode(true); clone.querySelectorAll('br').forEach(b => b.replaceWith('\n'));
+    const parts = String(clone.textContent || '').split('\n').map(clean).filter(Boolean);
+    return parts.map((t, i) => (first && i === 0) ? { t, b: true } : (first ? { t, i: true, s: 8.8, c: C.gray } : { t }));
+  }
+  function readTable(tbl, doc, weights) {
+    const heads = $$('thead th', tbl).map(th => tx(th));
+    const cols = heads.map((h, i) => ({ h, w: (weights && weights[i]) || 1 }));
+    const rows = $$('tbody tr', tbl).map(tr => $$('td', tr).map((td, i) => ({ lines: cellLines(td, i === 0).filter(l => l.t && l.t !== '-') })))
+      .filter(r => r.some(c => c.lines.length));
+    rows.forEach(r => r.forEach(c => { if (!c.lines.length) c.lines.push({ t: '-', c: C.light }); }));
+    if (cols.length && rows.length) doc.table(cols, rows);
+  }
+  const READERS = {
+    med: () => {
+      const d = new Doc(header('#med-print-header', 'Medication List'));
+      const tbl = $('#medications-print-table-wrap table');
+      if (tbl) readTable(tbl, d, [2.2, 1, 2.2, 1.6, 1.6, 1.2]);
+      d.para('This list is for personal reference only. Always verify medications with your pharmacist or physician before making changes.', { size: 9, italic: true, color: C.gray });
+      return d;
+    },
+    ct: () => {
+      const d = new Doc(header('#ct-print-header', 'Care Team Directory'));
+      const ICON = { '\u{1F4DE}': 'Phone', '✉️': 'Email', '✉': 'Email', '\u{1F3E5}': 'Facility', '\u{1F4E0}': '' };
+      const cards = $$('#ct-print-grid .ct-print-card').map(c => ({
+        title: tx($('h4', c)), sub: tx($('.ct-role', c)),
+        rows: $$('.ct-detail', c).map(r => { const spans = $$('span', r), icon = (spans[0] ? spans[0].textContent : '').trim(), val = tx(spans[1]); const lab = ICON[icon]; return lab === '' ? { label: val.split(':')[0], text: val.replace(/^[^:]*:\s*/, '') } : { label: lab || 'Info', text: val }; }),
+        note: tx($('.ct-notes', c))
+      }));
+      if (cards.length) d.cards(cards); else d.para('No care team contacts have been added yet.', { italic: true, color: C.gray });
+      return d;
+    },
+    handoff: () => {
+      const d = new Doc(header('#handoff-print-header', 'Caregiver Handoff Notes'));
+      $$('#handoff-list .handoff-card').forEach(card => {
+        const h4 = tx($('h4', card)), ps = $$('.handoff-header p', card).map(tx);
+        const rows = $$('.text-sm', card).map(p => { const st = $('strong', p); const lab = tx(st).replace(/:$/, ''); const val = clean(p.textContent.replace(st ? st.textContent : '', '')); const warn = /watch/i.test(lab); return { label: lab.replace(/^[^A-Za-z]+/, ''), value: val, color: warn ? C.rose : null }; }).filter(r => r.value);
+        d.entry(h4, ps.join('   |   '), rows);
+      });
+      if (!$$('#handoff-list .handoff-card').length) d.para('No handoff notes have been saved yet.', { italic: true, color: C.gray });
+      return d;
+    },
+    ec: () => {
+      const h = header('#ec-print-header', 'Emergency Information Card', C.red);
+      h.title = 'EMERGENCY INFORMATION'; const d = new Doc(h);
+      const root = $('#ec-preview-content'); let section = '', rows = [], contacts = [];
+      const flush = () => { if (rows.length) { d.panel(rows, { labelW: 96, size: 12 }); rows = []; } };
+      Array.from(root.children).forEach(el => {
+        const cls = String(el.className || '');
+        if (cls.indexOf('ec-section-head') >= 0) {
+          flush(); section = tx(el);
+          if (!/^allerg/i.test(section)) d.section(section);              // the allergy alert carries its own label
+          const nx = el.nextElementSibling;
+          if (!nx || String(nx.className || '').indexOf('ec-section-head') >= 0 || String(nx.className || '').indexOf('ec-footer') >= 0) d.para('None recorded', { italic: true, color: C.gray });
+          return;
+        }
+        if (cls.indexOf('emergency-row') >= 0) { rows.push({ label: tx($('strong', el)).replace(/:$/, ''), value: tx($('span', el)), bold: /blood|name/i.test(tx($('strong', el))) }); return; }
+        flush();
+        if (cls.indexOf('ec-allergy-row') >= 0) { const v = tx($('span', el)); d.alert('Allergies', v, /not recorded/i.test(v) ? { color: C.gray, fill: C.tint2 } : null); return; }
+        if (cls.indexOf('ec-med-row') >= 0) { const st = $('strong', el), name = tx(st), rest = clean(el.textContent.replace('•', '').replace(st ? st.textContent : '', '')); d.list([{ b: name, t: rest }]); return; }
+        if (cls.indexOf('ec-footer') >= 0) { d.para(tx(el), { size: 9, italic: true, color: C.gray }); return; }
+        const t = tx(el); if (t) d.para(t, { size: 11.5 });
+      });
+      flush();
+      return d;
+    },
+    visit: () => {
+      const d = new Doc(header('#visit-prep-print-header', 'Doctor Visit Prep'));
+      const root = $('#visit-prep-content');
+      (function walk(n) {
+        Array.from(n.children).forEach(el => {
+          const st = (el.getAttribute('style') || '').replace(/\s+/g, '');
+          if (/border-left:4pt/.test(st)) { const sp = $$('span', el).map(tx).filter(Boolean); d.summary(sp[0] || '', sp.slice(1).join('   |   ')); return; }
+          if (/font-weight:700/.test(st) && /border-bottom:1\.5pt/.test(st)) { d.section(tx(el).replace(/^[^A-Za-z]+/, '')); return; }
+          if (el.tagName === 'TABLE') { readTable(el, d, [2.2, 1, 1.8, 1.5]); return; }
+          if (/border-left:2\.5pt/.test(st)) { d.quote(tx(el)); return; }
+          if (/height:22pt/.test(st)) { let n2 = 1, s = el.nextElementSibling; while (s && /height:22pt/.test((s.getAttribute('style') || '').replace(/\s+/g, ''))) { n2++; s = s.nextElementSibling; } if (!el.previousElementSibling || !/height:22pt/.test((el.previousElementSibling.getAttribute('style') || '').replace(/\s+/g, ''))) d.ruled(n2); return; }
+          if (/border-bottom:1pt/.test(st) && el.children.length === 2) { const a = tx(el.children[0]), b = tx(el.children[1]); d.para(a, { bold: true, size: 10.5, after: 1 }); d.para(b, { size: 10, color: C.gray, after: 7 }); return; }
+          const kids = Array.from(el.children).filter(k => /^(DIV|P|TABLE)$/.test(k.tagName));
+          if (kids.length) { walk(el); return; }
+          const t = tx(el); if (t) d.para(t, { size: 10.5, italic: /italic/.test(st), color: /color:#(666|888)/i.test(st) ? C.gray : null });
+        });
+      })(root);
+      return d;
+    }
   };
+  const TITLES = { med: 'Medication List', ct: 'Care Team Directory', handoff: 'Handoff Notes', ec: 'Emergency Card', visit: 'Doctor Visit Prep' };
   function buildPrintPdf(kind) {
-    const k = KINDS[kind]; if (!k) return null;
-    let items = [];
-    k.parts.forEach(sel => { const el = document.querySelector(sel); if (el) items = items.concat(collect(el)); });
-    if (!items.length) return null;
-    return { bytes: buildPdf(items, k.title), title: k.title };
+    if (!READERS[kind]) return null;
+    const d = READERS[kind]();
+    return { bytes: d.finish(FOOT), title: TITLES[kind] };
   }
   window.__ccBuildPrintPdf = buildPrintPdf;                         // used by the automated tests
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -4170,7 +4372,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '2.0',
+    _version: '2.1',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
