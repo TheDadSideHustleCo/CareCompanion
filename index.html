@@ -991,6 +991,7 @@
     .print-doc-header .prt-title { font-family: Georgia, serif; font-size: 17pt; font-weight: bold; color: #2d5a3d; }
     .print-doc-header .prt-sub { font-size: 9pt; color: #555; margin-top: 3pt; }
     .print-doc-header .prt-right { text-align: right; font-size: 9pt; color: #555; }
+    .handoff-print-note { font-size: 9pt; color: #555; font-style: italic; margin: 0 0 10pt; }
 
     /* ── Hide all add/edit forms and UI-only elements on print ── */
     .no-print { display: none !important; }
@@ -1284,7 +1285,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      CareCompanion v<span id="app-version-label">2.1</span><br>
+      CareCompanion v<span id="app-version-label">2.2</span><br>
       Data stored locally on your device.<br>
       Not a medical device.<br><br>
       <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
@@ -1817,7 +1818,7 @@
       </div>
 
       <div id="handoff-list"></div>
-      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="document.body.dataset.print='handoff';window.print();">🖨️ Print Handoff Notes</button>
+      <button class="btn btn-outline no-print" style="margin-top:16px;" onclick="printHandoffNotes();">🖨️ Print Handoff Notes</button>
     </div>
 
     <!-- ═══════════════════════════════════ MEMORY BOX ═══ -->
@@ -2044,7 +2045,7 @@
 // ════════════════════════════════════════════════
 //  DATA LAYER — localStorage
 // ════════════════════════════════════════════════
-const APP_VERSION = '2.1';
+const APP_VERSION = '2.2';
 (function(){ try { var vl = document.getElementById('app-version-label'); if (vl) vl.textContent = APP_VERSION; } catch(e) {} })();
 
 const KEYS = {
@@ -2102,6 +2103,19 @@ let selectedMood = '';
 let selectedMemMood = '';
 let selectedStress = null;
 let logShowAll = false;
+// Long lists show a page at a time, with "Show more" buttons, so the app stays quick and easy to scroll
+const LIST_PAGE = { handoff: 15, memory: 12, stress: 20, careteam: 20, apptPast: 10 };
+const listShown = Object.assign({}, LIST_PAGE);
+function moreButtons(key, total, fn, noun) {
+  const page = LIST_PAGE[key];
+  if (total <= page) return '';
+  const shown = Math.min(listShown[key], total);
+  let h = '<div class="no-print" style="text-align:center;padding:16px 0;"><div style="font-size:1rem;color:var(--text-muted);margin-bottom:10px;">Showing ' + shown + ' of ' + total + ' ' + noun + '</div>';
+  if (shown < total) h += '<button class="btn btn-outline btn-sm" onclick="listShown.' + key + '+=LIST_PAGE.' + key + ';' + fn + '()">Show ' + Math.min(page, total - shown) + ' more ▼</button> <button class="btn btn-ghost btn-sm" onclick="listShown.' + key + '=' + total + ';' + fn + '()">Show all</button>';
+  if (shown > page) h += ' <button class="btn btn-ghost btn-sm" onclick="listShown.' + key + '=LIST_PAGE.' + key + ';' + fn + '()">▲ Show less</button>';
+  return h + '</div>';
+}
+let handoffPrintMode = false;
 let editingMedId = null;
 let editingLogId = null;
 let editingApptId = null;
@@ -2916,7 +2930,9 @@ function renderAppointments() {
 
   if (past.length) {
     html += `<div style="font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);padding:20px 0 10px;border-top:1px solid var(--border);margin-top:8px;">Past</div>`;
-    html += [...past].reverse().map(a => renderAppt(a, true)).join('');
+    const pastNewestFirst = [...past].reverse();
+    html += pastNewestFirst.slice(0, listShown.apptPast).map(a => renderAppt(a, true)).join('');
+    html += moreButtons('apptPast', pastNewestFirst.length, 'renderAppointments', 'past appointments');
   }
 
   el.innerHTML = html;
@@ -2982,7 +2998,7 @@ function renderCareTeam() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>No contacts yet. Add your care team above.</p></div>';
     return;
   }
-  el.innerHTML = team.map(c => `
+  el.innerHTML = team.slice(0, listShown.careteam).map(c => `
     <div class="contact-card">
       <div class="contact-avatar">${c.name[0]}</div>
       <div class="contact-info">
@@ -2998,7 +3014,7 @@ function renderCareTeam() {
         <button class="btn btn-ghost btn-sm no-print" onclick="deleteContact(${c.id})" aria-label="Delete ${esc(c.name)}">✕</button>
       </div>
     </div>
-  `).join('');
+  `).join('') + moreButtons('careteam', team.length, 'renderCareTeam', 'contacts');
 }
 
 // ════════════════════════════════════════════════
@@ -3057,14 +3073,27 @@ function deleteHandoff(id) {
   renderDashboard();
 }
 
-function renderHandoff() {
-  const notes = load(KEYS.handoff).sort((a, b) => b.date.localeCompare(a.date));
+// mode 'print' = only the last 14 days (or the 10 newest if nothing is that recent), so a printout stays short
+function renderHandoff(mode) {
+  handoffPrintMode = (mode === 'print');
+  const all = load(KEYS.handoff).sort((a, b) => b.date.localeCompare(a.date));
   const el = document.getElementById('handoff-list');
-  if (!notes.length) {
+  if (!all.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔄</div><p>No handoff notes yet.</p></div>';
     return;
   }
-  el.innerHTML = notes.map(n => `
+  let notes = all, printNote = '', more = '';
+  if (handoffPrintMode) {
+    const cut = new Date(); cut.setDate(cut.getDate() - 14); const cutStr = cut.toISOString().split('T')[0];
+    notes = all.filter(n => n.date >= cutStr);
+    const none14 = !notes.length;
+    if (none14) notes = all.slice(0, 10);
+    printNote = notes.length < all.length ? `<div class="handoff-print-note">${none14 ? 'No notes in the last 14 days, so the ' + notes.length + ' most recent are shown' : 'Showing the last 14 days: ' + notes.length + ' of ' + all.length + ' notes'}. Older notes stay saved in the app and in your backup.</div>` : '';
+  } else {
+    notes = all.slice(0, listShown.handoff);
+    more = moreButtons('handoff', all.length, 'renderHandoff', 'notes');
+  }
+  el.innerHTML = printNote + notes.map(n => `
     <div class="handoff-card">
       <div class="handoff-header">
         <div>
@@ -3083,7 +3112,14 @@ function renderHandoff() {
       ${n.watch ? `<p class="text-sm" style="margin-top:6px;color:var(--rose-dark);"><strong>⚠️ Watch for:</strong> ${esc(n.watch)}</p>` : ''}
       ${n.notes ? `<p class="text-sm" style="margin-top:6px;"><strong>Notes:</strong> ${esc(n.notes)}</p>` : ''}
     </div>
-  `).join('');
+  `).join('') + more;
+}
+
+function printHandoffNotes() {
+  renderHandoff('print');
+  document.body.dataset.print = 'handoff';
+  window.print();
+  if (window.__ccPdfMode) renderHandoff();     // the iPhone PDF is built straight away, so restore the normal list
 }
 
 // ════════════════════════════════════════════════
@@ -3148,7 +3184,7 @@ function renderMemories() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">💛</div><p>Your memory box is empty.<br>Add your first precious moment above.</p></div>';
     return;
   }
-  el.innerHTML = mems.map(m => `
+  el.innerHTML = mems.slice(0, listShown.memory).map(m => `
     <div class="memory-card">
       ${m.mood ? `<div class="memory-mood">${m.mood}</div>` : ''}
       <div class="memory-date">${formatDate(m.date)}</div>
@@ -3159,7 +3195,7 @@ function renderMemories() {
         <button class="btn btn-ghost btn-sm" onclick="deleteMemory(${m.id})">✕ Remove</button>
       </div>
     </div>
-  `).join('');
+  `).join('') + moreButtons('memory', mems.length, 'renderMemories', 'memories');
 }
 
 // ════════════════════════════════════════════════
@@ -3227,7 +3263,7 @@ function renderStress() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">🌿</div><p>No check-ins yet. How are you doing today?</p></div>';
     return;
   }
-  el.innerHTML = entries.map(e => `
+  el.innerHTML = entries.slice(0, listShown.stress).map(e => `
     <div class="log-entry" style="border-left-color:${e.score <= 3 ? 'var(--rose)' : e.score <= 6 ? 'var(--gold)' : 'var(--sage)'}">
       <div class="log-date">${formatDate(e.date)} · Wellbeing: <strong>${e.score}/10</strong></div>
       ${e.notes ? `<div class="log-text">${esc(e.notes)}</div>` : ''}
@@ -3237,7 +3273,7 @@ function renderStress() {
         <button class="btn btn-ghost btn-sm" onclick="deleteStress(${e.id})">✕ Remove</button>
       </div>
     </div>
-  `).join('');
+  `).join('') + moreButtons('stress', entries.length, 'renderStress', 'check-ins');
 }
 
 function deleteStress(id) {
@@ -3902,6 +3938,7 @@ window.addEventListener('afterprint', function() {
   delete document.body.dataset.print;
   const grid = document.getElementById('ct-print-grid');
   if (grid) grid.style.display = 'none';
+  if (handoffPrintMode) renderHandoff();       // back to the normal on-screen list
 });
 
 // ── iPhone Home Screen printing fallback ─────────────────────────────────
@@ -4186,6 +4223,7 @@ window.addEventListener('afterprint', function() {
     },
     handoff: () => {
       const d = new Doc(header('#handoff-print-header', 'Caregiver Handoff Notes'));
+      const hn = $('#handoff-list .handoff-print-note'); if (hn) d.para(tx(hn), { size: 9.5, italic: true, color: C.gray });
       $$('#handoff-list .handoff-card').forEach(card => {
         const h4 = tx($('h4', card)), ps = $$('.handoff-header p', card).map(tx);
         const rows = $$('.text-sm', card).map(p => { const st = $('strong', p); const lab = tx(st).replace(/:$/, ''); const val = clean(p.textContent.replace(st ? st.textContent : '', '')); const warn = /watch/i.test(lab); return { label: lab.replace(/^[^A-Za-z]+/, ''), value: val, color: warn ? C.rose : null }; }).filter(r => r.value);
@@ -4248,6 +4286,7 @@ window.addEventListener('afterprint', function() {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   if (!(isIOS && standalone) && !window.__ccForcePdfPrint) return;
+  window.__ccPdfMode = true;
   window.print = function () {
     const kind = document.body.dataset.print;
     try {
@@ -4372,7 +4411,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '2.1',
+    _version: '2.2',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
