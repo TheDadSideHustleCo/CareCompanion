@@ -1,58 +1,45 @@
-// CareCompanion Service Worker v13
-const CACHE_NAME = 'carecompanion-v13';
-
-const ASSETS_TO_CACHE = [
-  './carecompanion.html',
-  '/',
-  '/index.html',
-  './lato-300.ttf',
-  './lato-400.ttf',
-  './lato-700.ttf',
-  './playfair-400.ttf',
-  './playfair-600.ttf',
-  './playfair-italic-400.ttf',
+const CACHE = 'carecompanion-v66';
+const FILES = [
+  '/CareCompanion/',
+  '/CareCompanion/manifest.json',
+  '/CareCompanion/icon-192.png',
+  '/CareCompanion/icon-512.png',
 ];
 
-// Install — cache all assets
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE))
-  );
-  self.skipWaiting();
-});
-
-// Activate — purge old caches
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c =>
+      Promise.allSettled(FILES.map(f => c.add(f)))
     )
   );
-  self.clients.claim();
+  // Wait for message from app before taking over
 });
 
-// Fetch — cache-first strategy
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      return cached || fetch(event.request).then(response => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      });
-    }).catch(() => {
-      if (event.request.mode === 'navigate') {
-        return caches.match('./carecompanion.html');
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  // Network-first: always try to get fresh content, fall back to cache if offline
+  e.respondWith(
+    fetch(e.request).then(res => {
+      if (res && res.status === 200) {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
       }
+      return res;
+    }).catch(() => {
+      // Offline — serve from cache
+      return caches.match(e.request)
+        .then(cached => cached || caches.match('/CareCompanion/index.html'));
     })
   );
 });
-
-// SKIP_WAITING — allow clients to trigger update immediately
-self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self

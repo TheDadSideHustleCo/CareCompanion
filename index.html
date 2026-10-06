@@ -930,6 +930,8 @@
   .export-card p { font-size: 1.05rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6; }
 
   /* ── PROFESSIONAL PRINT STYLES ── */
+    /* Print-only headers never show on screen */
+    @media screen { .print-doc-header { display: none !important; } }
   @media print {
     @page { margin: 1.8cm 2cm; size: letter; }
 
@@ -1257,7 +1259,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      CareCompanion v1.5<br>
+      CareCompanion v<span id="app-version-label">1.5</span><br>
       Data stored locally on your device.<br>
       Not a medical device.<br><br>
       <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
@@ -2017,7 +2019,8 @@
 // ════════════════════════════════════════════════
 //  DATA LAYER — localStorage
 // ════════════════════════════════════════════════
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.5';
+(function(){ try { var vl = document.getElementById('app-version-label'); if (vl) vl.textContent = APP_VERSION; } catch(e) {} })();
 
 const KEYS = {
   profile: 'cc_profile',
@@ -3374,7 +3377,7 @@ function updateEmergencyCard() {
     <div style="font-size:1rem;line-height:1.6;margin-bottom:6px;">${conditions}</div>` : ''}
 
     <div class="ec-section-head">Allergies</div>
-    <div class="ec-allergy-row"><strong>⚠ ALLERGIES:</strong><span>${allergies || 'None known'}</span></div>
+    <div class="ec-allergy-row"><strong>⚠ ALLERGIES:</strong><span>${allergies || 'Not recorded'}</span></div>
 
     <div class="ec-section-head">Current Medications</div>
     ${medRows}
