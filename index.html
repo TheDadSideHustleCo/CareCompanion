@@ -168,6 +168,7 @@
     font-size: 1.05rem; color: var(--gold-light);
     cursor: pointer; text-decoration: underline;
     background: none; border: none; margin-top: 4px;
+    padding: 10px 6px; min-height: 44px;
     font-family: 'Lato', system-ui, -apple-system, sans-serif;
   }
 
@@ -590,6 +591,10 @@
     font-weight: 700; font-size: 1rem;
   }
   .stress-btn:hover { border-color: var(--sage-light); }
+  @media (max-width: 600px) {
+    .stress-scale { flex-wrap: wrap; }
+    .stress-btn { flex: 0 0 calc(20% - 7px); padding: 14px 4px; font-size: 1.1rem; }
+  }
   .stress-btn.selected-low { border-color: var(--sage); background: rgba(122,158,135,0.12); color: var(--sage-dark); }
   .stress-btn.selected-mid { border-color: var(--gold); background: rgba(196,164,107,0.12); color: #7a5e2a; }
   .stress-btn.selected-high { border-color: var(--rose); background: rgba(201,132,122,0.12); color: var(--rose-dark); }
@@ -648,7 +653,7 @@
   .hamburger {
     display: none;
     background: none; border: none;
-    cursor: pointer; padding: 6px 8px;
+    cursor: pointer; padding: 12px 10px;
     flex-direction: column; gap: 5px;
     border-radius: 6px;
   }
@@ -926,7 +931,14 @@
   .tooltip-dots { display: flex; gap: 6px; }
   .tooltip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
   .tooltip-dot.active { background: var(--sage); }
-  .tooltip-skip { font-size: 1rem; color: var(--text-muted); cursor: pointer; text-decoration: underline; background: none; border: none; }
+  .tooltip-skip { font-size: 1rem; color: var(--text-muted); cursor: pointer; text-decoration: underline; background: none; border: none; padding: 12px 8px; white-space: nowrap; }
+  @media (max-width: 600px) {
+    .tooltip-box { padding: 18px 18px; } .tooltip-box p { margin-bottom: 12px; }
+    .tooltip-nav { flex-wrap: wrap; gap: 8px; }
+    .tooltip-dots { width: 100%; justify-content: center; }
+    .tooltip-nav > * { flex-shrink: 0; }
+    .tooltip-nav .btn, .tooltip-nav button:not(.tooltip-skip) { margin-left: auto; }
+  }
 
   /* ── EXPORT / IMPORT ── */
   .export-card {
@@ -1157,7 +1169,7 @@
   #pwa-banner .pwa-btn { padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; white-space: nowrap; }
   #pwa-banner .pwa-btn-install { background: white; color: var(--sage-dark); }
   #pwa-banner .pwa-btn-dismiss { background: rgba(255,255,255,0.2); color: white; }
-  @media print { #pwa-banner { display: none !important; } }
+  @media print { #pwa-banner, #update-banner, #toast-container, #tooltip-overlay { display: none !important; } }
 </style>
 </head>
 <body>
@@ -1271,7 +1283,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      CareCompanion v<span id="app-version-label">1.7</span><br>
+      CareCompanion v<span id="app-version-label">1.8</span><br>
       Data stored locally on your device.<br>
       Not a medical device.<br><br>
       <span style="cursor:pointer;text-decoration:underline;opacity:0.7;" onclick="if(confirm('Reset all app data and start fresh?')){localStorage.clear();renderAll();renderDataSummary();updateProfileDisplay({name:'—'});document.getElementById('hero-name').textContent='your loved one';document.getElementById('disclaimer-overlay').style.display='flex';}">↺ Reset &amp; Start Fresh</span>
@@ -1678,7 +1690,7 @@
         </div>
         <div class="form-row" id="appt-recurring-row">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-            <input type="checkbox" id="appt-recurring" onchange="toggleRecurringFields()" style="accent-color:var(--sage);width:16px;height:16px;">
+            <input type="checkbox" id="appt-recurring" onchange="toggleRecurringFields()" style="accent-color:var(--sage);width:24px;height:24px;">
             <span>Repeat this appointment</span>
           </label>
           <div id="appt-recurring-fields" style="display:none;margin-top:12px;">
@@ -2031,7 +2043,7 @@
 // ════════════════════════════════════════════════
 //  DATA LAYER — localStorage
 // ════════════════════════════════════════════════
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 (function(){ try { var vl = document.getElementById('app-version-label'); if (vl) vl.textContent = APP_VERSION; } catch(e) {} })();
 
 const KEYS = {
@@ -3995,7 +4007,7 @@ function exportData() {
   // Build export object using the actual localStorage keys as property names
   // so import can restore them directly without any mapping
   const data = {
-    _version: '1.7',
+    _version: '1.8',
     _exported: new Date().toISOString(),
     _app: 'CareCompanion'
   };
@@ -4663,16 +4675,24 @@ function showTooltip(i) {
     target.style.outline = '2px solid var(--gold)';
     target.style.outlineOffset = '-2px';
     const rect = target.getBoundingClientRect();
-    box.style.position = 'fixed';
-    box.style.top = Math.min(Math.max(rect.top, 20), window.innerHeight - 300) + 'px';
-    box.style.left = (rect.right + 20) + 'px';
-    box.style.transform = 'none';
+    const sidebarVisible = rect.width > 0 && rect.right > 0 && window.innerWidth > 768;
+    if (sidebarVisible) {
+      box.style.position = 'fixed';
+      box.style.top = Math.min(Math.max(rect.top, 20), Math.max(20, window.innerHeight - 300)) + 'px';
+      box.style.left = Math.min(rect.right + 20, Math.max(12, window.innerWidth - 340)) + 'px';
+      box.style.transform = 'none';
+    } else {
+      centerTooltip(box);
+    }
   } else {
-    box.style.position = 'fixed';
-    box.style.top = '50%';
-    box.style.left = '50%';
-    box.style.transform = 'translate(-50%, -50%)';
+    centerTooltip(box);
   }
+  // always keep the box (and its Next / Skip buttons) on screen, scrolling inside if the screen is short
+  box.style.maxHeight = 'calc(100vh - 24px)';
+  box.style.overflowY = 'auto';
+  box.style.width = 'min(320px, calc(100vw - 24px))';
+  box.style.maxWidth = 'min(320px, calc(100vw - 24px))';
+  box.style.boxSizing = 'border-box';
 }
 
 function centerTooltip(box) {
