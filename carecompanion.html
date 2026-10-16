@@ -1176,6 +1176,9 @@
 </style>
 </head>
 <body>
+<!-- Shown only when the app cannot run here (e.g. a phone file preview); hidden by the script below whenever the app works -->
+<div id="tdsh-link-note" style="position:fixed;left:0;right:0;top:0;z-index:2147483647;background:#fff8e1;color:#1a1a1a;border-bottom:3px solid #c9971c;padding:16px 18px;font:600 18px/1.45 -apple-system,'Segoe UI',Arial,sans-serif;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.25);">&#128242; On an iPhone, iPad or Android phone?<br>Open CareCompanion from your link instead:<br><a href="https://thedadsidehustleco.github.io/CareCompanion/" style="color:#0b57d0;font-size:19px;overflow-wrap:anywhere;">thedadsidehustleco.github.io/<wbr>CareCompanion</a></div>
+<script>document.getElementById('tdsh-link-note').style.display='none';</script>
 
 <div id="toast-container"></div>
 
@@ -2087,6 +2090,8 @@ function showLastSaved() {
 }
 
 function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); showLastSaved(); }
+// Local calendar date (YYYY-MM-DD) on this device - not UTC, so evening entries stay on the right day
+function localDateStr(d) { d = d || new Date(); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
 function load(key, fallback=[]) {
   try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; }
   catch { return fallback; }
@@ -2130,7 +2135,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateMedTimeInputs();
 
   // Set today's date on inputs
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   ['log-date','mem-date','ho-date','appt-date'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = today;
@@ -2702,7 +2707,7 @@ function generateRecurringDates(startDate, freq, endDate) {
   let cur = new Date(startDate + 'T12:00:00');
   const max = 52;
   while (cur <= end && dates.length < max) {
-    dates.push(cur.toISOString().split('T')[0]);
+    dates.push(localDateStr(cur));
     if (freq === 'daily')     cur.setDate(cur.getDate() + 1);
     else if (freq === 'weekly')    cur.setDate(cur.getDate() + 7);
     else if (freq === 'biweekly')  cur.setDate(cur.getDate() + 14);
@@ -2799,7 +2804,7 @@ function editAppointment(id) {
   document.getElementById('appt-category').value = a.category || 'General';
   document.getElementById('appt-notes').value = a.notes || '';
   document.getElementById('appt-visit-notes').value = a.visitNotes || '';
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   const showVisitNotes = a.attended || a.date < today;
   document.getElementById('appt-visit-notes-row').style.display = showVisitNotes ? 'block' : 'none';
   // Hide recurring row when editing — edits apply to this instance only
@@ -2884,7 +2889,7 @@ function renderAppointments() {
     return;
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   const upcoming = appts.filter(a => a.date >= today);
   const past     = appts.filter(a => a.date <  today);
 
@@ -3085,7 +3090,7 @@ function renderHandoff(mode) {
   }
   let notes = all, printNote = '', more = '';
   if (handoffPrintMode) {
-    const cut = new Date(); cut.setDate(cut.getDate() - 14); const cutStr = cut.toISOString().split('T')[0];
+    const cut = new Date(); cut.setDate(cut.getDate() - 14); const cutStr = localDateStr(cut);
     notes = all.filter(n => n.date >= cutStr);
     const none14 = !notes.length;
     if (none14) notes = all.slice(0, 10);
@@ -3215,7 +3220,7 @@ function selectStress(n) {
 function addStressEntry() {
   if (!selectedStress) { alert('Please select your wellbeing level.'); return; }
   const data = {
-    date: new Date().toISOString().split('T')[0],
+    date: localDateStr(),
     score: selectedStress,
     notes: document.getElementById('stress-notes').value,
     gratitude: document.getElementById('stress-gratitude').value,
@@ -3459,7 +3464,7 @@ function updateEmergencyCard() {
 //  MEDICATION DAILY CHECK-OFF PERSISTENCE
 // ════════════════════════════════════════════════
 function getTodayKey() {
-  return 'cc_medchecks_' + new Date().toISOString().split('T')[0];
+  return 'cc_medchecks_' + localDateStr();
 }
 
 function getMedChecksForToday() {
@@ -3737,7 +3742,7 @@ function renderDashboard() {
   document.getElementById('stat-appt-detail').innerHTML = '<div class="stat-value" style="font-size:1.1rem;">—</div>';
 
   // Next appointment
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   const upcoming = appts.filter(a => a.date >= today);
   if (upcoming.length) {
     const nextDate = upcoming[0].date;
@@ -4430,7 +4435,7 @@ function exportData() {
   a.href = url;
   const profile = load(KEYS.profile, null);
   const nameSlug = profile && profile.name ? '-' + profile.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'') : '';
-  a.download = `carecompanion${nameSlug}-${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `carecompanion${nameSlug}-${localDateStr()}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -4558,7 +4563,7 @@ function renderCharts() {
   for (let i = 13; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    days.push(d.toISOString().split('T')[0]);
+    days.push(localDateStr(d));
   }
 
   // Helper: render bars directly into el (which IS the chart-bars div), then append label row after it
@@ -4717,10 +4722,10 @@ function renderGoodDays() {
   // Allow streak to count if today has no entry yet (check from yesterday)
   let check = new Date(today);
   // If today is logged as good, start from today; otherwise start from yesterday
-  const todayKey = today.toISOString().split('T')[0];
+  const todayKey = localDateStr(today);
   if (!goodDateSet.has(todayKey)) check.setDate(check.getDate() - 1);
   while (true) {
-    const key = check.toISOString().split('T')[0];
+    const key = localDateStr(check);
     if (!goodDateSet.has(key)) break;
     streak++;
     check.setDate(check.getDate() - 1);
@@ -4730,7 +4735,7 @@ function renderGoodDays() {
   // ── Last 30 days count ──
   const thirtyAgo = new Date(today);
   thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-  const thirtyKey = thirtyAgo.toISOString().split('T')[0];
+  const thirtyKey = localDateStr(thirtyAgo);
   const last30Count = logs.filter(l => l.mood === '😊' && l.date >= thirtyKey).length;
 
   // Render streak badge
@@ -4773,7 +4778,7 @@ function renderMoodSnapshot() {
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    days.push(d.toISOString().split('T')[0]);
+    days.push(localDateStr(d));
   }
   const moodColor = { '😊': '#7a9e87', '😐': '#c4a46b', '😔': '#c9847a', '😤': '#c9847a', '😴': '#b09080', '😰': '#c4a46b' };
   const moodLabel = { '😊': 'Good', '😐': 'Okay', '😔': 'Low', '😤': 'Agitated', '😴': 'Tired', '😰': 'Anxious' };
@@ -4816,18 +4821,18 @@ function renderGoodDaysWidget() {
   }
   const today = new Date();
   const thirtyAgo = new Date(today); thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-  const thirtyKey = thirtyAgo.toISOString().split('T')[0];
+  const thirtyKey = localDateStr(thirtyAgo);
   const last30 = goodDays.filter(l => l.date >= thirtyKey).length;
   const totalGood = goodDays.length;
 
   // Streak
   const goodDateSet = new Set(goodDays.map(l => l.date));
   let streak = 0;
-  const todayKey = today.toISOString().split('T')[0];
+  const todayKey = localDateStr(today);
   let check = new Date(today);
   if (!goodDateSet.has(todayKey)) check.setDate(check.getDate() - 1);
   while (streak < 365) {
-    const k = check.toISOString().split('T')[0];
+    const k = localDateStr(check);
     if (!goodDateSet.has(k)) break;
     streak++;
     check.setDate(check.getDate() - 1);
